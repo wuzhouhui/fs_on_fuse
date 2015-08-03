@@ -18,7 +18,7 @@
 `proc` 文件系统对应于 `/dev/fuse` 的文件 I/O 请求. `fuse_dev_read()` 处理
 文件的读操作, 并将 "请求队列" 的命令返回给主调程序. `fuse_dev_write()`
 处理文件的写操作, 该函数接收要被写入的数据, 将其放入 `req->out` 结构中,
-这些要被写入的数据会通过 "请求队列"  与 `request_send()` 返回给系统调用.
+这些要被写入的数据会通过 "请求队列" 与 `request_send()` 返回给系统调用.
 
 ### 1.2 fuse 库函数
 * 当你的用户态程序调用 `fuse_main()` (`lib/helper.c`) 时, `fuse_main()` 开始
@@ -279,4 +279,59 @@ ii) 用户可以创建大小不受限制的文件或目录, 或者是层次非�
     |    <fuse_unlink()                  |
     |  <sys_unlink()                     |
 
-给一个 FULE 文件系统造成死锁有几种方式,
+给一个 FULE 文件系统造成死锁有几种方式, 因为我们讨论的是非特权的用户空间
+程序, 关于这些我们必须做些什么.
+
+#### 情景 1 -- 简单的死锁
+
+    |  "rm /mnt/fuse/file"               |  FUSE filesystem daemon
+    |                                    |
+    |  >sys_unlink("/mnt/fuse/file")     |
+    |    [acquire inode semaphore        |
+    |     for "file"]                    |
+    |    >fuse_unlink()                  |
+    |      [sleep on req->waitq]         |
+    |                                    |  <sys_read()
+    |                                    |  >sys_unlink("/mnt/fuse/file")
+    |                                    |    [acquire inode semaphore
+    |                                    |     for "file"]
+    |                                    |    *DEADLOCK*
+
+解决方案是终止文件系统.
+
+#### 情景 2 -- 狡猾的死锁
+这一个需要精心制作的文件系统. 这是上面情景的变形, 只有对文件系统的回调不是
+显式的, 但这里的死锁是由页错误造成的.
+
+    |  Kamikaze filesystem thread 1      |  Kamikaze filesystem thread 2
+    |                                    |
+    |  [fd = open("/mnt/fuse/file")]     |  [request served normally]
+    |  [mmap fd to 'addr']               |
+    |  [close fd]                        |  [FLUSH triggers 'magic' flag]
+    |  [read a byte from addr]           |
+    |    >do_page_fault()                |
+    |      [find or create page]         |
+    |      [lock page]                   |
+    |      >fuse_readpage()              |
+    |         [queue READ request]       |
+    |         [sleep on req->waitq]      |
+    |                                    |  [read request to buffer]
+    |                                    |  [create reply header before addr]
+    |                                    |  >sys_write(addr - headerlength)
+    |                                    |    >fuse_dev_write()
+    |                                    |      [look up req in fc->processing]
+    |                                    |      [remove from fc->processing]
+    |                                    |      [copy write buffer to req]
+    |                                    |        >do_page_fault()
+    |                                    |           [find or create page]
+    |                                    |           [lock page]
+    |                                    |           * DEADLOCK *
+
+解决方案与上面的相同.
+
+另一个问题是, 当写缓冲区正在被复制给请求, 那么请求不能被中断或终止. 这是因 
+为在请求返回之后, 复制操作的目标地址可能不再有效.
+
+问题的解决办法是令复制操作成为一个原子操作, 当属于写缓冲区的页被 
+`get_user_pages()` 弄错时, 允许中断. 标志 `req->flag` 指出复制正在发生,
+终止操作会一直延迟到该标志被解除为止.
