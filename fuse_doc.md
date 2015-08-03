@@ -1,7 +1,7 @@
 # fuse 原理学习与理解
 ## 1 [fuse-1.3 的工作方式](http://fuse.sourceforge.net/doxygen/index.html#section1)
 ![fuse 与其他模块的关系](./FUSE_structure.svg.png)  
-图片来源 http://en.wikipedia.org/wiki/File:FUSE_structure.svg  
+图 1-1, 来源 http://en.wikipedia.org/wiki/File:FUSE_structure.svg  
 
 ### 1.1 内核模块
 内核模块由两个部分组成, 第一个是位于 `kernel/dev.c` 的 `proc` 文件系统, 第
@@ -342,3 +342,24 @@ FUSE 默认不会检查文件访问权限, 文件系统可以自由地实现自�
 问题的解决办法是令复制操作成为一个原子操作, 当属于写缓冲区的页被 
 `get_user_pages()` 弄错时, 允许中断. 标志 `req->flag` 指出复制正在发生,
 终止操作会一直延迟到该标志被解除为止.
+
+## 3 我理解的 fuse 工作方式
+我们以图 1-1 为例, 说明一下 fuse 的工作流程.
+
+1. 用户在 shell 中输入 `ls` 命令, shell `fork()` 一个子进程执行 `ls`
+* `ls` 调用 `stat` (glibc)
+* glibc  的 `stat` 调用系统调用 `sys_stat`
+* fuse 内核模块事先在 VFS 中注册了函数接口, 所以 VFS 收到 fuse 文件系统的 
+`stat` 请求后, 会交由 fuse 模块处理.
+* fuse 模块收到 `stat` 请求, 将请求写至 `/dev/fuse`
+* 用户文件系统守护进程 (在图 1-1 是 `hello`) 不断读取 `/dev/fuse`, 若发现
+是发送给自己的请求, 则处理该请求.
+* `hello` 文件系统根据用户在 `struct fuse_operations` 注册的回调函数, 调用 
+相应的 `stat` 实现.
+* `hello` 文件系统处理完 `stat` 请求后, 将处理结果写回给 `/dev/fuse`
+* fuse 内核模块从 `/dev/fuse` 读取到 `stat` 请求的处理结果, 将结果返回给
+VFS 
+* VFS 再将结果依次上传, 最后显示在终端中.
+
+由此可见, fuse 内核模块负责与内核交互, 而用户文件系统通过 fuse 库, 利用
+`/dev/fuse` 与 fuse 内核模块交互.
