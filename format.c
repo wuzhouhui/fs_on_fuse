@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	if (size_mb < DISK_MIN_SIZE || size_mb > DISK_MAX_SIZE)
 		err_quit("the size of %s is inappropriate", argv[1]);
 
-	sb.s_magic = 0x7594;
+	sb.s_magic = MAGIC;
 	if (size_mb <= 10) {
 		sb.s_zmap_blocks = 5;
 		sb.s_inode_blocks = 256;
@@ -39,7 +39,8 @@ int main(int argc, char *argv[])
 		sb.s_inode_blocks = 512;
 	}
 	sb.s_imap_blocks = 1;
-	sb.s_zone_blocks = (stat.st_size >> BLK_SIZE_SHIFT)
+	/* minus one for super block */
+	sb.s_zone_blocks = (stat.st_size >> BLK_SIZE_SHIFT) - 1
 		- sb.s_zmap_blocks - sb.s_imap_blocks - sb.s_inode_blocks;
 	sb.s_max_size = MAX_FILE_SIZE;
 

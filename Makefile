@@ -2,10 +2,13 @@ CC = gcc
 CFLAGS = -g -Wall
 DEPS = *.h
 
-all: format
+all: format ufs
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+ufs: ufs.o error.o
+	$(CC) $(CFLAGS) ufs.o error.o -o ufs
 
 format: format.o error.o
 	$(CC) $(CFLAGS) format.o error.o -o format
