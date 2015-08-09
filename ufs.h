@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /* the max and min size of disk file, in megabyte */
 #define DISK_MAX_SIZE	32
@@ -15,9 +16,12 @@
 #define BLK_SIZE_SHIFT	9
 #define BLK_SIZE	(1 << BLK_SIZE_SHIFT)
 #define MAGIC		0x7594
-
+/* max length of file name, null terminator exclueded */
+#define NAME_LEN        27
 /* # inode per block */
 #define INUM_PER_BLK	(BLK_SIZE / sizeof(struct d_inode))
+
+#define ROOT_INO	1
 
 /* super block in disk */
 struct d_super_block {
@@ -93,6 +97,41 @@ struct d_inode {
 	 * 7: double indirect block.
 	 */
 	blkcnt_t i_zones[8];
+};
+
+/* inode in memrory */
+struct m_inode {
+	/* # of links into this inode */
+	nlink_t	i_nlink;
+	/* file type and permission */
+	mode_t	i_mode;
+	/* the size of file */
+	off_t	i_size;
+	/* the last time this file accessed */
+	time_t	i_atime;
+	/* the last time this file modifed */
+	time_t	i_mtime;
+	/* the last time this inode changed */
+	time_t	i_ctime;
+	/* the owner of this file */
+	uid_t	i_uid;
+	/* the owner'group of this file */
+	gid_t	i_gid;
+	/*
+	 * 0-5: direct block.
+	 * 6: indirect block.
+	 * 7: double indirect block.
+	 */
+	blkcnt_t i_zones[8];
+
+	ino_t	i_ino;		/* number of inode */
+	int	i_refcnt;	/* reference count */
+};
+
+/* directory entry */
+struct dir_entry {
+	ino_t	de_inum;
+	char	de_name[NAME_LEN + 1];
 };
 
 #define MAX_FILE_SIZE	(8259 << 10)
