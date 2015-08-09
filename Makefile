@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -g -Wall
+# XXX: does -D_FILE_OFFSET_BITS affects sizeof(off_t) ?
+CFLAGS = -g -Wall -D_FILE_OFFSET_BITS=64
 DEPS = *.h
 
 all: format ufs
@@ -8,7 +9,7 @@ all: format ufs
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 ufs: ufs.o error.o
-	$(CC) $(CFLAGS) ufs.o error.o -o ufs
+	$(CC) $(CFLAGS)  ufs.o error.o -o ufs
 
 format: format.o error.o
 	$(CC) $(CFLAGS) format.o error.o -o format

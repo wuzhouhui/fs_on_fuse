@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fuse.h>
 
 /* the max and min size of disk file, in megabyte */
 #define DISK_MAX_SIZE	32

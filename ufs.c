@@ -80,7 +80,7 @@ static unsigned int left_cnt(void *bitmap, blkcnt_t blk, int total)
 	return(total - one + 1);
 }
 
-static int fs_init(const char *disk_name)
+static int init(const char *disk_name)
 {
 	int	fd;
 	void	*addr;
@@ -107,9 +107,19 @@ static int fs_init(const char *disk_name)
 	return(0);
 }
 
+static int ufs_open(const char *path, struct fuse_file_info *fi)
+{
+	ufs_log(UFS_LOG_DEBUG, "ufs_open path = %s", path);
+	return(0);
+}
+
+struct fuse_operations ufs_oper = {
+	.open = ufs_open,
+};
+
 int main(int argc, char *argv[])
 {
-	fs_init(argv[1]);
+	init(argv[1]);
 	pr_sb(&sb);
 	return(0);
 }
