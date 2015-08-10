@@ -21,7 +21,7 @@ static inline int is_bvalid(blkcnt_t bnum)
 
 static inline int is_dvalid(blkcnt_t dnum)
 {
-	return(dnum >= 1  && dnum <= (6 + ZNUM_PER_BLK + ZNUM_PER_BLK *
+	return(dnum >= 0  && dnum < (6 + ZNUM_PER_BLK + ZNUM_PER_BLK *
 				ZNUM_PER_BLK));
 }
 /*
@@ -344,7 +344,7 @@ blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)
 		goto out;
 	}
 
-	data_num--;
+	data_num;
 	if (data_num < 6) {
 		ret = inode.i_zones[data_num];
 		goto out;
