@@ -10,8 +10,9 @@ all: format ufs
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-ufs: ufs.o errorlog.o error.o
-	$(CC) $(CFLAGS) ufs.o errorlog.o error.o $(FUSE_LIB) -o ufs
+ufs: ufs.o errorlog.o error.o ufslib.o
+	$(CC) $(CFLAGS) ufs.o errorlog.o error.o ufslib.o \
+		$(FUSE_LIB) -o ufs
 
 format: format.o error.o
 	$(CC) $(CFLAGS) format.o error.o -o format

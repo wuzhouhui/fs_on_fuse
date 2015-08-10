@@ -49,24 +49,6 @@ static char bit[] = {
 
 struct m_super_block sb;
 
-static int read_sb(const char *disk_name)
-{
-	int	fd;
-
-	if (disk_name == NULL || disk_name[0] == 0)
-		return(-1);
-	if ((fd = open(disk_name, O_RDWR)) < 0)
-		err_sys("read_sb: open %s error.", disk_name);
-	if (read(fd, &sb, sizeof(struct d_super_block)) !=
-			sizeof(struct d_super_block))
-		err_sys("read_sb: read %s error.", disk_name);
-	if (sb.s_magic != MAGIC) {
-		err_msg("filesystem magic %x isn't right.", sb.s_magic);
-		return(-1);
-	}
-	return(fd);
-}
-
 /* statistic the number of available entries */
 static unsigned int left_cnt(void *bitmap, blkcnt_t blk, int total)
 {

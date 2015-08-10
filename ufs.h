@@ -25,6 +25,8 @@
 #define NAME_LEN        27
 /* # inode per block */
 #define INUM_PER_BLK	(BLK_SIZE / sizeof(struct d_inode))
+/* # zone nubmer per block */
+#define ZNUM_PER_BLK	(BLK_SIZE / sizeof(blkcnt_t))
 
 #define ROOT_INO	1
 
@@ -68,9 +70,9 @@ struct m_super_block {
 	blkcnt_t s_1st_inode_block;
 	/* 1st zone block' number in disk */
 	blkcnt_t s_1st_zone_block;
-	/* available inode left */
+	/* available inode left. XXX deprecated. */
 	ino_t	s_inode_left;
-	/* available zone bloc left */
+	/* available zone bloc left. XXX deprecated */
 	blkcnt_t s_block_left;
 	/* file descriptor of disk file */
 	int	s_fd;
@@ -140,5 +142,23 @@ struct dir_entry {
 };
 
 #define MAX_FILE_SIZE	(8259 << 10)
+
+int read_sb(const char *);
+ino_t new_inode(void);
+int free_inode(ino_t);
+int rd_inode(ino_t, struct d_inode *);
+int wr_inode(const struct m_inode *);
+blkcnt_t new_zone(void);
+int free_zone(blkcnt_t);
+int rd_zone(blkcnt_t, void *, size_t);
+int wr_zone(blkcnt_t, const void *, size_t);
+blkcnt_t inum2blknum(ino_t inum);
+blkcnt_t zonenum2blknum(blkcnt_t);
+blkcnt_t datanum2zonenum(ino_t, blkcnt_t);
+int rd_blk(blkcnt_t, void *, size_t);
+int wr_blk(blkcnt_t, const void *, size_t);
+int path2dir_ent(const char *path, struct dir_entry *);
+int srch_dir_entry(const struct m_inode *, const char *);
+int add_dir_entry(struct m_inode *dir, const struct dir_entry *);
 
 #endif /* end of _UFS_H */

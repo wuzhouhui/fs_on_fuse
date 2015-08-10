@@ -7,12 +7,12 @@
 
 ## 1.2 常量说明
 
-	#define NAME_LEN        27	        /* 文件名的最大长度, 不包括结尾的空字符 */
-	#define BLK_SIZE        512	        /* 磁盘块大小 */
-	#define OPEN_MAX        64	        /* 同时打开文件数最大值 */
-	#define DISK_MAX_SIZE   32		/* 磁盘文件最大值 (MB) */
-	#define DISK_MIN_SIZE	1		/* 磁盘文件最小值 (MB) */
-	#define ROOT_INO	1		/* 根目录的 i 结点号 */
+	#define NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
+	#define BLK_SIZE        512	/* 磁盘块大小 */
+	#define OPEN_MAX        64	/* 同时打开文件数最大值 */
+	#define DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
+	#define DISK_MIN_SIZE	1	/* 磁盘文件最小值 (MB) */
+	#define ROOT_INO	1	/* 根目录的 i 结点号 */
 
 ## 1.3 主要数据结构
 
@@ -393,20 +393,21 @@
 		// 从 i 结点位图的第 1 个位开始查找.
 		// 如果找到值为 0 的位或超出位图范围, 则退出循环; 否则继续.
 		// 在循环之外, 若循环是因为越界而退出, 则返回 0; 否则 
-		// 置位并返回该位在位图中的下标.
+		// 置位, 更新 inode_left 并返回该位在位图中的下标.
 
 	int free_inode(ino_t inum)
 		// 判断 inum 的合法性.
 		// 测试 bit[inum] 是否置位
 		// 若未置位则出错; 否则清零并返回成功.
 
-	int rd_inode(struct inode *inode)
+	int rd_inode(ino_t inum struct d_inode *inode)
+		// 判断 inum 与 inode 的有效性
 		// 计算 inode 所在的磁盘块号.
 		// 读磁盘块, 提取指定的 i 结点 
 		// 将读取到的 i 结点写入 inode,
 		// 返回
 
-	int wr_inode(struct inode *inode)
+	int wr_inode(struct m_inode *inode)
 		// 计算 inode 所在的磁盘块号
 		// 读磁盘块, 修改指定的 i 指点
 		// 写回磁盘
