@@ -3,6 +3,9 @@
  */
 #include "ufs.h"
 
+/* errorlog.c needes it */
+int log_to_stderr;
+
 /*
  * just a test function
  */
@@ -44,7 +47,7 @@ static char bit[] = {
 	2, 3, 3, 4,
 };
 
-static struct m_super_block sb;
+struct m_super_block sb;
 
 static int read_sb(const char *disk_name)
 {
@@ -86,6 +89,11 @@ static int init(const char *disk_name)
 	void	*addr;
 	struct stat stat;
 
+	/* print log to syslog */
+	log_to_stderr = 0;
+	log_open("ufs", LOG_PID, LOG_USER);
+	log_msg("init called");
+
 	if ((fd = read_sb(disk_name)) < 0)
 		err_quit("fs_init: read_sb error");
 	if (fstat(fd, &stat) < 0)
@@ -104,12 +112,14 @@ static int init(const char *disk_name)
 			sb.s_inode_blocks * INUM_PER_BLK);
 	sb.s_block_left = (blkcnt_t)left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
+
+	log_msg("init returned");
 	return(0);
 }
 
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
-	ufs_log(UFS_LOG_DEBUG, "ufs_open path = %s", path);
+	log_msg("ufs_open: path = %s", path);
 	return(0);
 }
 
@@ -119,7 +129,6 @@ struct fuse_operations ufs_oper = {
 
 int main(int argc, char *argv[])
 {
-	init(argv[1]);
-	pr_sb(&sb);
-	return(0);
+	init(argv[2]);
+	return(fuse_main(argc - 1, argv, &ufs_oper, NULL));
 }

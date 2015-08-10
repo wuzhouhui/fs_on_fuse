@@ -1,6 +1,8 @@
 CC = gcc
 # XXX: does -D_FILE_OFFSET_BITS affects sizeof(off_t) ?
-CFLAGS = -g -Wall -D_FILE_OFFSET_BITS=64
+CFLAGS = -g -Wall `pkg-config fuse --cflags`
+FUSE_LIB = -g -Wall `pkg-config fuse --libs` -L/usr/lib
+
 DEPS = *.h
 
 all: format ufs
@@ -8,8 +10,8 @@ all: format ufs
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-ufs: ufs.o error.o
-	$(CC) $(CFLAGS)  ufs.o error.o -o ufs
+ufs: ufs.o errorlog.o error.o
+	$(CC) $(CFLAGS) ufs.o errorlog.o error.o $(FUSE_LIB) -o ufs
 
 format: format.o error.o
 	$(CC) $(CFLAGS) format.o error.o -o format

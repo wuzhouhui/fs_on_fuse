@@ -1,6 +1,7 @@
 #ifndef _UFS_H
 #define _UFS_H
 
+#define FUSE_USE_VERSION 26
 #include "apue.h"
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -9,6 +10,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fuse.h>
+#include <errno.h>		/* for definition of errno */
+#include <stdarg.h>		/* ISO C variable arguments */
+#include <syslog.h>
 
 /* the max and min size of disk file, in megabyte */
 #define DISK_MAX_SIZE	32
