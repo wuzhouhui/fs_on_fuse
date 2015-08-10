@@ -10,8 +10,8 @@
 	#define NAME_LEN        27	        /* 文件名的最大长度, 不包括结尾的空字符 */
 	#define BLK_SIZE        512	        /* 磁盘块大小 */
 	#define OPEN_MAX        64	        /* 同时打开文件数最大值 */
-	#define DISK_MAX_SIZE   (1 << 25)       /* 磁盘文件最大值 */
-	#define DISK_MIN_SIZE	(1 << 20)	/* 磁盘文件最小值 */
+	#define DISK_MAX_SIZE   32		/* 磁盘文件最大值 (MB) */
+	#define DISK_MIN_SIZE	1		/* 磁盘文件最小值 (MB) */
 	#define ROOT_INO	1		/* 根目录的 i 结点号 */
 
 ## 1.3 主要数据结构
