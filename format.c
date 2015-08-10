@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
 	root.i_mode = 0x3ff;
 	root.i_uid = getuid();
 	root.i_gid = getgid();
+	root.i_size = sizeof(struct dir_entry) * 2;
 	memset(root.i_zones, 0, sizeof(root.i_zones));
 	root.i_zones[0] = 1;
 	if (write(fd, &root, sizeof(root)) != sizeof(root))

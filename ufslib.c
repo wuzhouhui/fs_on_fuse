@@ -106,22 +106,21 @@ int rd_inode(ino_t inum, struct d_inode *inode)
 
 	log_msg("rd_inode called");
 	if (inode == NULL) {
-		ret = -1;
+		ret = -EINVAL;
 		log_msg("rd_inode: inode is NULL");
 		goto out;
 	}
 	if (!is_ivalid(inum)) {
-		ret = -1;
+		ret = -EINVAL;
 		log_msg("rd_inode: inode number %u out of range", inum);
 		goto out;
 	}
 	if ((blknum = inum2blknum(inum)) == 0) {
-		ret = -1;
+		ret = -EINVAL;
 		log_msg("rd_inode: block number of inode %u is zero", inum);
 		goto out;
 	}
-	if (rd_blk(blknum, buf, sizeof(buf)) < 0) {
-		ret = -1;
+	if ((ret = rd_blk(blknum, buf, sizeof(buf))) < 0) {
 		log_msg("rd_inode: rd_blk error for block %u", blknum);
 		goto out;
 	}
@@ -388,18 +387,22 @@ int rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 	log_msg("rd_blk called, blk_num = %u", blk_num);
 	if (!is_bvalid(blk_num)) {
 		log_msg("rd_blk: block num %u is not valid", blk_num);
+		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
 		log_msg("rd_blk: buf is NULL");
+		ret = -EINVAL;
 		goto out;
 	}
 	if (size != BLK_SIZE) {
 		log_msg("rd_blk: size = %u", size);
+		ret = -EINVAL;
 		goto out;
 	}
 	if (pread(sb.s_fd, buf, size, blk_num << BLK_SIZE_SHIFT) != size) {
 		log_ret("rd_blk: pread error");
+		ret = -errno;
 		goto out;
 	}
 	ret = 0;
@@ -432,5 +435,32 @@ int wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 	ret = 0;
 out:
 	log_msg("wr_blk return %d", ret);
+	return(ret);
+}
+
+ino_t path2inum(const char *path)
+{
+	int	l;
+
+	if (path == NULL || path[0] == 0)
+		return(0);
+	l = strlen(path);
+	if (l == 1)
+		return(ROOT_INO);
+	else
+		return(0);
+}
+
+/*
+ * convert file mode and permission from ufs to 
+ * UNIX.
+ */
+mode_t conv_fmode(mode_t mode)
+{
+	mode_t ret = mode & 0x1ff;
+	if (UFS_ISREG(mode))
+		ret |= S_IFREG;
+	if (UFS_ISDIR(mode))
+		ret |= S_IFDIR;
 	return(ret);
 }

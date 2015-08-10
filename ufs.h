@@ -30,6 +30,9 @@
 
 #define ROOT_INO	1
 
+#define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
+#define UFS_ISDIR(mode)	((mode) & (1 << 9))
+
 /* super block in disk */
 struct d_super_block {
 	/* magic number of filesystem */
@@ -157,8 +160,9 @@ blkcnt_t zonenum2blknum(blkcnt_t);
 blkcnt_t datanum2zonenum(ino_t, blkcnt_t);
 int rd_blk(blkcnt_t, void *, size_t);
 int wr_blk(blkcnt_t, const void *, size_t);
-int path2dir_ent(const char *path, struct dir_entry *);
+ino_t path2inum(const char *);
 int srch_dir_entry(const struct m_inode *, const char *);
-int add_dir_entry(struct m_inode *dir, const struct dir_entry *);
+int add_dir_entry(struct m_inode *, const struct dir_entry *);
+mode_t conv_fmode(mode_t);
 
 #endif /* end of _UFS_H */

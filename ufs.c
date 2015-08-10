@@ -99,14 +99,66 @@ static int init(const char *disk_name)
 	return(0);
 }
 
+static int ufs_getattr(const char *path, struct stat *statptr)
+{
+	int	ret = 0;
+	ino_t	inum;
+	struct d_inode inode;
+
+	log_msg("ufs_getattr called, path = %s", path);
+	if ((inum = path2inum(path)) == 0) {
+		log_msg("ufs_open: path2inum return 0");
+		ret = -ENOENT;
+		goto out;
+	}
+	if ((ret = rd_inode(inum, &inode)) < 0) {
+		log_msg("ufs_open: rd_inode error");
+		goto out;
+	}
+	statptr->st_mode = conv_fmode(inode.i_mode);
+	statptr->st_ino = inum;
+	statptr->st_nlink = inode.i_nlink;
+	statptr->st_uid = inode.i_uid;
+	statptr->st_gid = inode.i_gid;
+	statptr->st_size = inode.i_size;
+	statptr->st_atime = inode.i_atime;
+	statptr->st_ctime = inode.i_ctime;
+	statptr->st_mtime = inode.i_mtime;
+	ret = 0;
+out:
+	log_msg("ufs_getattr return %d", ret);
+	return(ret);
+}
+
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
+	int	ret = 0;
+
 	log_msg("ufs_open: path = %s", path);
-	return(0);
+	log_msg("ufs_open return %d", ret);
+	return(ret);
+}
+
+static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+		off_t offset, struct fuse_file_info *fi)
+{
+	int	ret = 0;
+
+	log_msg("ufs_readdir called, path = %s", path);
+	if ((inum = path2inum(path)) == 0) {
+		log_msg("ufs_readdir: path2inum return 0");
+		ret = -ENOENT;
+		goto out;
+	}
+out:
+	log_msg("ufs_readdir return %d", ret);
+	return(ret);
 }
 
 struct fuse_operations ufs_oper = {
-	.open = ufs_open,
+	.getattr	= ufs_getattr,
+	.open		= ufs_open,
+	.readdir	= ufs_readdir,
 };
 
 int main(int argc, char *argv[])
