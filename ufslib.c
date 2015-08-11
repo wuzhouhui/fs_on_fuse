@@ -445,7 +445,7 @@ ino_t path2inum(const char *path)
 	int	i, start;
 
 	log_msg("path2inum called, path = %s", path);
-	inode.i_ino = 1;
+	inode.i_ino = ROOT_INO;
 	if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
 		inode.i_ino = 0;
 		log_msg("path2inum: rd_inode error");
@@ -483,6 +483,53 @@ out:
 	return(inode.i_ino);
 }
 
+ino_t srch_dir_entry(const struct m_inode *par, const char *file,
+		struct dir_entry *res)
+{
+	off_t	i;
+	blkcnt_t dnum, znum;
+	char	buf[BLK_SIZE];
+	struct dir_entry *de;
+
+	log_msg("srch_dir_entry called");
+	if (par == NULL || file == NULL || res == NULL)
+		log_msg("srch_dir_entry: arguments is NULL");
+	log_msg("srch_dir_entry: par->i_ino = %u, file = %s", par->i_ino,
+			file);
+	
+	i = 0;
+	res->de_inum = 0;
+	dnum = 0;
+	while (i < par->i_size) {
+		if ((znum = datanum2zonenum(par->i_ino, dnum)) == 0) {
+			log_msg("srch_dir_entry: datanum2zonenum return "
+					"zero for data %u", dnum);
+			goto out;
+		}
+		if (rd_zone(znum, &buf, sizeof(buf)) < 0) {
+			log_msg("srch_dir_entry: rd_inode error for data"
+					" %u", znum);
+			goto out;
+		}
+		for (de = (struct dir_entry *)buf; de < (struct dir_entry *)
+				(buf + ENTRYNUM_PER_BLK) &&
+				i < par->i_size; de++) {
+			if (de->de_inum == 0)
+				continue;
+			i += sizeof(*de);
+			if (strncmp(de->de_name, file, NAME_LEN) == 0) {
+				res->de_inum = de->de_inum;
+				strncpy(res->de_name, de->de_name, NAME_LEN);
+				res->de_name[NAME_LEN] = 0;
+				goto out;
+			}
+		}
+		dnum++;
+	}
+out:
+	log_msg("srch_dir_entry return %u", res->de_inum);
+	return(res->de_inum);
+}
 /*
  * convert file mode and permission from ufs to 
  * UNIX.

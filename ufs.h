@@ -28,6 +28,8 @@
 /* # zone nubmer per block */
 #define ZNUM_PER_BLK	(BLK_SIZE / sizeof(blkcnt_t))
 
+#define ENTRYNUM_PER_BLK	(BLK_SIZE / sizeof(struct dir_entry))
+
 #define ROOT_INO	1
 
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
