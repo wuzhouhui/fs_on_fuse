@@ -17,8 +17,8 @@
     - `-ENOTDIR`: `path` 中的某一前缀不是目录;
     - `-EINVAL`: 含有无效参数;
   + 注: `creat(const char *path, mode_t mode)` 等价于
-`open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`, 所以可通过 `open` 来
-实现
+`open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`,  但无法通过 fuse 获取不
+定参数, 故无法通过 `open` 实现 `creat`.
 
 * `open(const char *path, int oflag, ... /* mode_t mode */)`
   + 功能: 打开一个文件, 必要时创建.
