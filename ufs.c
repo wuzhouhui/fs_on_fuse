@@ -8,7 +8,6 @@ int log_to_stderr;
 
 /*
  * just a test function
- */
 static void pr_sb(const struct m_super_block *sb)
 {
 	char	buf[BLK_SIZE];
@@ -39,6 +38,7 @@ static void pr_sb(const struct m_super_block *sb)
 	printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
 	return;
 }
+*/
 
 static char bit[] = {
 	0, 1, 1, 2,
