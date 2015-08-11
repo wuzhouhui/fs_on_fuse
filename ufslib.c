@@ -437,22 +437,21 @@ out:
 	return(ret);
 }
 
-ino_t path2inum(const char *path)
+int path2inum(const char *path, ino_t *inum)
 {
 	struct m_inode inode;
 	struct dir_entry ent;
 	char	file[NAME_LEN + 1];
-	int	i, start;
+	int	i, start, ret;
 
 	log_msg("path2inum called, path = %s", (path == NULL ? "NULL" : 
 				path));
 	if (path == NULL) {
-		inode.i_ino = 0;
+		ret = -EINVAL;
 		goto out;
 	}
 	inode.i_ino = ROOT_INO;
-	if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
-		inode.i_ino = 0;
+	if ((ret = rd_inode(inode.i_ino, (struct d_inode *)&inode)) < 0) {
 		log_msg("path2inum: rd_inode error");
 		goto out;
 	}
@@ -470,22 +469,24 @@ ino_t path2inum(const char *path)
 		memcpy(file, path + start, i - start);
 		file[i - start] = 0;
 		if (srch_dir_entry(&inode, file, &ent) == 0) {
-			inode.i_ino = 0;
+			ret = -ENOENT;
 			log_msg("path2inum: srch_dir_entry return zero, "
 					"file %s not found", file);
 			goto out;
 		}
 		inode.i_ino = ent.de_inum;
-		if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
-			inode.i_ino = 0;
+		ret = rd_inode(inode.i_ino, (struct d_inode *)&inode);
+		if (ret  < 0) {
 			log_msg("path2inum: rd_inode error");
 			goto out;
 		}
 	}
+	*inum = inode.i_ino;
+	ret = 0;
 
 out:
-	log_msg("path2inum return %u", inode.i_ino);
-	return(inode.i_ino);
+	log_msg("path2inum return %d", ret);
+	return(ret);
 }
 
 ino_t srch_dir_entry(const struct m_inode *par, const char *file,

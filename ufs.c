@@ -106,9 +106,8 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 	struct d_inode inode;
 
 	log_msg("ufs_getattr called, path = %s", path);
-	if ((inum = path2inum(path)) == 0) {
+	if ((ret = path2inum(path, &inum)) == 0) {
 		log_msg("ufs_open: path2inum return 0");
-		ret = -ENOENT;
 		goto out;
 	}
 	if ((ret = rd_inode(inum, &inode)) < 0) {
@@ -151,7 +150,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	struct d_inode inode;
 
 	log_msg("ufs_readdir called, path = %s", path);
-	if ((inum = path2inum(path)) == 0) {
+	if ((ret = path2inum(path, &inum)) == 0) {
 		log_msg("ufs_readdir: path2inum return 0");
 		ret = -ENOENT;
 		goto out;
