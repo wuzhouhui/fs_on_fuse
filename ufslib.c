@@ -104,7 +104,7 @@ int rd_inode(ino_t inum, struct d_inode *inode)
 	blkcnt_t blknum;
 	char	buf[BLK_SIZE];
 
-	log_msg("rd_inode called");
+	log_msg("rd_inode called, inode num = %u", inum);
 	if (inode == NULL) {
 		ret = -EINVAL;
 		log_msg("rd_inode: inode is NULL");
@@ -236,23 +236,23 @@ int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 	log_msg("rd_zone called, zone_num = %u", zone_num);
 	if (!is_zvalid(zone_num)) {
 		log_msg("rd_zone: znum out of range, znum = %u", zone_num);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
 		log_msg("rd_zone: buf is NULL");
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if (size != BLK_SIZE) {
 		log_msg("rd_zone: size = %z, do not equals to %d",
 				size, BLK_SIZE);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if ((bnum = zonenum2blknum(zone_num)) == 0) {
 		log_msg("rd_zone: zone %u's block number is zero", zone_num);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	ret = rd_blk(bnum, buf, size);
@@ -375,7 +375,7 @@ blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)
 	}
 	ret = ((blkcnt_t *)buf)[data_num % ZNUM_PER_BLK];
 out:
-	log_msg("zonenum2blknum return %u", ret);
+	log_msg("datanum2zonenum return %u", ret);
 	return(ret);
 }
 
@@ -507,7 +507,7 @@ ino_t srch_dir_entry(const struct m_inode *par, const char *file,
 			goto out;
 		}
 		if (rd_zone(znum, &buf, sizeof(buf)) < 0) {
-			log_msg("srch_dir_entry: rd_inode error for data"
+			log_msg("srch_dir_entry: rd_zone error for data"
 					" %u", znum);
 			goto out;
 		}

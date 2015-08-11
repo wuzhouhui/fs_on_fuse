@@ -142,14 +142,52 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi)
 {
-	int	ret = 0;
+	int	ret = 0, j;
 	ino_t	inum;
+	blkcnt_t dnum, znum;
+	off_t	i;
+	char	blkbuf[BLK_SIZE];
+	struct dir_entry *de;
+	struct d_inode inode;
 
 	log_msg("ufs_readdir called, path = %s", path);
 	if ((inum = path2inum(path)) == 0) {
 		log_msg("ufs_readdir: path2inum return 0");
 		ret = -ENOENT;
 		goto out;
+	}
+	if ((ret = rd_inode(inum, &inode) < 0)) {
+		log_msg("ufs_readdir: rd_inode error");
+		goto out;
+	}
+	i = 0;
+	dnum = 0;
+	while (i < inode.i_size) {
+		if ((znum = datanum2zonenum(inum, dnum)) == 0) {
+			log_msg("readdir: datanum2zonenum return "
+					"zero for data %u", dnum);
+			ret = -EINVAL;
+			goto out;
+		}
+		if ((ret = rd_zone(znum, &blkbuf, sizeof(blkbuf))) < 0) {
+			log_msg("readdir: rd_zone error for data"
+					" %u", znum);
+			goto out;
+		}
+		log_msg("inode.i_size == %u", inode.i_size);
+		for (de = (struct dir_entry *)blkbuf, j = 0;
+				j < ENTRYNUM_PER_BLK && i < inode.i_size; j++) {
+			if (de[j].de_inum == 0)
+				continue;
+			i += sizeof(*de);
+			if (filler(buf, de[j].de_name, NULL, 0) != 0) {
+				log_msg("readdir: filler error for filling %s",
+						de[j].de_name);
+				ret =  -ENOMEM;
+				goto out;
+			}
+		}
+		dnum++;
 	}
 out:
 	log_msg("ufs_readdir return %d", ret);
@@ -164,6 +202,6 @@ struct fuse_operations ufs_oper = {
 
 int main(int argc, char *argv[])
 {
-	init(argv[2]);
+	init(argv[argc - 1]);
 	return(fuse_main(argc - 1, argv, &ufs_oper, NULL));
 }

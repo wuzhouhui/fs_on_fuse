@@ -27,4 +27,4 @@ ignore:
 	done)
 
 clean:
-	rm -f *.o format a.out
+	rm -f *.o format a.out ufs
