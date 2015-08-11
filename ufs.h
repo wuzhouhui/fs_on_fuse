@@ -13,6 +13,7 @@
 #include <errno.h>		/* for definition of errno */
 #include <stdarg.h>		/* ISO C variable arguments */
 #include <syslog.h>
+#include <libgen.h>
 
 /* the max and min size of disk file, in megabyte */
 #define DISK_MAX_SIZE	32
@@ -34,6 +35,7 @@
 
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
+
 
 /* super block in disk */
 struct d_super_block {
@@ -147,6 +149,17 @@ struct dir_entry {
 };
 
 #define MAX_FILE_SIZE	(8259 << 10)
+
+struct file {
+	struct m_inode *f_inode;
+	mode_t	f_mode;	
+	int	f_flag;
+	int	f_count;
+	off_t	f_pos;
+};
+#define OPEN_MAX	64
+extern struct file open_files[];
+
 
 int read_sb(const char *);
 ino_t new_inode(void);

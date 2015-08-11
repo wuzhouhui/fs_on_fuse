@@ -6,6 +6,7 @@
 /* errorlog.c needes it */
 int log_to_stderr;
 
+struct file open_files[OPEN_MAX];
 /*
  * just a test function
 static void pr_sb(const struct m_super_block *sb)
@@ -97,6 +98,11 @@ static int init(const char *disk_name)
 
 	log_msg("init returned");
 	return(0);
+}
+
+static int ufs_creat(const char *path, mode_t mode,
+		struct fuse_file_info *fi)
+{
 }
 
 static int ufs_getattr(const char *path, struct stat *statptr)
@@ -194,6 +200,7 @@ out:
 }
 
 struct fuse_operations ufs_oper = {
+	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
 	.open		= ufs_open,
 	.readdir	= ufs_readdir,
