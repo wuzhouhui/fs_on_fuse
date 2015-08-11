@@ -444,7 +444,12 @@ ino_t path2inum(const char *path)
 	char	file[NAME_LEN + 1];
 	int	i, start;
 
-	log_msg("path2inum called, path = %s", path);
+	log_msg("path2inum called, path = %s", (path == NULL ? "NULL" : 
+				path));
+	if (path == NULL) {
+		inode.i_ino = 0;
+		goto out;
+	}
 	inode.i_ino = ROOT_INO;
 	if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
 		inode.i_ino = 0;
