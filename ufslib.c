@@ -437,6 +437,52 @@ out:
 	return(ret);
 }
 
+int dir2inum(const char *dirpath, ino_t *inum)
+{
+	int	ret;
+
+	log_msg("dir2inum called, dirpath = %s", (dirpath == NULL ? "NULL" :
+				dirpath));
+	if ((ret = path2inum(dirpath, inum)) < 0) {
+		log_msg("dir2inum: path2inum error");
+		goto out;
+	}
+	if ((ret = rd_inode(*inum, &inode)) < 0) {
+		log_msg("dir2inum: rd_inode error for %u", *inum);
+		goto out;
+	}
+	if (!UFS_ISDIR(inode.i_mode)) {
+		ret = -ENOTDIR;
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("dir2inum return %d", ret);
+	return(ret);
+}
+
+int add_entry(ino_t dirinum, const char *file, struct dir_entry *entry)
+{
+	log_msg("add_entry called, adding %s in %u", (file == NULL ? "NULL"
+				: file), dirinum);
+	if (!is_ivalid(dirinum)) {
+		log_msg("add_entry: dirinum = %u is not valid", dirinum);
+		ret = -EINVAL;
+		goto out;
+	}
+	if (file == NULL) {
+		log_msg("add_entry: file is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (entry == NULL) {
+		log_msg("add_entry: entry is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
+	
+}
+
 int path2inum(const char *path, ino_t *inum)
 {
 	struct m_inode inode;

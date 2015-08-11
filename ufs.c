@@ -103,6 +103,57 @@ static int init(const char *disk_name)
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
+	int	fd;
+	char	*dir, *base;
+	struct m_inode *inode;
+
+	log_msg("ufs_creat called, path = %s, mode = %o", (path == NULL ?
+				"NULL" : path), mode);
+	if (path == NULL) {
+		ret = -EINVAL;
+		goto out;
+	}
+	for (fd = 0; fd < OPEN_MAX; fd++)
+		if (open_files[fd].f_count == 0)
+			break;
+	if (fd >= OPEN_MAX) {
+		log_msg("ufs_creat: open_files full");
+		ret = -ENFILE;
+		goto out;
+	}
+	dir = dirname(path);
+	base = basename(path);
+	if ((ret = dir2inum(dir, &dirinum)) < 0) {
+		log_msg("ufs_creat: dir2inum error for %s", dir);
+		goto out;
+	}
+	if ((ret = rd_inode(dirinum, (struct d_inode *)&inode)) < 0) {
+		log_msg("ufs_creat: rd_inode error");
+		goto out;
+	}
+	if (srch_dir_entry(&inode, base, &entry) == 0) {
+
+		if ((ret = add_entry(dirinum, base, &entry)) < 0) {
+			log_msg("ufs_creat: add_entry error for "
+					"%s in %s", base, dir);
+			goto out;
+		}
+	}
+	ret = rd_inode(entry->de_inum,
+			(struct d_inode *)open_files[fd].f_inode)
+	if (ret < 0) {
+		log_msg("ufs_creat: rd_inode error for %u", entry->de_inum);
+		goto out;
+	}
+	open_files[fd].f_mode = open_files[fd].f_inode.i_mode;
+	open_files[fd].f_flag = UFS_O_WRONLY;
+	open_files[fd].f_count = 1;
+	open_files[fd].f_pos = 0;
+	fi->fh = fd;
+	ret = 0;
+out:
+	log_msg("ufs_creat return %d", ret);
+	return(ret);
 }
 
 static int ufs_getattr(const char *path, struct stat *statptr)
