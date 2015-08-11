@@ -344,7 +344,6 @@ blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)
 		goto out;
 	}
 
-	data_num;
 	if (data_num < 6) {
 		ret = inode.i_zones[data_num];
 		goto out;
@@ -440,15 +439,48 @@ out:
 
 ino_t path2inum(const char *path)
 {
-	int	l;
+	struct m_inode inode;
+	struct dir_entry ent;
+	char	file[NAME_LEN + 1];
+	int	i, start;
 
-	if (path == NULL || path[0] == 0)
-		return(0);
-	l = strlen(path);
-	if (l == 1)
-		return(ROOT_INO);
-	else
-		return(0);
+	log_msg("path2inum called, path = %s", path);
+	inode.i_ino = 1;
+	if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
+		inode.i_ino = 0;
+		log_msg("path2inum: rd_inode error");
+		goto out;
+	}
+
+	i = 1;
+	while (path[i]) {
+		if (path[i] == '/')
+			start = ++i;
+		else
+			start = i++;
+		while (path[i] != '/' && path[i])
+			i++;
+		if (path[start] == 0) /* /usr/bin/vim/ */
+			break;
+		memcpy(file, path + start, i - start);
+		file[i - start] = 0;
+		if (srch_dir_entry(&inode, file, &ent) == 0) {
+			inode.i_ino = 0;
+			log_msg("path2inum: srch_dir_entry return zero, "
+					"file %s not found", file);
+			goto out;
+		}
+		inode.i_ino = ent.de_inum;
+		if (rd_inode(inode.i_ino, (struct d_inode *)&inode) < 0) {
+			inode.i_ino = 0;
+			log_msg("path2inum: rd_inode error");
+			goto out;
+		}
+	}
+
+out:
+	log_msg("path2inum return %u", inode.i_ino);
+	return(inode.i_ino);
 }
 
 /*

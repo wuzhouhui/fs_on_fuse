@@ -161,7 +161,8 @@ blkcnt_t datanum2zonenum(ino_t, blkcnt_t);
 int rd_blk(blkcnt_t, void *, size_t);
 int wr_blk(blkcnt_t, const void *, size_t);
 ino_t path2inum(const char *);
-int srch_dir_entry(const struct m_inode *, const char *);
+ino_t srch_dir_entry(const struct m_inode *, const char *,
+		struct dir_entry *);
 int add_dir_entry(struct m_inode *, const struct dir_entry *);
 mode_t conv_fmode(mode_t);
 

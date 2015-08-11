@@ -143,6 +143,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi)
 {
 	int	ret = 0;
+	ino_t	inum;
 
 	log_msg("ufs_readdir called, path = %s", path);
 	if ((inum = path2inum(path)) == 0) {

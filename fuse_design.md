@@ -400,7 +400,7 @@
 		// 测试 bit[inum] 是否置位
 		// 若未置位则出错; 否则清零并返回成功.
 
-	int rd_inode(ino_t inum struct d_inode *inode)
+	int rd_inode(ino_t inum, struct d_inode *inode)
 		// 判断 inum 与 inode 的有效性
 		// 计算 inode 所在的磁盘块号.
 		// 读磁盘块, 提取指定的 i 结点 
