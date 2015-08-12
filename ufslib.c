@@ -24,6 +24,15 @@ static inline int is_dvalid(blkcnt_t dnum)
 	return(dnum >= 0  && dnum < (6 + ZNUM_PER_BLK + ZNUM_PER_BLK *
 				ZNUM_PER_BLK));
 }
+
+static blkcnt_t creat_zone(ino_t inum, block dnum)
+{
+	blkcnt_t ret = 0;
+	log_msg("creat_zone called, inum = %u, dnum = %u", inum, dnum);
+	ret = _datanum2zonenum(inum, dnum, 1);
+	log_msg("creat_zone return %u", ret);
+	return(ret);
+}
 /*
  * read super block from disk, return the disk file's file descriptor
  */
