@@ -196,7 +196,7 @@ int wr_inode(const struct m_inode *inode)
 	}
 	ret = 0;
 out:
-	log_msg("rd_inode return %d", ret);
+	log_msg("wr_inode return %d", ret);
 	return(ret);
 }
 
@@ -570,8 +570,8 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	char	buf[BLK_SIZE];
 	struct dir_entry *de;
 
-	log_msg("add_entry called, adding %s in %u", (file == NULL ? "NULL"
-				: file), dirinode->i_ino);
+	log_msg("add_entry called, adding %s in %u",
+			(file == NULL ? "NULL" : file), dirinode->i_ino);
 	if (dirinode == NULL || !is_ivalid(dirinode->i_ino)) {
 		log_msg("add_entry: dirinode not valid");
 		ret = -EINVAL;
@@ -599,7 +599,8 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	}
 	memset(&inode, 0, sizeof(inode));
 	inode.i_nlink = 1;
-	inode.i_size = 0;
+	inode.i_uid = getuid();
+	inode.i_gid = getgid();
 	if ((ret = wr_inode(&inode)) < 0) {
 		log_msg("add_entry: wr_inode error");
 		goto out;
@@ -648,8 +649,8 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	ret = 0;
 
 out:
-	if (ret && de->de_inum)
-		free_inode(de->de_inum);
+	if (ret && entry->de_inum)
+		free_inode(entry->de_inum);
 	log_msg("add_entry return %d", ret);
 	return(ret);
 }
