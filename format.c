@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 		err_sys("write %s error", argv[1]);
 
 	/* inode map */
-	memset(&buf, 0, sizeof(buf));
+	memset(buf, 0, sizeof(buf));
 	buf[0] = 3;
 	if (write(fd, buf, sizeof(buf)) != sizeof(buf))
 		err_sys("write %s error", argv[1]);
