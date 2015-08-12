@@ -12,7 +12,7 @@
     - `-ENAMETOOLONG`: 新文件名过长;
     - `-ENFILE`: 文件系统无空间存放新打开的文件;
     - `-ENOENT`: `path` 中的某一前缀目录不存在;
-    - `-ENOME`: 内存不足;
+    - `-ENOMEM`: 内存不足;
     - `-ENOSPC`: 硬盘空间不足;
     - `-ENOTDIR`: `path` 中的某一前缀不是目录;
     - `-EINVAL`: 含有无效参数;

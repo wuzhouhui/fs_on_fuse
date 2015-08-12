@@ -36,6 +36,8 @@
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
 
+/* file opened write only */
+#define UFS_O_WRONLY	0x1
 
 /* super block in disk */
 struct d_super_block {

@@ -440,6 +440,7 @@ out:
 int dir2inum(const char *dirpath, ino_t *inum)
 {
 	int	ret;
+	struct m_inode inode;
 
 	log_msg("dir2inum called, dirpath = %s", (dirpath == NULL ? "NULL" :
 				dirpath));
@@ -447,7 +448,7 @@ int dir2inum(const char *dirpath, ino_t *inum)
 		log_msg("dir2inum: path2inum error");
 		goto out;
 	}
-	if ((ret = rd_inode(*inum, &inode)) < 0) {
+	if ((ret = rd_inode(*inum, (struct d_inode *)&inode)) < 0) {
 		log_msg("dir2inum: rd_inode error for %u", *inum);
 		goto out;
 	}
@@ -463,6 +464,12 @@ out:
 
 int add_entry(ino_t dirinum, const char *file, struct dir_entry *entry)
 {
+	int	ret, i;
+	struct m_inode inode;
+	blkcnt_t dnum, znum;
+	char	buf[BLK_SIZE];
+	struct dir_entry *de;
+
 	log_msg("add_entry called, adding %s in %u", (file == NULL ? "NULL"
 				: file), dirinum);
 	if (!is_ivalid(dirinum)) {
@@ -480,7 +487,75 @@ int add_entry(ino_t dirinum, const char *file, struct dir_entry *entry)
 		ret = -EINVAL;
 		goto out;
 	}
-	
+
+	/*
+	 * allocate a new inode and initialize it,
+	 * then write it.
+	 */
+	if ((entry->de_inum = new_inode()) == 0) {
+		log_msg("add_entry: new_inode return zero");
+		ret = -ENOSPC;
+		goto out;
+	}
+	memset(&inode, 0, sizeof(inode));
+	inode.i_nlink = 1;
+	inode.i_size = 0;
+	if ((ret = wr_inode(&inode)) < 0) {
+		log_msg("add_entry: wr_inode error");
+		goto out;
+	}
+
+	/*
+	 * find a available entry in parent directory. write new entry and
+	 * update parent directory's inode.
+	 */
+	dnum = 0;
+	while (1) {
+		if ((znum = creat_zone(dirinum, dnum)) == 0) {
+			log_msg("add_entry: creat_zone return 0 for %u",
+					znum);
+			ret = -ENOSPC;
+			goto out;
+		}
+		if ((ret = rd_zone(znum, &buf, sizeof(buf))) < 0) {
+			log_msg("add_entry: rd_zone error");
+			goto out;
+		}
+		for (de = (struct dir_entry *)&buf, i = 0;
+				i < ENTRYNUM_PER_BLK; i++)
+			if (de[i].de_inum == 0)
+				break;
+		if (i < ENTRYNUM_PER_BLK)
+			break;
+	}
+	/* find a available entry in directory */
+	de[i].de_inum = entry->de_inum;
+	strncpy(de[i].de_name, file, NAME_LEN);
+	de[i].de_name[NAME_LEN] = 0;
+	memcpy(&entry, &de[i], sizeof(entry));
+	if ((ret = wr_zone(znum, &buf, sizeof(buf))) < 0) {
+		log_msg("add_entry: wr_zone error");
+		goto out;
+	}
+	/*
+	 * update parent directory's inode.
+	 */
+	if ((ret = rd_inode(dirinum, (struct d_inode *)&inode)) < 0) {
+		log_msg("add_entry: rd_inode error for %u", dirinum);
+		goto out;
+	}
+	inode.i_size += sizeof(entry);
+	if ((ret = wr_inode(&inode)) < 0) {
+		log_msg("add_entry: wr_inode error");
+		goto out;
+	}
+	ret = 0;
+
+out:
+	if (de->de_inum)
+		free_inode(de->de_inum);
+	log_msg("add_entry return %d", ret);
+	return(ret);
 }
 
 int path2inum(const char *path, ino_t *inum)

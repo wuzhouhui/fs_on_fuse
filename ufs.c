@@ -103,9 +103,12 @@ static int init(const char *disk_name)
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
-	int	fd;
+	int	fd, ret;
+	ino_t	dirinum;
 	char	*dir, *base;
-	struct m_inode *inode;
+	struct m_inode inode;
+	char	pathcpy[NAME_LEN + 1];
+	struct dir_entry entry;
 
 	log_msg("ufs_creat called, path = %s, mode = %o", (path == NULL ?
 				"NULL" : path), mode);
@@ -121,8 +124,10 @@ static int ufs_creat(const char *path, mode_t mode,
 		ret = -ENFILE;
 		goto out;
 	}
-	dir = dirname(path);
-	base = basename(path);
+	strcpy(pathcpy, path);
+	dir = dirname(pathcpy);
+	strcpy(pathcpy, path);
+	base = basename(pathcpy);
 	if ((ret = dir2inum(dir, &dirinum)) < 0) {
 		log_msg("ufs_creat: dir2inum error for %s", dir);
 		goto out;
@@ -139,13 +144,13 @@ static int ufs_creat(const char *path, mode_t mode,
 			goto out;
 		}
 	}
-	ret = rd_inode(entry->de_inum,
-			(struct d_inode *)open_files[fd].f_inode)
+	ret = rd_inode(entry.de_inum,
+			(struct d_inode *)open_files[fd].f_inode);
 	if (ret < 0) {
-		log_msg("ufs_creat: rd_inode error for %u", entry->de_inum);
+		log_msg("ufs_creat: rd_inode error for %u", entry.de_inum);
 		goto out;
 	}
-	open_files[fd].f_mode = open_files[fd].f_inode.i_mode;
+	open_files[fd].f_mode = open_files[fd].f_inode->i_mode;
 	open_files[fd].f_flag = UFS_O_WRONLY;
 	open_files[fd].f_count = 1;
 	open_files[fd].f_pos = 0;
