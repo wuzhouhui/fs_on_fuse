@@ -136,7 +136,7 @@ static int ufs_creat(const char *path, mode_t mode,
 		log_msg("ufs_creat: rd_inode error");
 		goto out;
 	}
-	if (srch_dir_entry(&inode, base, &entry) == 0) {
+	if (find_entry(&inode, base, &entry) == 0) {
 
 		if ((ret = add_entry(dirinum, base, &entry)) < 0) {
 			log_msg("ufs_creat: add_entry error for "
@@ -224,8 +224,8 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	i = 0;
 	dnum = 0;
 	while (i < inode.i_size) {
-		if ((znum = datanum2zonenum(inum, dnum)) == 0) {
-			log_msg("readdir: datanum2zonenum return "
+		if ((znum = dnum2znum(inum, dnum)) == 0) {
+			log_msg("readdir: dnum2znum return "
 					"zero for data %u", dnum);
 			ret = -EINVAL;
 			goto out;

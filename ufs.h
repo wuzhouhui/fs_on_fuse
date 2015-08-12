@@ -173,16 +173,15 @@ blkcnt_t new_zone(void);
 int free_zone(blkcnt_t);
 int rd_zone(blkcnt_t, void *, size_t);
 int wr_zone(blkcnt_t, const void *, size_t);
-blkcnt_t inum2blknum(ino_t inum);
-blkcnt_t zonenum2blknum(blkcnt_t);
-blkcnt_t datanum2zonenum(ino_t, blkcnt_t);
+blkcnt_t inum2bnum(ino_t inum);
+blkcnt_t znum2bnum(blkcnt_t);
+blkcnt_t dnum2znum(ino_t, blkcnt_t);
 int rd_blk(blkcnt_t, void *, size_t);
 int wr_blk(blkcnt_t, const void *, size_t);
 int path2inum(const char *, ino_t *);
 int dir2inum(const char *, ino_t *);
-ino_t srch_dir_entry(const struct m_inode *, const char *,
+ino_t find_entry(const struct m_inode *, const char *,
 		struct dir_entry *);
-int add_dir_entry(struct m_inode *, const struct dir_entry *);
 mode_t conv_fmode(mode_t);
 
 #endif /* end of _UFS_H */

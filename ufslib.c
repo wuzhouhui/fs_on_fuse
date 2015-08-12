@@ -2,7 +2,7 @@
 
 extern struct m_super_block sb;
 
-static blkcnt_t _datanum2zonenum(ino_t, blkcnt_t, int);
+static blkcnt_t _dnum2znum(ino_t, blkcnt_t, int);
 
 /* determine whether the inode inum is valid */
 static inline int is_ivalid(ino_t inum)
@@ -31,17 +31,17 @@ static blkcnt_t creat_zone(ino_t inum, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
 	log_msg("creat_zone called, inum = %u, dnum = %u", inum, dnum);
-	ret = _datanum2zonenum(inum, dnum, 1);
+	ret = _dnum2znum(inum, dnum, 1);
 	log_msg("creat_zone return %u", ret);
 	return(ret);
 }
 
-blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t dnum)
+blkcnt_t dnum2znum(ino_t inum, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("datanum2zonenum called, inum = %u, dnum = %u", inum, dnum);
-	ret = _datanum2zonenum(inum, dnum, 0);
-	log_msg("datanum2zonenum return %u", ret);
+	log_msg("dnum2znum called, inum = %u, dnum = %u", inum, dnum);
+	ret = _dnum2znum(inum, dnum, 0);
+	log_msg("dnum2znum return %u", ret);
 	return(ret);
 }
 
@@ -128,7 +128,7 @@ out:
 int rd_inode(ino_t inum, struct d_inode *inode)
 {
 	int	ret;
-	blkcnt_t blknum;
+	blkcnt_t bnum;
 	char	buf[BLK_SIZE];
 
 	log_msg("rd_inode called, inode num = %u", inum);
@@ -142,13 +142,13 @@ int rd_inode(ino_t inum, struct d_inode *inode)
 		log_msg("rd_inode: inode number %u out of range", inum);
 		goto out;
 	}
-	if ((blknum = inum2blknum(inum)) == 0) {
+	if ((bnum = inum2bnum(inum)) == 0) {
 		ret = -EINVAL;
 		log_msg("rd_inode: block number of inode %u is zero", inum);
 		goto out;
 	}
-	if ((ret = rd_blk(blknum, buf, sizeof(buf))) < 0) {
-		log_msg("rd_inode: rd_blk error for block %u", blknum);
+	if ((ret = rd_blk(bnum, buf, sizeof(buf))) < 0) {
+		log_msg("rd_inode: rd_blk error for block %u", bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
@@ -162,7 +162,7 @@ out:
 int wr_inode(const struct m_inode *inode)
 {
 	int	ret;
-	blkcnt_t blknum;
+	blkcnt_t bnum;
 	char	buf[BLK_SIZE];
 
 	log_msg("wr_inode called");
@@ -177,22 +177,22 @@ int wr_inode(const struct m_inode *inode)
 				inode->i_ino);
 		goto out;
 	}
-	if ((blknum = inum2blknum(inode->i_ino)) == 0) {
+	if ((bnum = inum2bnum(inode->i_ino)) == 0) {
 		ret = -1;
 		log_msg("wr_inode: block number of inode %u is zero",
 				inode->i_ino);
 		goto out;
 	}
-	if (rd_blk(blknum, buf, sizeof(buf)) < 0) {
+	if (rd_blk(bnum, buf, sizeof(buf)) < 0) {
 		ret = -1;
-		log_msg("wr_inode: rd_blk error for block %u", blknum);
+		log_msg("wr_inode: rd_blk error for block %u", bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
 	((struct d_inode *)buf)[(inode->i_ino - 1) % INUM_PER_BLK] =
 		*(struct d_inode *)inode;
-	if (wr_blk(blknum, buf, sizeof(buf)) < 0) {
-		log_msg("wr_inode: wr_blk error for block %u", blknum);
+	if (wr_blk(bnum, buf, sizeof(buf)) < 0) {
+		log_msg("wr_inode: wr_blk error for block %u", bnum);
 		ret = -1;
 		goto out;
 	}
@@ -289,7 +289,7 @@ int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 		ret = -EINVAL;
 		goto out;
 	}
-	if ((bnum = zonenum2blknum(zone_num)) == 0) {
+	if ((bnum = znum2bnum(zone_num)) == 0) {
 		log_msg("rd_zone: zone %u's block number is zero", zone_num);
 		ret = -EINVAL;
 		goto out;
@@ -322,7 +322,7 @@ int wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 		ret = -1;
 		goto out;
 	}
-	if ((bnum = zonenum2blknum(zone_num)) == 0) {
+	if ((bnum = znum2bnum(zone_num)) == 0) {
 		log_msg("wr_zone: zone %u's block number is zero", zone_num);
 		ret = -1;
 		goto out;
@@ -333,53 +333,53 @@ out:
 	return(ret);
 }
 
-blkcnt_t inum2blknum(ino_t inum)
+blkcnt_t inum2bnum(ino_t inum)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("inum2blknum called, inum = %u", inum);
+	log_msg("inum2bnum called, inum = %u", inum);
 	if (!is_ivalid(inum))
-		log_msg("inum2blknum: inode %u is not valid", inum);
+		log_msg("inum2bnum: inode %u is not valid", inum);
 	else
 		ret = (inum - 1) / INUM_PER_BLK + sb.s_1st_inode_block;
-	log_msg("inum2blknum return %u", ret);
+	log_msg("inum2bnum return %u", ret);
 	return(ret);
 }
 
-blkcnt_t zonenum2blknum(blkcnt_t zone_num)
+blkcnt_t znum2bnum(blkcnt_t zone_num)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("zonenum2blknum called, zone_num = %u", zone_num);
+	log_msg("znum2bnum called, zone_num = %u", zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("zonenum2blknum: zone %s is not valid", zone_num);
+		log_msg("znum2bnum: zone %s is not valid", zone_num);
 		goto out;
 	}
 	ret = (zone_num - 1) + sb.s_1st_zone_block;
 out:
-	log_msg("zonenum2blknum return %u", ret);
+	log_msg("znum2bnum return %u", ret);
 	return(ret);
 }
 
-static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
+static blkcnt_t _dnum2znum(ino_t inum, blkcnt_t dnum, int creat)
 {
 	blkcnt_t ret = 0, znum;
 	struct m_inode inode;
 	char	buf[BLK_SIZE];
 
-	log_msg("_datanum2zonenum called, inum = %u, dnum = %u, creat = %d",
+	log_msg("_dnum2znum called, inum = %u, dnum = %u, creat = %d",
 			inum, dnum, creat);
 	if (!is_ivalid(inum)) {
-		log_msg("_datanum2zonenum: inum %u is not valid", inum);
+		log_msg("_dnum2znum: inum %u is not valid", inum);
 		goto out;
 	}
 	if (!is_dvalid(dnum)) {
-		log_msg("_datanum2zonenum: dnum %u is not valid",
+		log_msg("_dnum2znum: dnum %u is not valid",
 				dnum);
 		goto out;
 	}
 	if (rd_inode(inum, (struct d_inode *)&inode) < 0) {
-		log_msg("_datanum2zonenum: rd_inode error");
+		log_msg("_dnum2znum: rd_inode error");
 		goto out;
 	}
 
@@ -389,7 +389,7 @@ static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
 				goto out;
 			inode.i_zones[dnum] = ret;
 			if (wr_inode(&inode) < 0) {
-				log_msg("_datanum2zonenum: wr_inode error");
+				log_msg("_dnum2znum: wr_inode error");
 				ret = 0;
 				goto out;
 			}
@@ -401,12 +401,12 @@ static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
 	if (dnum < ZNUM_PER_BLK) {
 	if (inode.i_zones[6] == 0 && creat) {
 		if ((ret = new_zone()) == 0) {
-			log_msg("_datanum2zonenum: new_zone return 0");
+			log_msg("_dnum2znum: new_zone return 0");
 			goto out;
 		}
 		inode.i_zones[6] = ret;
 		if (wr_inode(&inode) < 0) {
-			log_msg("_datanum2zonenum: wr_inode error");
+			log_msg("_dnum2znum: wr_inode error");
 			ret = 0;
 			goto out;
 		}
@@ -417,7 +417,7 @@ static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
 				goto out;
 			((blkcnt_t *)buf)[dnum] = ret;
 			if (wr_zone(inode.i_zones[6], &buf, sizeof(buf)) < 0) {
-				log_msg("_datanum2zonenum: wr_inode error");
+				log_msg("_dnum2znum: wr_inode error");
 				ret = 0;
 				goto out;
 			}
@@ -430,54 +430,54 @@ static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
 	ret = inode.i_zones[7];
 	if (ret == 0 && creat) {
 		if ((ret = new_zone()) == 0) {
-			log_msg("_datanum2zonenum: new_inode return 0");
+			log_msg("_dnum2znum: new_inode return 0");
 			goto out;
 		}
 		inode.i_zones[7] = ret;
 		if (wr_inode(&inode) < 0) {
-			log_msg("_datanum2zonenum: wr_inode error for inode"
+			log_msg("_dnum2znum: wr_inode error for inode"
 					" %u", inode.i_ino);
 			goto out;
 		}
 	}
 	if (rd_zone(inode.i_zones[7], buf, sizeof(buf)) < 0) {
-		log_msg("datanum2zonenum: rd_zone error for %u",
+		log_msg("dnum2znum: rd_zone error for %u",
 				inode.i_zones[7]);
 		goto out;
 	}
 	ret = ((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
 		if ((ret = new_zone()) == 0) {
-			log_msg("_datanum2zonenum: new_inode return 0 for "
+			log_msg("_dnum2znum: new_inode return 0 for "
 					"1st level of double");
 			goto out;
 		}
 	((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK] = ret;
 		if (wr_zone(inode.i_zones[7], buf, sizeof(buf)) < 0) {
-			log_msg("_datanum2zonenum: wr_zone error");
+			log_msg("_dnum2znum: wr_zone error");
 			goto out;
 		}
 	}
 	if (rd_zone(ret, buf, sizeof(buf)) < 0) {
-		log_msg("_datanum2zonenum: rd_zone error");
+		log_msg("_dnum2znum: rd_zone error");
 		goto out;
 	}
 	znum = ret;
 	ret = ((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
 		if ((ret = new_zone()) == 0) {
-			log_msg("_datanum2zonenum: new_inode return 0 for "
+			log_msg("_dnum2znum: new_inode return 0 for "
 					"2nd level of double");
 			goto out;
 		}
 	      ((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK] = ret;
 		if (wr_zone(znum, buf, sizeof(buf)) < 0) {
-			log_msg("_datanum2zonenum: wr_zone error");
+			log_msg("_dnum2znum: wr_zone error");
 			goto out;
 		}
 	}
 out:
-	log_msg("datanum2zonenum return %u", ret);
+	log_msg("dnum2znum return %u", ret);
 	return(ret);
 }
 
@@ -691,9 +691,9 @@ int path2inum(const char *path, ino_t *inum)
 			break;
 		memcpy(file, path + start, i - start);
 		file[i - start] = 0;
-		if (srch_dir_entry(&inode, file, &ent) == 0) {
+		if (find_entry(&inode, file, &ent) == 0) {
 			ret = -ENOENT;
-			log_msg("path2inum: srch_dir_entry return zero, "
+			log_msg("path2inum: find_entry return zero, "
 					"file %s not found", file);
 			goto out;
 		}
@@ -712,7 +712,7 @@ out:
 	return(ret);
 }
 
-ino_t srch_dir_entry(const struct m_inode *par, const char *file,
+ino_t find_entry(const struct m_inode *par, const char *file,
 		struct dir_entry *res)
 {
 	off_t	i;
@@ -720,23 +720,23 @@ ino_t srch_dir_entry(const struct m_inode *par, const char *file,
 	char	buf[BLK_SIZE];
 	struct dir_entry *de;
 
-	log_msg("srch_dir_entry called");
+	log_msg("find_entry called");
 	if (par == NULL || file == NULL || res == NULL)
-		log_msg("srch_dir_entry: arguments is NULL");
-	log_msg("srch_dir_entry: par->i_ino = %u, file = %s", par->i_ino,
+		log_msg("find_entry: arguments is NULL");
+	log_msg("find_entry: par->i_ino = %u, file = %s", par->i_ino,
 			file);
 
 	i = 0;
 	res->de_inum = 0;
 	dnum = 0;
 	while (i < par->i_size) {
-		if ((znum = datanum2zonenum(par->i_ino, dnum)) == 0) {
-			log_msg("srch_dir_entry: datanum2zonenum return "
+		if ((znum = dnum2znum(par->i_ino, dnum)) == 0) {
+			log_msg("find_entry: dnum2znum return "
 					"zero for data %u", dnum);
 			goto out;
 		}
 		if (rd_zone(znum, &buf, sizeof(buf)) < 0) {
-			log_msg("srch_dir_entry: rd_zone error for data"
+			log_msg("find_entry: rd_zone error for data"
 					" %u", znum);
 			goto out;
 		}
@@ -756,7 +756,7 @@ ino_t srch_dir_entry(const struct m_inode *par, const char *file,
 		dnum++;
 	}
 out:
-	log_msg("srch_dir_entry return %u", res->de_inum);
+	log_msg("find_entry return %u", res->de_inum);
 	return(res->de_inum);
 }
 /*
