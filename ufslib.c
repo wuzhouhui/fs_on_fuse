@@ -61,7 +61,13 @@ ino_t new_inode(void)
 			if (p[i] & (1 << j))
 				continue;
 
-			/* find a free inode */
+			/* find a free inode bit */
+
+			/* test if there is available inode */
+			if (((i << 3) + j - 1) >=
+					sb.s_inode_blocks * INUM_PER_BLK)
+				goto out;
+
 			p[i] |= 1 << j;
 			ret = (i << 3) + j;
 			goto out;
