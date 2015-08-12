@@ -144,12 +144,12 @@ static int ufs_creat(const char *path, mode_t mode,
 		}
 	}
 	ret = rd_inode(entry.de_inum,
-			(struct d_inode *)open_files[fd].f_inode);
+			(struct d_inode *)&open_files[fd].f_inode);
 	if (ret < 0) {
 		log_msg("ufs_creat: rd_inode error for %u", entry.de_inum);
 		goto out;
 	}
-	open_files[fd].f_mode = open_files[fd].f_inode->i_mode;
+	open_files[fd].f_mode = open_files[fd].f_inode.i_mode;
 	open_files[fd].f_flag = UFS_O_WRONLY;
 	open_files[fd].f_count = 1;
 	open_files[fd].f_pos = 0;

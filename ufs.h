@@ -155,7 +155,7 @@ struct dir_entry {
 #define MAX_FILE_SIZE	(8259 << 10)
 
 struct file {
-	struct m_inode *f_inode;
+	struct m_inode f_inode;
 	mode_t	f_mode;	
 	int	f_flag;
 	int	f_count;
