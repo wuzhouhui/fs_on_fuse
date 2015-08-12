@@ -189,10 +189,12 @@ blkcnt_t new_zone(void)
 	char	*p = sb.s_zmap;
 	int	n = sb.s_zmap_blocks << BLK_SIZE_SHIFT;
 	int	i, j;
+	char	buf[BLK_SIZE];
 	ino_t	ret = 0;
 
 	log_msg("new_zone called");
 
+	/* n in bytes, not bit */
 	for (i = 0; i < n; i++) {
 		if (p[i] == 0xff)
 			continue;
@@ -209,6 +211,10 @@ blkcnt_t new_zone(void)
 			}
 			p[i] |= 1 << j;
 			ret = (i << 3) + j;
+
+			memset(buf, 0, sizeof(buf));
+			if (wr_zone(ret, &buf, sizeof(buf)) < 0)
+				log_msg("new_zone: wr_zone error");
 			goto out;
 		}
 	}
