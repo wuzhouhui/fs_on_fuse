@@ -104,15 +104,19 @@ static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
 	int	fd, ret;
-	char	*dir, *base;
+	char	dir[PATH_LEN + 1], base[NAME_LEN + 1];
 	struct m_inode dirinode;
-	char	pathcpy[NAME_LEN + 1];
+	char	pathcpy[PATH_LEN + 1];
 	struct dir_entry entry;
 
-	log_msg("ufs_creat called, path = %s, mode = %o", (path == NULL ?
-				"NULL" : path), mode);
+	log_msg("ufs_creat called, path = %s, mode = %o",
+			(path == NULL ? "NULL" : path), mode);
 	if (path == NULL) {
 		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= PATH_LEN) {
+		ret = -ENAMETOOLONG;
 		goto out;
 	}
 	for (fd = 0; fd < OPEN_MAX; fd++)
@@ -124,9 +128,9 @@ static int ufs_creat(const char *path, mode_t mode,
 		goto out;
 	}
 	strcpy(pathcpy, path);
-	dir = dirname(pathcpy);
+	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
-	base = basename(pathcpy);
+	strcpy(base, basename(pathcpy));
 	if ((ret = dir2i(dir, &dirinode)) < 0) {
 		log_msg("ufs_creat: dir2i error for %s", dir);
 		goto out;

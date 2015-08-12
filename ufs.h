@@ -22,8 +22,10 @@
 #define BLK_SIZE_SHIFT	9
 #define BLK_SIZE	(1 << BLK_SIZE_SHIFT)
 #define MAGIC		0x7594
-/* max length of file name, null terminator exclueded */
+/* max length of file name, null terminator excluded */
 #define NAME_LEN        27
+/* max length of path, null terminator excluded */
+#define PATH_LEN	1024
 /* # inode per block */
 #define INUM_PER_BLK	(BLK_SIZE / sizeof(struct d_inode))
 /* # zone nubmer per block */
