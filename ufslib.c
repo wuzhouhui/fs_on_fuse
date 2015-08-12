@@ -623,7 +623,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 			log_msg("add_entry: rd_zone error");
 			goto out;
 		}
-		for (de = (struct dir_entry *)&buf, i = 0;
+		for (de = (struct dir_entry *)buf, i = 0;
 				i < ENTRYNUM_PER_BLK; i++)
 			if (de[i].de_inum == 0)
 				break;
