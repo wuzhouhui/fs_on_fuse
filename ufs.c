@@ -104,9 +104,8 @@ static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
 	int	fd, ret;
-	ino_t	dirinum;
 	char	*dir, *base;
-	struct m_inode inode;
+	struct m_inode dirinode;
 	char	pathcpy[NAME_LEN + 1];
 	struct dir_entry entry;
 
@@ -128,17 +127,13 @@ static int ufs_creat(const char *path, mode_t mode,
 	dir = dirname(pathcpy);
 	strcpy(pathcpy, path);
 	base = basename(pathcpy);
-	if ((ret = dir2inum(dir, &dirinum)) < 0) {
-		log_msg("ufs_creat: dir2inum error for %s", dir);
+	if ((ret = dir2i(dir, &dirinode)) < 0) {
+		log_msg("ufs_creat: dir2i error for %s", dir);
 		goto out;
 	}
-	if ((ret = rd_inode(dirinum, (struct d_inode *)&inode)) < 0) {
-		log_msg("ufs_creat: rd_inode error");
-		goto out;
-	}
-	if (find_entry(&inode, base, &entry) == 0) {
+	if (find_entry(&dirinode, base, &entry) == -ENOENT) {
 
-		if ((ret = add_entry(dirinum, base, &entry)) < 0) {
+		if ((ret = add_entry(&dirinode, base, &entry)) < 0) {
 			log_msg("ufs_creat: add_entry error for "
 					"%s in %s", base, dir);
 			goto out;
@@ -164,20 +159,15 @@ out:
 static int ufs_getattr(const char *path, struct stat *statptr)
 {
 	int	ret = 0;
-	ino_t	inum;
-	struct d_inode inode;
+	struct m_inode inode;
 
 	log_msg("ufs_getattr called, path = %s", path);
-	if ((ret = path2inum(path, &inum)) == 0) {
-		log_msg("ufs_open: path2inum return 0");
-		goto out;
-	}
-	if ((ret = rd_inode(inum, &inode)) < 0) {
-		log_msg("ufs_open: rd_inode error");
+	if ((ret = path2i(path, &inode)) < 0) {
+		log_msg("ufs_open: path2i error");
 		goto out;
 	}
 	statptr->st_mode = conv_fmode(inode.i_mode);
-	statptr->st_ino = inum;
+	statptr->st_ino = inode.i_ino;
 	statptr->st_nlink = inode.i_nlink;
 	statptr->st_uid = inode.i_uid;
 	statptr->st_gid = inode.i_gid;
@@ -204,27 +194,22 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi)
 {
 	int	ret = 0, j;
-	ino_t	inum;
 	blkcnt_t dnum, znum;
 	off_t	i;
 	char	blkbuf[BLK_SIZE];
 	struct dir_entry *de;
-	struct d_inode inode;
+	struct m_inode inode;
 
 	log_msg("ufs_readdir called, path = %s", path);
-	if ((ret = path2inum(path, &inum)) == 0) {
-		log_msg("ufs_readdir: path2inum return 0");
+	if ((ret = path2i(path, &inode)) < 0) {
+		log_msg("ufs_readdir: path2i error ");
 		ret = -ENOENT;
-		goto out;
-	}
-	if ((ret = rd_inode(inum, &inode) < 0)) {
-		log_msg("ufs_readdir: rd_inode error");
 		goto out;
 	}
 	i = 0;
 	dnum = 0;
 	while (i < inode.i_size) {
-		if ((znum = dnum2znum(inum, dnum)) == 0) {
+		if ((znum = dnum2znum(&inode, dnum)) == 0) {
 			log_msg("readdir: dnum2znum return "
 					"zero for data %u", dnum);
 			ret = -EINVAL;

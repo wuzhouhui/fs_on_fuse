@@ -164,7 +164,7 @@ extern struct file open_files[];
 
 
 int read_sb(const char *);
-int add_entry(ino_t, const char *, struct dir_entry *);
+int add_entry(struct m_inode *, const char *, struct dir_entry *);
 ino_t new_inode(void);
 int free_inode(ino_t);
 int rd_inode(ino_t, struct d_inode *);
@@ -175,13 +175,12 @@ int rd_zone(blkcnt_t, void *, size_t);
 int wr_zone(blkcnt_t, const void *, size_t);
 blkcnt_t inum2bnum(ino_t inum);
 blkcnt_t znum2bnum(blkcnt_t);
-blkcnt_t dnum2znum(ino_t, blkcnt_t);
+blkcnt_t dnum2znum(struct m_inode *, blkcnt_t);
 int rd_blk(blkcnt_t, void *, size_t);
 int wr_blk(blkcnt_t, const void *, size_t);
-int path2inum(const char *, ino_t *);
-int dir2inum(const char *, ino_t *);
-ino_t find_entry(const struct m_inode *, const char *,
-		struct dir_entry *);
+int path2i(const char *, struct m_inode *);
+int dir2i(const char *, struct m_inode *);
+int find_entry(struct m_inode *, const char *, struct dir_entry *);
 mode_t conv_fmode(mode_t);
 
 #endif /* end of _UFS_H */
