@@ -200,7 +200,13 @@ blkcnt_t new_zone(void)
 			if (p[i] & (1 << j))
 				continue;
 
-			/* find a free inode */
+			/* find a free zone bit */
+
+			/* test if there is available zone in disk */
+			if (((i << 3) + j - 1) >= sb.s_zone_blocks) {
+				ret = 0;
+				goto out;
+			}
 			p[i] |= 1 << j;
 			ret = (i << 3) + j;
 			goto out;
