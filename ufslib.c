@@ -2,6 +2,8 @@
 
 extern struct m_super_block sb;
 
+static blkcnt_t _datanum2zonenum(ino_t, blkcnt_t, int);
+
 /* determine whether the inode inum is valid */
 static inline int is_ivalid(ino_t inum)
 {
@@ -25,7 +27,7 @@ static inline int is_dvalid(blkcnt_t dnum)
 				ZNUM_PER_BLK));
 }
 
-static blkcnt_t creat_zone(ino_t inum, block dnum)
+static blkcnt_t creat_zone(ino_t inum, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
 	log_msg("creat_zone called, inum = %u, dnum = %u", inum, dnum);
@@ -33,6 +35,16 @@ static blkcnt_t creat_zone(ino_t inum, block dnum)
 	log_msg("creat_zone return %u", ret);
 	return(ret);
 }
+
+blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t dnum)
+{
+	blkcnt_t ret = 0;
+	log_msg("datanum2zonenum called, inum = %u, dnum = %u", inum, dnum);
+	ret = _datanum2zonenum(inum, dnum, 0);
+	log_msg("datanum2zonenum return %u", ret);
+	return(ret);
+}
+
 /*
  * read super block from disk, return the disk file's file descriptor
  */
@@ -331,58 +343,121 @@ out:
 	return(ret);
 }
 
-blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)
+static blkcnt_t _datanum2zonenum(ino_t inum, blkcnt_t dnum, int creat)
 {
 	blkcnt_t ret = 0, znum;
-	struct d_inode inode;
+	struct m_inode inode;
 	char	buf[BLK_SIZE];
 
-	log_msg("datanum2zonenum called, inum = %u, data_num = %u", inum,
-			data_num);
+	log_msg("_datanum2zonenum called, inum = %u, dnum = %u, creat = %d",
+			inum, dnum, creat);
 	if (!is_ivalid(inum)) {
-		log_msg("datanum2zonenum: inum %u is not valid", inum);
+		log_msg("_datanum2zonenum: inum %u is not valid", inum);
 		goto out;
 	}
-	if (!is_dvalid(data_num)) {
-		log_msg("datanum2zonenum: data_num %u is not valid",
-				data_num);
+	if (!is_dvalid(dnum)) {
+		log_msg("_datanum2zonenum: dnum %u is not valid",
+				dnum);
 		goto out;
 	}
-	if (rd_inode(inum, &inode) < 0) {
-		log_msg("datanum2zonenum: rd_inode error");
-		goto out;
-	}
-
-	if (data_num < 6) {
-		ret = inode.i_zones[data_num];
+	if (rd_inode(inum, (struct d_inode *)&inode) < 0) {
+		log_msg("_datanum2zonenum: rd_inode error");
 		goto out;
 	}
 
-	data_num -= 6;
-	if (rd_zone(inode.i_zones[6], buf, sizeof(buf)) < 0) {
-		log_msg("datanum2zonenum: rd_zone error for %u",
-				inode.i_zones[6]);
+	if (dnum < 6) {
+		if (inode.i_zones[dnum] == 0 && creat) {
+			if ((ret = new_zone()) == 0)
+				goto out;
+			inode.i_zones[dnum] = ret;
+			if (wr_inode(&inode) < 0) {
+				log_msg("_datanum2zonenum: wr_inode error");
+				ret = 0;
+				goto out;
+			}
+		}
 		goto out;
 	}
-	if (data_num < ZNUM_PER_BLK) {
-		ret = ((blkcnt_t *)buf)[data_num];
+
+	dnum -= 6;
+	if (dnum < ZNUM_PER_BLK) {
+	if (inode.i_zones[6] == 0 && creat) {
+		if ((ret = new_zone()) == 0) {
+			log_msg("_datanum2zonenum: new_zone return 0");
+			goto out;
+		}
+		inode.i_zones[6] = ret;
+		if (wr_inode(&inode) < 0) {
+			log_msg("_datanum2zonenum: wr_inode error");
+			ret = 0;
+			goto out;
+		}
+	}
+		ret = ((blkcnt_t *)buf)[dnum];
+		if (ret == 0 && creat) {
+			if ((ret = new_zone()) == 0)
+				goto out;
+			((blkcnt_t *)buf)[dnum] = ret;
+			if (wr_zone(inode.i_zones[6], &buf, sizeof(buf)) < 0) {
+				log_msg("_datanum2zonenum: wr_inode error");
+				ret = 0;
+				goto out;
+			}
+		}
 		goto out;
 	}
 
 	/* double indirect */
+	dnum -= ZNUM_PER_BLK;
+	ret = inode.i_zones[7];
+	if (ret == 0 && creat) {
+		if ((ret = new_zone()) == 0) {
+			log_msg("_datanum2zonenum: new_inode return 0");
+			goto out;
+		}
+		inode.i_zones[7] = ret;
+		if (wr_inode(&inode) < 0) {
+			log_msg("_datanum2zonenum: wr_inode error for inode"
+					" %u", inode.i_ino);
+			goto out;
+		}
+	}
 	if (rd_zone(inode.i_zones[7], buf, sizeof(buf)) < 0) {
 		log_msg("datanum2zonenum: rd_zone error for %u",
 				inode.i_zones[7]);
 		goto out;
 	}
-	data_num -= ZNUM_PER_BLK;
-	znum = ((blkcnt_t *)buf)[(data_num / ZNUM_PER_BLK)];
-	if (rd_zone(znum, buf, sizeof(buf)) < 0) {
-		log_msg("datanum2zonenum: rd_zone error for %u",
-				znum);
+	ret = ((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK];
+	if (ret == 0 && creat) {
+		if ((ret = new_zone()) == 0) {
+			log_msg("_datanum2zonenum: new_inode return 0 for "
+					"1st level of double");
+			goto out;
+		}
+	((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK] = ret;
+		if (wr_zone(inode.i_zones[7], buf, sizeof(buf)) < 0) {
+			log_msg("_datanum2zonenum: wr_zone error");
+			goto out;
+		}
+	}
+	if (rd_zone(ret, buf, sizeof(buf)) < 0) {
+		log_msg("_datanum2zonenum: rd_zone error");
 		goto out;
 	}
-	ret = ((blkcnt_t *)buf)[data_num % ZNUM_PER_BLK];
+	znum = ret;
+	ret = ((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK];
+	if (ret == 0 && creat) {
+		if ((ret = new_zone()) == 0) {
+			log_msg("_datanum2zonenum: new_inode return 0 for "
+					"2nd level of double");
+			goto out;
+		}
+	      ((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK] = ret;
+		if (wr_zone(znum, buf, sizeof(buf)) < 0) {
+			log_msg("_datanum2zonenum: wr_zone error");
+			goto out;
+		}
+	}
 out:
 	log_msg("datanum2zonenum return %u", ret);
 	return(ret);
@@ -574,7 +649,7 @@ int path2inum(const char *path, ino_t *inum)
 	char	file[NAME_LEN + 1];
 	int	i, start, ret;
 
-	log_msg("path2inum called, path = %s", (path == NULL ? "NULL" : 
+	log_msg("path2inum called, path = %s", (path == NULL ? "NULL" :
 				path));
 	if (path == NULL) {
 		ret = -EINVAL;
@@ -632,7 +707,7 @@ ino_t srch_dir_entry(const struct m_inode *par, const char *file,
 		log_msg("srch_dir_entry: arguments is NULL");
 	log_msg("srch_dir_entry: par->i_ino = %u, file = %s", par->i_ino,
 			file);
-	
+
 	i = 0;
 	res->de_inum = 0;
 	dnum = 0;
@@ -667,7 +742,7 @@ out:
 	return(res->de_inum);
 }
 /*
- * convert file mode and permission from ufs to 
+ * convert file mode and permission from ufs to
  * UNIX.
  */
 mode_t conv_fmode(mode_t mode)
