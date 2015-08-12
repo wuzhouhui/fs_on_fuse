@@ -229,7 +229,7 @@ blkcnt_t new_zone(void)
 			p[i] |= 1 << j;
 
 			memset(buf, 0, sizeof(buf));
-			if (wr_zone(ret, &buf, sizeof(buf)) < 0)
+			if (wr_zone(ret, buf, sizeof(buf)) < 0)
 				log_msg("new_zone: wr_zone error");
 			goto out;
 		}
@@ -619,7 +619,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 			ret = -ENOSPC;
 			goto out;
 		}
-		if ((ret = rd_zone(znum, &buf, sizeof(buf))) < 0) {
+		if ((ret = rd_zone(znum, buf, sizeof(buf))) < 0) {
 			log_msg("add_entry: rd_zone error");
 			goto out;
 		}
@@ -634,15 +634,15 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	de[i].de_inum = entry->de_inum;
 	strncpy(de[i].de_name, file, NAME_LEN);
 	de[i].de_name[NAME_LEN] = 0;
-	memcpy(&entry, &de[i], sizeof(entry));
-	if ((ret = wr_zone(znum, &buf, sizeof(buf))) < 0) {
+	memcpy(entry, &de[i], sizeof(de[i]));
+	if ((ret = wr_zone(znum, buf, sizeof(buf))) < 0) {
 		log_msg("add_entry: wr_zone error");
 		goto out;
 	}
 	/*
 	 * update parent directory's inode.
 	 */
-	dirinode->i_size += sizeof(entry);
+	dirinode->i_size += sizeof(de[i]);
 	if ((ret = wr_inode(dirinode)) < 0) {
 		log_msg("add_entry: wr_inode error");
 		goto out;
@@ -732,7 +732,7 @@ int find_entry(struct m_inode *par, const char *file,
 					"zero for data %u", dnum);
 			goto out;
 		}
-		if (rd_zone(znum, &buf, sizeof(buf)) < 0) {
+		if (rd_zone(znum, buf, sizeof(buf)) < 0) {
 			log_msg("find_entry: rd_zone error for data"
 					" %u", znum);
 			goto out;

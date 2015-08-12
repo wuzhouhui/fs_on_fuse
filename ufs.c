@@ -219,17 +219,18 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			ret = -EINVAL;
 			goto out;
 		}
-		if ((ret = rd_zone(znum, &blkbuf, sizeof(blkbuf))) < 0) {
-			log_msg("readdir: rd_zone error for data"
-					" %u", znum);
+		if ((ret = rd_zone(znum, blkbuf, sizeof(blkbuf))) < 0) {
+			log_msg("readdir: rd_zone error for data %u", znum);
 			goto out;
 		}
 		log_msg("inode.i_size == %u", inode.i_size);
-		for (de = (struct dir_entry *)blkbuf, j = 0;
-				j < ENTRYNUM_PER_BLK && i < inode.i_size; j++) {
+		de = (struct dir_entry *)blkbuf;
+		for (j = 0; j < ENTRYNUM_PER_BLK && i < inode.i_size; j++) {
 			if (de[j].de_inum == 0)
 				continue;
 			i += sizeof(*de);
+			log_msg("de[%d].de_name = %s, de_inum = %u",
+					j, de[j].de_name, de[j].de_inum);
 			if (filler(buf, de[j].de_name, NULL, 0) != 0) {
 				log_msg("readdir: filler error for filling %s",
 						de[j].de_name);
