@@ -167,7 +167,7 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 
 	log_msg("ufs_getattr called, path = %s", path);
 	if ((ret = path2i(path, &inode)) < 0) {
-		log_msg("ufs_open: path2i error");
+		log_msg("ufs_getattr: path2i error");
 		goto out;
 	}
 	statptr->st_mode = conv_fmode(inode.i_mode);

@@ -30,7 +30,7 @@ static inline int is_dvalid(blkcnt_t dnum)
 static blkcnt_t creat_zone(struct m_inode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("creat_zone called, inum = %u, dnum = %u", inode, dnum);
+	log_msg("creat_zone called, inum = %u, dnum = %u", inode->i_ino, dnum);
 	ret = _dnum2znum(inode, dnum, 1);
 	log_msg("creat_zone return %u", ret);
 	return(ret);
