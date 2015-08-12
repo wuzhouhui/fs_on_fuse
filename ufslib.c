@@ -599,6 +599,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	}
 	memset(&inode, 0, sizeof(inode));
 	inode.i_nlink = 1;
+	inode.i_ino = entry->de_inum;
 	inode.i_uid = getuid();
 	inode.i_gid = getgid();
 	if ((ret = wr_inode(&inode)) < 0) {
