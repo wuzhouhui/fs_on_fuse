@@ -30,9 +30,10 @@ static inline int is_dvalid(blkcnt_t dnum)
 static blkcnt_t creat_zone(struct m_inode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("creat_zone called, inum = %u, dnum = %u", inode->i_ino, dnum);
+	log_msg("creat_zone called, inum = %d, dnum = %d",
+			(int)inode->i_ino, (int)dnum);
 	ret = _dnum2znum(inode, dnum, 1);
-	log_msg("creat_zone return %u", ret);
+	log_msg("creat_zone return %d", (int)ret);
 	return(ret);
 }
 
@@ -364,8 +365,8 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 	blkcnt_t ret = 0, znum;
 	char	buf[BLK_SIZE];
 
-	log_msg("_dnum2znum called, inum = %u, dnum = %u, creat = %d",
-			inode->i_ino, dnum, creat);
+	log_msg("_dnum2znum called, inum = %d, dnum = %d, creat = %d",
+			(int)inode->i_ino, (int)dnum, (int)creat);
 	if (!is_ivalid(inode->i_ino)) {
 		log_msg("_dnum2znum: inum %u is not valid", inode->i_ino);
 		goto out;
@@ -596,7 +597,7 @@ int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 	 */
 	dnum = 0;
 	while (1) {
-		if ((znum = creat_zone(dir, dnum)) == 0) {
+		if ((znum = creat_zone(dir, dnum++)) == 0) {
 			log_msg("add_entry: creat_zone return 0 for %u",
 					znum);
 			ret = -ENOSPC;
@@ -712,7 +713,7 @@ int find_entry(struct m_inode *par, const char *file,
 	i = 0;
 	dnum = 0;
 	while (i < par->i_size) {
-		if ((znum = dnum2znum(par, dnum)) == 0) {
+		if ((znum = dnum2znum(par, dnum++)) == 0) {
 			log_msg("find_entry: dnum2znum return "
 					"zero for data %u", dnum);
 			break;
@@ -737,7 +738,6 @@ int find_entry(struct m_inode *par, const char *file,
 				goto out;
 			}
 		}
-		dnum++;
 	}
 	ret = -ENOENT;
 out:

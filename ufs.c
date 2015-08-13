@@ -279,7 +279,6 @@ static int ufs_mkdir(const char *path, mode_t mode)
 	oldmask = umask(0);
 	umask(oldmask);
 	dirinode.i_mode = ((mode & 0777) | UFS_IFDIR) & (~oldmask);
-	dirinode.i_size = sizeof(struct dir_entry) * 2;
 	dirinode.i_atime = dirinode.i_ctime = dirinode.i_mtime
 		= time(NULL);
 	dirinode.i_uid = getuid();
@@ -354,7 +353,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	i = 0;
 	dnum = 0;
 	while (i < inode.i_size) {
-		if ((znum = dnum2znum(&inode, dnum)) == 0) {
+		if ((znum = dnum2znum(&inode, dnum++)) == 0) {
 			log_msg("readdir: dnum2znum return "
 					"zero for data %u", dnum);
 			ret = -EINVAL;
@@ -379,7 +378,6 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 				goto out;
 			}
 		}
-		dnum++;
 	}
 out:
 	log_msg("ufs_readdir return %d", ret);
