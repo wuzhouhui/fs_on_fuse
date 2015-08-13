@@ -1,13 +1,13 @@
 #include "ufs.h"
 
-extern struct m_super_block sb;
+extern struct ufs_msuper_block sb;
 
-static blkcnt_t _dnum2znum(struct m_inode *, blkcnt_t, int);
+static blkcnt_t _ufs_dnum2znum(struct ufs_minode *, blkcnt_t, int);
 
 /* determine whether the inode inum is valid */
 static inline int is_ivalid(ino_t inum)
 {
-	return(inum >= 1 && inum < (sb.s_inode_blocks << (BLK_SIZE_SHIFT + 3)));
+	return(inum >= 1 && inum < (sb.s_inode_blocks << (UFS_BLK_SIZE_SHIFT + 3)));
 }
 
 static inline int is_zvalid(blkcnt_t znum)
@@ -23,59 +23,59 @@ static inline int is_bvalid(blkcnt_t bnum)
 
 static inline int is_dvalid(blkcnt_t dnum)
 {
-	return(dnum >= 0  && dnum < (6 + ZNUM_PER_BLK + ZNUM_PER_BLK *
-				ZNUM_PER_BLK));
+	return(dnum >= 0  && dnum < (6 + UFS_ZNUM_PER_BLK + UFS_ZNUM_PER_BLK *
+				UFS_ZNUM_PER_BLK));
 }
 
-static blkcnt_t creat_zone(struct m_inode *inode, blkcnt_t dnum)
+static blkcnt_t creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
 	log_msg("creat_zone called, inum = %d, dnum = %d",
 			(int)inode->i_ino, (int)dnum);
-	ret = _dnum2znum(inode, dnum, 1);
+	ret = _ufs_dnum2znum(inode, dnum, 1);
 	log_msg("creat_zone return %d", (int)ret);
 	return(ret);
 }
 
-blkcnt_t dnum2znum(struct m_inode *inode, blkcnt_t dnum)
+blkcnt_t ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("dnum2znum called, inum = %u, dnum = %u",
+	log_msg("ufs_dnum2znum called, inum = %u, dnum = %u",
 			(unsigned int)inode->i_ino, (unsigned int)dnum);
-	ret = _dnum2znum(inode, dnum, 0);
-	log_msg("dnum2znum return %u", (unsigned int)ret);
+	ret = _ufs_dnum2znum(inode, dnum, 0);
+	log_msg("ufs_dnum2znum return %u", (unsigned int)ret);
 	return(ret);
 }
 
 /*
  * read super block from disk, return the disk file's file descriptor
  */
-int read_sb(const char *disk_name)
+int ufs_read_sb(const char *disk_name)
 {
 	int	fd;
 
 	if (disk_name == NULL || disk_name[0] == 0)
 		return(-1);
 	if ((fd = open(disk_name, O_RDWR)) < 0)
-		err_sys("read_sb: open %s error.", disk_name);
-	if (read(fd, &sb, sizeof(struct d_super_block)) !=
-			sizeof(struct d_super_block))
-		err_sys("read_sb: read %s error.", disk_name);
-	if (sb.s_magic != MAGIC) {
+		err_sys("ufs_read_sb: open %s error.", disk_name);
+	if (read(fd, &sb, sizeof(struct ufs_dsuper_block)) !=
+			sizeof(struct ufs_dsuper_block))
+		err_sys("ufs_read_sb: read %s error.", disk_name);
+	if (sb.s_magic != UFS_MAGIC) {
 		err_msg("filesystem magic %x isn't right.", sb.s_magic);
 		return(-1);
 	}
 	return(fd);
 }
 
-ino_t new_inode(void)
+ino_t ufs_new_inode(void)
 {
 	char	*p = sb.s_imap;
-	int	n = sb.s_imap_blocks << BLK_SIZE_SHIFT;
+	int	n = sb.s_imap_blocks << UFS_BLK_SIZE_SHIFT;
 	int	i, j;
 	ino_t	ret = 0;
 
-	log_msg("new_inode called");
+	log_msg("ufs_new_inode called");
 
 	for (i = 0; i < n; i++) {
 		if (p[i] == 0xff)
@@ -88,7 +88,7 @@ ino_t new_inode(void)
 
 			/* test if there is available inode */
 			if (((i << 3) + j - 1) >=
-					sb.s_inode_blocks * INUM_PER_BLK)
+					sb.s_inode_blocks * UFS_INUM_PER_BLK)
 				goto out;
 
 			p[i] |= 1 << j;
@@ -97,18 +97,18 @@ ino_t new_inode(void)
 		}
 	}
 out:
-	log_msg("new_inode return %d", (int)ret);
+	log_msg("ufs_new_inode return %d", (int)ret);
 	return(ret);
 }
 
-int free_inode(ino_t inum)
+int ufs_free_inode(ino_t inum)
 {
 	ino_t	n;
 	int	ret;
 
-	log_msg("free_inode called, inum = %u", (unsigned int)inum);
+	log_msg("ufs_free_inode called, inum = %u", (unsigned int)inum);
 	if (!is_ivalid(inum)) {
-		log_msg("free_inode: inum out of range, inum = %u",
+		log_msg("ufs_free_inode: inum out of range, inum = %u",
 				(unsigned int)inum);
 		ret = -EINVAL;
 		goto out;
@@ -116,7 +116,7 @@ int free_inode(ino_t inum)
 
 	n = inum >> 3;
 	if ((sb.s_imap[n] & (1 << (inum & 7))) == 0) {
-		log_msg("free_inode: inode %d already freed", (int)inum);
+		log_msg("ufs_free_inode: inode %d already freed", (int)inum);
 		ret = -EAGAIN;
 	} else {
 		sb.s_imap[n] &= ~(1 << (inum & 7));
@@ -124,99 +124,99 @@ int free_inode(ino_t inum)
 	}
 
 out:
-	log_msg("free_inode return %d", ret);
+	log_msg("ufs_free_inode return %d", ret);
 	return(ret);
 }
 
-int rd_inode(ino_t inum, struct d_inode *inode)
+int rufs_dinode(ino_t inum, struct ufs_dinode *inode)
 {
 	int	ret;
 	blkcnt_t bnum;
-	char	buf[BLK_SIZE];
+	char	buf[UFS_BLK_SIZE];
 
-	log_msg("rd_inode called, inode num = %u", (unsigned int)inum);
+	log_msg("rufs_dinode called, inode num = %u", (unsigned int)inum);
 	if (inode == NULL) {
 		ret = -EINVAL;
-		log_msg("rd_inode: inode is NULL");
+		log_msg("rufs_dinode: inode is NULL");
 		goto out;
 	}
 	if (!is_ivalid(inum)) {
 		ret = -EINVAL;
-		log_msg("rd_inode: inode number %u out of range",
+		log_msg("rufs_dinode: inode number %u out of range",
 				(unsigned int)inum);
 		goto out;
 	}
-	if ((bnum = inum2bnum(inum)) == 0) {
+	if ((bnum = ufs_inum2bnum(inum)) == 0) {
 		ret = -EINVAL;
-		log_msg("rd_inode: block number of inode %u is zero",
+		log_msg("rufs_dinode: block number of inode %u is zero",
 				(unsigned int)inum);
 		goto out;
 	}
-	if ((ret = rd_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("rd_inode: rd_blk error for block %u",
+	if ((ret = ufs_rd_blk(bnum, buf, sizeof(buf))) < 0) {
+		log_msg("rufs_dinode: ufs_rd_blk error for block %u",
 				(unsigned int)bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
-	*inode = ((struct d_inode *)buf)[(inum - 1) % INUM_PER_BLK];
+	*inode = ((struct ufs_dinode *)buf)[(inum - 1) % UFS_INUM_PER_BLK];
 	ret = 0;
 out:
-	log_msg("rd_inode return %d", ret);
+	log_msg("rufs_dinode return %d", ret);
 	return(ret);
 }
 
-int wr_inode(const struct m_inode *inode)
+int ufs_wr_inode(const struct ufs_minode *inode)
 {
 	int	ret;
 	blkcnt_t bnum;
-	char	buf[BLK_SIZE];
+	char	buf[UFS_BLK_SIZE];
 
-	log_msg("wr_inode called");
+	log_msg("ufs_wr_inode called");
 	if (inode == NULL) {
 		ret = -EINVAL;
-		log_msg("wr_inode: inode is NULL");
+		log_msg("ufs_wr_inode: inode is NULL");
 		goto out;
 	}
 	if (!is_ivalid(inode->i_ino)) {
 		ret = -EINVAL;
-		log_msg("wr_inode: inode number %u out of range",
+		log_msg("ufs_wr_inode: inode number %u out of range",
 				(unsigned int)inode->i_ino);
 		goto out;
 	}
-	if ((bnum = inum2bnum(inode->i_ino)) == 0) {
+	if ((bnum = ufs_inum2bnum(inode->i_ino)) == 0) {
 		ret = -EINVAL;
-		log_msg("wr_inode: block number of inode %u is zero",
+		log_msg("ufs_wr_inode: block number of inode %u is zero",
 				(unsigned int)inode->i_ino);
 		goto out;
 	}
-	if ((ret = rd_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("wr_inode: rd_blk error for block %u",
+	if ((ret = ufs_rd_blk(bnum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_wr_inode: ufs_rd_blk error for block %u",
 				(unsigned int)bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
-	((struct d_inode *)buf)[(inode->i_ino - 1) % INUM_PER_BLK] =
-		*(struct d_inode *)inode;
-	if ((ret = wr_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("wr_inode: wr_blk error for block %u",
+	((struct ufs_dinode *)buf)[(inode->i_ino - 1) % UFS_INUM_PER_BLK] =
+		*(struct ufs_dinode *)inode;
+	if ((ret = ufs_wr_blk(bnum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_wr_inode: ufs_wr_blk error for block %u",
 				(unsigned int)bnum);
 		goto out;
 	}
 	ret = 0;
 out:
-	log_msg("wr_inode return %d", ret);
+	log_msg("ufs_wr_inode return %d", ret);
 	return(ret);
 }
 
-blkcnt_t new_zone(void)
+blkcnt_t ufs_new_zone(void)
 {
 	char	*p = sb.s_zmap;
-	int	n = sb.s_zmap_blocks << BLK_SIZE_SHIFT;
+	int	n = sb.s_zmap_blocks << UFS_BLK_SIZE_SHIFT;
 	int	i, j;
-	char	buf[BLK_SIZE];
+	char	buf[UFS_BLK_SIZE];
 	ino_t	ret = 0;
 
-	log_msg("new_zone called");
+	log_msg("ufs_new_zone called");
 
 	/* n in bytes, not bit */
 	for (i = 0; i < n; i++) {
@@ -237,24 +237,24 @@ blkcnt_t new_zone(void)
 			p[i] |= 1 << j;
 
 			memset(buf, 0, sizeof(buf));
-			if (wr_zone(ret, buf, sizeof(buf)) < 0)
-				log_msg("new_zone: wr_zone error");
+			if (ufs_wr_zone(ret, buf, sizeof(buf)) < 0)
+				log_msg("ufs_new_zone: ufs_wr_zone error");
 			goto out;
 		}
 	}
 out:
-	log_msg("new_zone return %d", (int)ret);
+	log_msg("ufs_new_zone return %d", (int)ret);
 	return(ret);
 }
 
-int free_zone(blkcnt_t znum)
+int ufs_free_zone(blkcnt_t znum)
 {
 	ino_t	n;
 	int	ret;
 
-	log_msg("free_zone called, znum = %u", (unsigned int)znum);
+	log_msg("ufs_free_zone called, znum = %u", (unsigned int)znum);
 	if (!is_zvalid(znum)) {
-		log_msg("free_zone: znum out of range, znum = %u",
+		log_msg("ufs_free_zone: znum out of range, znum = %u",
 				(unsigned int)znum);
 		ret = -EINVAL;
 		goto out;
@@ -262,7 +262,7 @@ int free_zone(blkcnt_t znum)
 
 	n = znum >> 3;
 	if ((sb.s_zmap[n] & (1 << (znum & 7))) == 0) {
-		log_msg("free_zone: zone %d already freed", (int)znum);
+		log_msg("ufs_free_zone: zone %d already freed", (int)znum);
 		ret = -EAGAIN;
 	} else {
 		sb.s_zmap[n] &= ~(1 << (znum & 7));
@@ -274,121 +274,121 @@ out:
 	return(ret);
 }
 
-int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
+int ufs_rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 {
 	int	ret;
 	blkcnt_t bnum;
 
-	log_msg("rd_zone called, zone_num = %u", (unsigned int)zone_num);
+	log_msg("ufs_rd_zone called, zone_num = %u", (unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("rd_zone: znum out of range, znum = %u",
+		log_msg("ufs_rd_zone: znum out of range, znum = %u",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
-		log_msg("rd_zone: buf is NULL");
+		log_msg("ufs_rd_zone: buf is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (size != BLK_SIZE) {
-		log_msg("rd_zone: size = %d, do not equals to %d",
-				(int)size, BLK_SIZE);
+	if (size != UFS_BLK_SIZE) {
+		log_msg("ufs_rd_zone: size = %d, do not equals to %d",
+				(int)size, UFS_BLK_SIZE);
 		ret = -EINVAL;
 		goto out;
 	}
-	if ((bnum = znum2bnum(zone_num)) == 0) {
-		log_msg("rd_zone: zone %u's block number is zero",
+	if ((bnum = ufs_znum2bnum(zone_num)) == 0) {
+		log_msg("ufs_rd_zone: zone %u's block number is zero",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
-	ret = rd_blk(bnum, buf, size);
+	ret = ufs_rd_blk(bnum, buf, size);
 out:
-	log_msg("rd_zone return %d", ret);
+	log_msg("ufs_rd_zone return %d", ret);
 	return(ret);
 }
 
-int wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
+int ufs_wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 {
 	int	ret;
 	blkcnt_t bnum;
 
-	log_msg("wr_zone called, zone_num = %u",
+	log_msg("ufs_wr_zone called, zone_num = %u",
 			(unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("wr_zone: znum out of range, znum = %u",
+		log_msg("ufs_wr_zone: znum out of range, znum = %u",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
-		log_msg("wr_zone: buf is NULL");
+		log_msg("ufs_wr_zone: buf is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (size != BLK_SIZE) {
-		log_msg("wr_zone: size = %d, do not equals to %d",
-				(int)size, BLK_SIZE);
+	if (size != UFS_BLK_SIZE) {
+		log_msg("ufs_wr_zone: size = %d, do not equals to %d",
+				(int)size, UFS_BLK_SIZE);
 		ret = -EINVAL;
 		goto out;
 	}
-	if ((bnum = znum2bnum(zone_num)) == 0) {
-		log_msg("wr_zone: zone %u's block number is zero",
+	if ((bnum = ufs_znum2bnum(zone_num)) == 0) {
+		log_msg("ufs_wr_zone: zone %u's block number is zero",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
-	ret = wr_blk(bnum, buf, size);
+	ret = ufs_wr_blk(bnum, buf, size);
 out:
-	log_msg("wr_zone return %d", ret);
+	log_msg("ufs_wr_zone return %d", ret);
 	return(ret);
 }
 
-blkcnt_t inum2bnum(ino_t inum)
+blkcnt_t ufs_inum2bnum(ino_t inum)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("inum2bnum called, inum = %u", (unsigned int)inum);
+	log_msg("ufs_inum2bnum called, inum = %u", (unsigned int)inum);
 	if (!is_ivalid(inum))
-		log_msg("inum2bnum: inode %u is not valid",
+		log_msg("ufs_inum2bnum: inode %u is not valid",
 				(unsigned int)inum);
 	else
-		ret = (inum - 1) / INUM_PER_BLK + sb.s_1st_inode_block;
-	log_msg("inum2bnum return %u", (unsigned int)ret);
+		ret = (inum - 1) / UFS_INUM_PER_BLK + sb.s_1st_inode_block;
+	log_msg("ufs_inum2bnum return %u", (unsigned int)ret);
 	return(ret);
 }
 
-blkcnt_t znum2bnum(blkcnt_t zone_num)
+blkcnt_t ufs_znum2bnum(blkcnt_t zone_num)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("znum2bnum called, zone_num = %u", (unsigned int)zone_num);
+	log_msg("ufs_znum2bnum called, zone_num = %u", (unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("znum2bnum: zone %u is not valid",
+		log_msg("ufs_znum2bnum: zone %u is not valid",
 				(unsigned int)zone_num);
 		goto out;
 	}
 	ret = (zone_num - 1) + sb.s_1st_zone_block;
 out:
-	log_msg("znum2bnum return %u", (unsigned int)ret);
+	log_msg("ufs_znum2bnum return %u", (unsigned int)ret);
 	return(ret);
 }
 
-static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
+static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int creat)
 {
 	blkcnt_t ret = 0, znum;
-	char	buf[BLK_SIZE];
+	char	buf[UFS_BLK_SIZE];
 
-	log_msg("_dnum2znum called, inum = %d, dnum = %d, creat = %d",
+	log_msg("_ufs_dnum2znum called, inum = %d, dnum = %d, creat = %d",
 			(int)inode->i_ino, (int)dnum, (int)creat);
 	if (!is_ivalid(inode->i_ino)) {
-		log_msg("_dnum2znum: inum %u is not valid",
+		log_msg("_ufs_dnum2znum: inum %u is not valid",
 				(unsigned int)inode->i_ino);
 		goto out;
 	}
 	if (!is_dvalid(dnum)) {
-		log_msg("_dnum2znum: dnum %u is not valid",
+		log_msg("_ufs_dnum2znum: dnum %u is not valid",
 				(unsigned int)dnum);
 		goto out;
 	}
@@ -396,11 +396,11 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 	if (dnum < 6) {
 		ret = inode->i_zones[dnum];
 		if (ret == 0 && creat) {
-			if ((ret = new_zone()) == 0)
+			if ((ret = ufs_new_zone()) == 0)
 				goto out;
 			inode->i_zones[dnum] = ret;
-			if (wr_inode(inode) < 0) {
-				log_msg("_dnum2znum: wr_inode error");
+			if (ufs_wr_inode(inode) < 0) {
+				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
 				ret = 0;
 				goto out;
 			}
@@ -409,16 +409,16 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 	}
 
 	dnum -= 6;
-	if (dnum < ZNUM_PER_BLK) {
+	if (dnum < UFS_ZNUM_PER_BLK) {
 		ret = inode->i_zones[6];
 		if (ret == 0 && creat) {
-			if ((ret = new_zone()) == 0) {
-				log_msg("_dnum2znum: new_zone return 0");
+			if ((ret = ufs_new_zone()) == 0) {
+				log_msg("_ufs_dnum2znum: ufs_new_zone return 0");
 				goto out;
 			}
 			inode->i_zones[6] = ret;
-			if (wr_inode(inode) < 0) {
-				log_msg("_dnum2znum: wr_inode error");
+			if (ufs_wr_inode(inode) < 0) {
+				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
 				ret = 0;
 				goto out;
 			}
@@ -427,11 +427,11 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 			goto out;
 		ret = ((blkcnt_t *)buf)[dnum];
 		if (ret == 0 && creat) {
-			if ((ret = new_zone()) == 0)
+			if ((ret = ufs_new_zone()) == 0)
 				goto out;
 			((blkcnt_t *)buf)[dnum] = ret;
-			if (wr_zone(inode->i_zones[6], buf, sizeof(buf)) < 0) {
-				log_msg("_dnum2znum: wr_inode error");
+			if (ufs_wr_zone(inode->i_zones[6], buf, sizeof(buf)) < 0) {
+				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
 				ret = 0;
 				goto out;
 			}
@@ -440,139 +440,139 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 	}
 
 	/* double indirect */
-	dnum -= ZNUM_PER_BLK;
+	dnum -= UFS_ZNUM_PER_BLK;
 	ret = inode->i_zones[7];
 	if (ret == 0 && creat) {
-		if ((ret = new_zone()) == 0) {
-			log_msg("_dnum2znum: new_inode return 0");
+		if ((ret = ufs_new_zone()) == 0) {
+			log_msg("_ufs_dnum2znum: ufs_new_inode return 0");
 			goto out;
 		}
 		inode->i_zones[7] = ret;
-		if (wr_inode(inode) < 0) {
-			log_msg("_dnum2znum: wr_inode error for inode"
+		if (ufs_wr_inode(inode) < 0) {
+			log_msg("_ufs_dnum2znum: ufs_wr_inode error for inode"
 					" %u", (unsigned int)inode->i_ino);
 			goto out;
 		}
 	}
 	if (inode->i_zones[7] == 0)
 		goto out;
-	if (rd_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
-		log_msg("dnum2znum: rd_zone error for %u",
+	if (ufs_rd_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
+		log_msg("ufs_dnum2znum: ufs_rd_zone error for %u",
 				(unsigned int)inode->i_zones[7]);
 		ret = 0;
 		goto out;
 	}
-	ret = ((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK];
+	ret = ((blkcnt_t *)buf)[dnum / UFS_ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
-		if ((ret = new_zone()) == 0) {
-			log_msg("_dnum2znum: new_inode return 0 for "
+		if ((ret = ufs_new_zone()) == 0) {
+			log_msg("_ufs_dnum2znum: ufs_new_inode return 0 for "
 					"1st level of double");
 			goto out;
 		}
-		((blkcnt_t *)buf)[dnum / ZNUM_PER_BLK] = ret;
-		if (wr_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
-			log_msg("_dnum2znum: wr_zone error");
+		((blkcnt_t *)buf)[dnum / UFS_ZNUM_PER_BLK] = ret;
+		if (ufs_wr_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
+			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
 			goto out;
 		}
 	}
 	if (ret == 0)
 		goto out;
-	if (rd_zone(ret, buf, sizeof(buf)) < 0) {
-		log_msg("_dnum2znum: rd_zone error");
+	if (ufs_rd_zone(ret, buf, sizeof(buf)) < 0) {
+		log_msg("_ufs_dnum2znum: ufs_rd_zone error");
 		goto out;
 	}
 	znum = ret;
-	ret = ((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK];
+	ret = ((blkcnt_t *)buf)[dnum % UFS_ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
-		if ((ret = new_zone()) == 0) {
-			log_msg("_dnum2znum: new_inode return 0 for "
+		if ((ret = ufs_new_zone()) == 0) {
+			log_msg("_ufs_dnum2znum: ufs_new_inode return 0 for "
 					"2nd level of double");
 			goto out;
 		}
-		((blkcnt_t *)buf)[dnum % ZNUM_PER_BLK] = ret;
-		if (wr_zone(znum, buf, sizeof(buf)) < 0) {
-			log_msg("_dnum2znum: wr_zone error");
+		((blkcnt_t *)buf)[dnum % UFS_ZNUM_PER_BLK] = ret;
+		if (ufs_wr_zone(znum, buf, sizeof(buf)) < 0) {
+			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
 			goto out;
 		}
 	}
 out:
-	log_msg("_dnum2znum return %u", (unsigned int)ret);
+	log_msg("_ufs_dnum2znum return %u", (unsigned int)ret);
 	return(ret);
 }
 
-int rd_blk(blkcnt_t blk_num, void *buf, size_t size)
+int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 {
 	int	ret = 0;
 
-	log_msg("rd_blk called, blk_num = %u", (unsigned int)blk_num);
+	log_msg("ufs_rd_blk called, blk_num = %u", (unsigned int)blk_num);
 	if (!is_bvalid(blk_num)) {
-		log_msg("rd_blk: block num %u is not valid",
+		log_msg("ufs_rd_blk: block num %u is not valid",
 				(unsigned int)blk_num);
 		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
-		log_msg("rd_blk: buf is NULL");
+		log_msg("ufs_rd_blk: buf is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (size != BLK_SIZE) {
-		log_msg("rd_blk: size = %u", (unsigned int)size);
+	if (size != UFS_BLK_SIZE) {
+		log_msg("ufs_rd_blk: size = %u", (unsigned int)size);
 		ret = -EINVAL;
 		goto out;
 	}
-	if (pread(sb.s_fd, buf, size, blk_num << BLK_SIZE_SHIFT) != size) {
-		log_ret("rd_blk: pread error");
+	if (pread(sb.s_fd, buf, size, blk_num << UFS_BLK_SIZE_SHIFT) != size) {
+		log_ret("ufs_rd_blk: pread error");
 		ret = -errno;
 		goto out;
 	}
 	ret = 0;
 out:
-	log_msg("rd_blk return %d", ret);
+	log_msg("ufs_rd_blk return %d", ret);
 	return(ret);
 }
 
-int wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
+int ufs_wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 {
 	int	ret;
 
-	log_msg("wr_blk called, blk_num = %u",
+	log_msg("ufs_wr_blk called, blk_num = %u",
 			(unsigned int)blk_num);
 	if (!is_bvalid(blk_num)) {
-		log_msg("wr_blk: block num %u is not valid",
+		log_msg("ufs_wr_blk: block num %u is not valid",
 				(unsigned int)blk_num);
 		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
-		log_msg("wr_blk: buf is NULL");
+		log_msg("ufs_wr_blk: buf is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (size != BLK_SIZE) {
-		log_msg("wr_blk: size = %u", (unsigned int)size);
+	if (size != UFS_BLK_SIZE) {
+		log_msg("ufs_wr_blk: size = %u", (unsigned int)size);
 		ret = -EINVAL;
 		goto out;
 	}
-	if (pwrite(sb.s_fd, buf, size, blk_num << BLK_SIZE_SHIFT) != size) {
-		log_ret("wr_blk: pwrite error");
+	if (pwrite(sb.s_fd, buf, size, blk_num << UFS_BLK_SIZE_SHIFT) != size) {
+		log_ret("ufs_wr_blk: pwrite error");
 		ret = -errno;
 		goto out;
 	}
 	ret = 0;
 out:
-	log_msg("wr_blk return %d", ret);
+	log_msg("ufs_wr_blk return %d", ret);
 	return(ret);
 }
 
-int dir2i(const char *dirpath, struct m_inode *dirinode)
+int ufs_dir2i(const char *dirpath, struct ufs_minode *dirinode)
 {
 	int	ret;
 
-	log_msg("dir2i called, dirpath = %s", (dirpath == NULL ? "NULL" :
+	log_msg("ufs_dir2i called, dirpath = %s", (dirpath == NULL ? "NULL" :
 				dirpath));
-	if ((ret = path2i(dirpath, dirinode)) < 0) {
-		log_msg("dir2i: path2i error");
+	if ((ret = ufs_path2i(dirpath, dirinode)) < 0) {
+		log_msg("ufs_dir2i: ufs_path2i error");
 		goto out;
 	}
 	if (!UFS_ISDIR(dirinode->i_mode)) {
@@ -581,32 +581,32 @@ int dir2i(const char *dirpath, struct m_inode *dirinode)
 	}
 	ret = 0;
 out:
-	log_msg("dir2i return %d", ret);
+	log_msg("ufs_dir2i return %d", ret);
 	return(ret);
 }
 
-int add_entry(struct m_inode *dir, const struct dir_entry *ent)
+int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
 	blkcnt_t dnum, znum;
-	char	buf[BLK_SIZE];
-	struct dir_entry *de;
+	char	buf[UFS_BLK_SIZE];
+	struct ufs_dir_entry *de;
 
-	log_msg("add_entry called, adding %s in %u",
+	log_msg("ufs_add_entry called, adding %s in %u",
 			(ent == NULL ? "NULL" : ent->de_name),
 			(unsigned int)dir->i_ino);
 	if (dir == NULL || !is_ivalid(dir->i_ino)) {
-		log_msg("add_entry: dirinode not valid");
+		log_msg("ufs_add_entry: dirinode not valid");
 		ret = -EINVAL;
 		goto out;
 	}
 	if (ent == NULL) {
-		log_msg("add_entry: ent is NULL");
+		log_msg("ufs_add_entry: ent is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
 	if (!UFS_ISDIR(dir->i_mode)) {
-		log_msg("add_entry: inode %u is not diectory",
+		log_msg("ufs_add_entry: inode %u is not diectory",
 				(unsigned int)dir->i_ino);
 		ret = -ENOTDIR;
 		goto out;
@@ -619,50 +619,50 @@ int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 	dnum = 0;
 	while (1) {
 		if ((znum = creat_zone(dir, dnum++)) == 0) {
-			log_msg("add_entry: creat_zone return 0 for %u",
+			log_msg("ufs_add_entry: creat_zone return 0 for %u",
 					(unsigned int)znum);
 			ret = -ENOSPC;
 			goto out;
 		}
-		if ((ret = rd_zone(znum, buf, sizeof(buf))) < 0) {
-			log_msg("add_entry: rd_zone error");
+		if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+			log_msg("ufs_add_entry: ufs_rd_zone error");
 			goto out;
 		}
-		for (de = (struct dir_entry *)buf, i = 0;
-				i < ENTRYNUM_PER_BLK; i++)
+		for (de = (struct ufs_dir_entry *)buf, i = 0;
+				i < UFS_ENTRYNUM_PER_BLK; i++)
 			if (de[i].de_inum == 0)
 				break;
-		if (i < ENTRYNUM_PER_BLK)
+		if (i < UFS_ENTRYNUM_PER_BLK)
 			break;
 	}
 	/* find a available entry in directory */
 	memcpy(&de[i], ent, sizeof(de[i]));
-	if ((ret = wr_zone(znum, buf, sizeof(buf))) < 0) {
-		log_msg("add_entry: wr_zone error");
+	if ((ret = ufs_wr_zone(znum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_add_entry: ufs_wr_zone error");
 		goto out;
 	}
 	/*
 	 * update parent directory's inode.
 	 */
 	dir->i_size += sizeof(de[i]);
-	if ((ret = wr_inode(dir)) < 0) {
-		log_msg("add_entry: wr_inode error");
+	if ((ret = ufs_wr_inode(dir)) < 0) {
+		log_msg("ufs_add_entry: ufs_wr_inode error");
 		goto out;
 	}
 	ret = 0;
 
 out:
-	log_msg("add_entry return %d", ret);
+	log_msg("ufs_add_entry return %d", ret);
 	return(ret);
 }
 
-int path2i(const char *path, struct m_inode *inode)
+int ufs_path2i(const char *path, struct ufs_minode *inode)
 {
-	struct dir_entry ent;
-	char	file[NAME_LEN + 1];
+	struct ufs_dir_entry ent;
+	char	file[UFS_NAME_LEN + 1];
 	int	i, start, ret;
 
-	log_msg("path2i called, path = %s", (path == NULL ? "NULL" :
+	log_msg("ufs_path2i called, path = %s", (path == NULL ? "NULL" :
 				path));
 	if (path == NULL) {
 		ret = -EINVAL;
@@ -672,9 +672,9 @@ int path2i(const char *path, struct m_inode *inode)
 		ret = -EINVAL;
 		goto out;
 	}
-	inode->i_ino = ROOT_INO;
-	if ((ret = rd_inode(ROOT_INO, (struct d_inode *)inode)) < 0) {
-		log_msg("path2i: rd_inode error");
+	inode->i_ino = UFS_ROOT_INO;
+	if ((ret = rufs_dinode(UFS_ROOT_INO, (struct ufs_dinode *)inode)) < 0) {
+		log_msg("ufs_path2i: rufs_dinode error");
 		goto out;
 	}
 
@@ -690,41 +690,41 @@ int path2i(const char *path, struct m_inode *inode)
 			break;
 		memcpy(file, path + start, i - start);
 		file[i - start] = 0;
-		if ((ret = find_entry(inode, file, &ent)) < 0) {
-			log_msg("path2i: find_entry error for %s", file);
+		if ((ret = ufs_find_entry(inode, file, &ent)) < 0) {
+			log_msg("ufs_path2i: ufs_find_entry error for %s", file);
 			goto out;
 		}
 		inode->i_ino = ent.de_inum;
-		ret = rd_inode(inode->i_ino, (struct d_inode *)inode);
+		ret = rufs_dinode(inode->i_ino, (struct ufs_dinode *)inode);
 		if (ret  < 0) {
-			log_msg("path2i: rd_inode error");
+			log_msg("ufs_path2i: rufs_dinode error");
 			goto out;
 		}
 	}
 	ret = 0;
 
 out:
-	log_msg("path2i return %d, inum = %u", ret,
+	log_msg("ufs_path2i return %d, inum = %u", ret,
 			(unsigned int)inode->i_ino);
 	return(ret);
 }
 
-int find_entry(struct m_inode *par, const char *file,
-		struct dir_entry *res)
+int ufs_find_entry(struct ufs_minode *par, const char *file,
+		struct ufs_dir_entry *res)
 {
 	off_t	i, j;
 	int	ret;
 	blkcnt_t dnum, znum;
-	char	buf[BLK_SIZE];
-	struct dir_entry *de;
+	char	buf[UFS_BLK_SIZE];
+	struct ufs_dir_entry *de;
 
-	log_msg("find_entry called");
+	log_msg("ufs_find_entry called");
 	if (par == NULL || file == NULL || res == NULL) {
-		log_msg("find_entry: arguments is NULL");
+		log_msg("ufs_find_entry: arguments is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
-	log_msg("find_entry: par->i_ino = %u, file = %s",
+	log_msg("ufs_find_entry: par->i_ino = %u, file = %s",
 			(unsigned int)par->i_ino, file);
 
 	if (!UFS_ISDIR(par->i_mode)) {
@@ -735,27 +735,27 @@ int find_entry(struct m_inode *par, const char *file,
 	i = 0;
 	dnum = 0;
 	while (i < par->i_size) {
-		if ((znum = dnum2znum(par, dnum++)) == 0) {
-			log_msg("find_entry: dnum2znum return "
+		if ((znum = ufs_dnum2znum(par, dnum++)) == 0) {
+			log_msg("ufs_find_entry: ufs_dnum2znum return "
 					"zero for data %u", (unsigned int)dnum);
 			break;
 		}
-		if ((ret = rd_zone(znum, buf, sizeof(buf))) < 0) {
-			log_msg("find_entry: rd_zone error for data"
+		if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+			log_msg("ufs_find_entry: ufs_rd_zone error for data"
 					" %u", (unsigned int)znum);
 			goto out;
 		}
-		for (de = (struct dir_entry *)buf, j = 0;
-				j < ENTRYNUM_PER_BLK &&
+		for (de = (struct ufs_dir_entry *)buf, j = 0;
+				j < UFS_ENTRYNUM_PER_BLK &&
 				i < par->i_size; j++) {
 			if (de[j].de_inum == 0)
 				continue;
 			i += sizeof(*de);
-			if (strncmp(de[j].de_name, file, NAME_LEN) == 0) {
+			if (strncmp(de[j].de_name, file, UFS_NAME_LEN) == 0) {
 				res->de_inum = de[j].de_inum;
 				strncpy(res->de_name, de[j].de_name,
-						NAME_LEN);
-				res->de_name[NAME_LEN] = 0;
+						UFS_NAME_LEN);
+				res->de_name[UFS_NAME_LEN] = 0;
 				ret = 0;
 				goto out;
 			}
@@ -763,14 +763,14 @@ int find_entry(struct m_inode *par, const char *file,
 	}
 	ret = -ENOENT;
 out:
-	log_msg("find_entry return %d", ret);
+	log_msg("ufs_find_entry return %d", ret);
 	return(ret);
 }
 /*
  * convert file mode and permission from ufs to
  * UNIX.
  */
-mode_t conv_fmode(mode_t mode)
+mode_t ufs_conv_fmode(mode_t mode)
 {
 	mode_t ret = mode & 0x1ff;
 	if (UFS_ISREG(mode))

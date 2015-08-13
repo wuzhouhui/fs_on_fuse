@@ -16,24 +16,24 @@
 #include <libgen.h>
 
 /* the max and min size of disk file, in megabyte */
-#define DISK_MAX_SIZE	32
-#define DISK_MIN_SIZE	1
+#define UFS_DISK_MAX_SIZE	32
+#define UFS_DISK_MIN_SIZE	1
 /* the size of block */
-#define BLK_SIZE_SHIFT	9
-#define BLK_SIZE	(1 << BLK_SIZE_SHIFT)
-#define MAGIC		0x7594
+#define UFS_BLK_SIZE_SHIFT	9
+#define UFS_BLK_SIZE	(1 << UFS_BLK_SIZE_SHIFT)
+#define UFS_MAGIC		0x7594
 /* max length of file name, null terminator excluded */
-#define NAME_LEN        27
+#define UFS_NAME_LEN        27
 /* max length of path, null terminator excluded */
-#define PATH_LEN	1024
+#define UFS_PATH_LEN	1024
 /* # inode per block */
-#define INUM_PER_BLK	(BLK_SIZE / sizeof(struct d_inode))
+#define UFS_INUM_PER_BLK	(UFS_BLK_SIZE / sizeof(struct ufs_dinode))
 /* # zone nubmer per block */
-#define ZNUM_PER_BLK	(BLK_SIZE / sizeof(blkcnt_t))
+#define UFS_ZNUM_PER_BLK	(UFS_BLK_SIZE / sizeof(blkcnt_t))
 
-#define ENTRYNUM_PER_BLK	(BLK_SIZE / sizeof(struct dir_entry))
+#define UFS_ENTRYNUM_PER_BLK	(UFS_BLK_SIZE / sizeof(struct ufs_dir_entry))
 
-#define ROOT_INO	1
+#define UFS_ROOT_INO	1
 
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
@@ -43,7 +43,7 @@
 #define UFS_O_WRONLY	0x1
 
 /* super block in disk */
-struct d_super_block {
+struct ufs_dsuper_block {
 	/* magic number of filesystem */
 	unsigned short s_magic;
 	/* # block that inode map used */
@@ -59,7 +59,7 @@ struct d_super_block {
 };
 
 /* super block in memory */
-struct m_super_block {
+struct ufs_msuper_block {
 	/* magic number of filesystem */
 	unsigned short s_magic;
 	/* # block that inode map used */
@@ -93,7 +93,7 @@ struct m_super_block {
 };
 
 /* inode in disk */
-struct d_inode {
+struct ufs_dinode {
 	/* # of links into this inode */
 	nlink_t	i_nlink;
 	/* file type and permission */
@@ -119,7 +119,7 @@ struct d_inode {
 };
 
 /* inode in memrory */
-struct m_inode {
+struct ufs_minode {
 	/* # of links into this inode */
 	nlink_t	i_nlink;
 	/* file type and permission */
@@ -148,42 +148,42 @@ struct m_inode {
 };
 
 /* directory entry */
-struct dir_entry {
+struct ufs_dir_entry {
 	ino_t	de_inum;
-	char	de_name[NAME_LEN + 1];
+	char	de_name[UFS_NAME_LEN + 1];
 };
 
 #define MAX_FILE_SIZE	(8259 << 10)
 
 struct file {
-	struct m_inode f_inode;
+	struct ufs_minode f_inode;
 	mode_t	f_mode;	
 	int	f_flag;
 	int	f_count;
 	off_t	f_pos;
 };
 #define OPEN_MAX	64
-extern struct file open_files[OPEN_MAX];
+extern struct file ufs_open_files[OPEN_MAX];
 
 
-int read_sb(const char *);
-int add_entry(struct m_inode *, const struct dir_entry *);
-ino_t new_inode(void);
-int free_inode(ino_t);
-int rd_inode(ino_t, struct d_inode *);
-int wr_inode(const struct m_inode *);
-blkcnt_t new_zone(void);
-int free_zone(blkcnt_t);
-int rd_zone(blkcnt_t, void *, size_t);
-int wr_zone(blkcnt_t, const void *, size_t);
-blkcnt_t inum2bnum(ino_t inum);
-blkcnt_t znum2bnum(blkcnt_t);
-blkcnt_t dnum2znum(struct m_inode *, blkcnt_t);
-int rd_blk(blkcnt_t, void *, size_t);
-int wr_blk(blkcnt_t, const void *, size_t);
-int path2i(const char *, struct m_inode *);
-int dir2i(const char *, struct m_inode *);
-int find_entry(struct m_inode *, const char *, struct dir_entry *);
-mode_t conv_fmode(mode_t);
+int ufs_read_sb(const char *);
+int ufs_add_entry(struct ufs_minode *, const struct ufs_dir_entry *);
+ino_t ufs_new_inode(void);
+int ufs_free_inode(ino_t);
+int rufs_dinode(ino_t, struct ufs_dinode *);
+int ufs_wr_inode(const struct ufs_minode *);
+blkcnt_t ufs_new_zone(void);
+int ufs_free_zone(blkcnt_t);
+int ufs_rd_zone(blkcnt_t, void *, size_t);
+int ufs_wr_zone(blkcnt_t, const void *, size_t);
+blkcnt_t ufs_inum2bnum(ino_t inum);
+blkcnt_t ufs_znum2bnum(blkcnt_t);
+blkcnt_t ufs_dnum2znum(struct ufs_minode *, blkcnt_t);
+int ufs_rd_blk(blkcnt_t, void *, size_t);
+int ufs_wr_blk(blkcnt_t, const void *, size_t);
+int ufs_path2i(const char *, struct ufs_minode *);
+int ufs_dir2i(const char *, struct ufs_minode *);
+int ufs_find_entry(struct ufs_minode *, const char *, struct ufs_dir_entry *);
+mode_t ufs_conv_fmode(mode_t);
 
 #endif /* end of _UFS_H */

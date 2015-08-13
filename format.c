@@ -13,10 +13,10 @@ int main(int argc, char *argv[])
 	off_t	offset;
 	size_t	size_mb;
 	struct stat stat;
-	struct d_super_block sb;
-	static char buf[BLK_SIZE];
-	struct d_inode root;
-	struct dir_entry ent;
+	struct ufs_dsuper_block sb;
+	static char buf[UFS_BLK_SIZE];
+	struct ufs_dinode root;
+	struct ufs_dir_entry ent;
 
 	if (argc != 2)
 		err_quit("usage: ./format <diskfile>");
@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
 	if (!S_ISREG(stat.st_mode))
 		err_quit("%s is not a regular file", argv[1]);
 	size_mb = stat.st_size >> 20;
-	if (size_mb < DISK_MIN_SIZE || size_mb > DISK_MAX_SIZE)
+	if (size_mb < UFS_DISK_MIN_SIZE || size_mb > UFS_DISK_MAX_SIZE)
 		err_quit("the size of %s is inappropriate", argv[1]);
 
-	sb.s_magic = MAGIC;
+	sb.s_magic = UFS_MAGIC;
 	if (size_mb <= 10) {
 		sb.s_zmap_blocks = 5;
 		sb.s_inode_blocks = 256;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	}
 	sb.s_imap_blocks = 1;
 	/* minus one for super block */
-	sb.s_zone_blocks = (stat.st_size >> BLK_SIZE_SHIFT) - 1
+	sb.s_zone_blocks = (stat.st_size >> UFS_BLK_SIZE_SHIFT) - 1
 		- sb.s_zmap_blocks - sb.s_imap_blocks - sb.s_inode_blocks;
 	sb.s_max_size = MAX_FILE_SIZE;
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
 	root.i_mode = 0x3ff;
 	root.i_uid = getuid();
 	root.i_gid = getgid();
-	root.i_size = sizeof(struct dir_entry) * 2;
+	root.i_size = sizeof(struct ufs_dir_entry) * 2;
 	memset(root.i_zones, 0, sizeof(root.i_zones));
 	root.i_zones[0] = 1;
 	if (write(fd, &root, sizeof(root)) != sizeof(root))
@@ -89,13 +89,13 @@ int main(int argc, char *argv[])
 
 	/* write directory entry of root */
 	memset(buf, 0, sizeof(buf));
-	ent.de_inum = ROOT_INO;
+	ent.de_inum = UFS_ROOT_INO;
 	strcpy(ent.de_name, ".");
 	memcpy(buf, &ent, sizeof(ent));
 	strcpy(ent.de_name, "..");
 	memcpy(buf + sizeof(ent), &ent, sizeof(ent));
 	offset = (1 + sb.s_imap_blocks + sb.s_zmap_blocks +
-			sb.s_inode_blocks) << BLK_SIZE_SHIFT;
+			sb.s_inode_blocks) << UFS_BLK_SIZE_SHIFT;
 	if (pwrite(fd, buf, sizeof(buf), offset) != sizeof(buf))
 		err_sys("pwrite error");
 

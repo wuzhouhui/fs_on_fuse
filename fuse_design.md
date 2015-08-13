@@ -7,14 +7,14 @@
 
 ## 1.2 常量说明
 
-	#define MAGIC		0x7594	/* 文件系统的标识 */
-	#define NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
-	#define PATH_LEN	1024	/* 路径名最大长度, 不包括结尾的空字符 */
-	#define BLK_SIZE        512	/* 磁盘块大小 */
+	#define UFS_MAGIC		0x7594	/* 文件系统的标识 */
+	#define UFS_NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
+	#define UFS_PATH_LEN	1024	/* 路径名最大长度, 不包括结尾的空字符 */
+	#define UFS_BLK_SIZE        512	/* 磁盘块大小 */
 	#define OPEN_MAX        64	/* 同时打开文件数最大值 */
-	#define DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
-	#define DISK_MIN_SIZE	1	/* 磁盘文件最小值 (MB) */
-	#define ROOT_INO	1	/* 根目录的 i 结点号 */
+	#define UFS_DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
+	#define UFS_DISK_MIN_SIZE	1	/* 磁盘文件最小值 (MB) */
+	#define UFS_ROOT_INO	1	/* 根目录的 i 结点号 */
 
 ## 1.3 主要数据结构
 
@@ -40,9 +40,9 @@
 
 	/*
 	 * super block in disk.
-	 * sizeof(struct d_super_block) <= 512
+	 * sizeof(struct ufs_dsuper_block) <= 512
 	 */
-	struct d_super_block {
+	struct ufs_dsuper_block {
 		unsigned short s_magic; /* 文件系统魔数 */
 		blkcnt_t s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
 		blkcnt_t s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
@@ -52,7 +52,7 @@
 	};
 	
 	/* super block in memeory */
-	struct m_super_block {
+	struct ufs_msuper_block {
                 unsigned short s_magic; /* 文件系统魔数 */
 		blkcnt_t s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
 		blkcnt_t s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
@@ -83,7 +83,7 @@
 其他的与 i 结点位图相同.
 
 之所以分成 "磁盘上的超级块" 与 "内存中的超级块" 是为了兼顾使用的方便与信息的最
-小化. `struct m_super_block` 结构中多出来的信息可以通过 "磁盘上的超级块" 计算得到,
+小化. `struct ufs_msuper_block` 结构中多出来的信息可以通过 "磁盘上的超级块" 计算得到,
 但如果每次使用时都重新计算比较浪费时间, 所以将这些辅助信息事先计算并存储起来.
 
 为了分辨出 "所有 i 结点都被占用" 与 "所有逻辑块都被占用" 的情况, i 结点位图与
@@ -94,9 +94,9 @@
 
 	/*
 	 * 磁盘上的 i 结点.
-	 * sizeof(struct d_inode) <= BLK_SIZE
+	 * sizeof(struct ufs_dinode) <= UFS_BLK_SIZE
 	 */
-	struct d_inode {
+	struct ufs_dinode {
 		nlink_t	i_nlink;	/* 链接数 */
 		mode_t	i_mode;		/* 文件类型和访问权限 */
 		off_t	i_size;		/* 文件长度, 以字节计 */
@@ -116,7 +116,7 @@
 	};
 
 	/* 内存中的 i 结点. */
-	struct m_inode {
+	struct ufs_minode {
 		nlink_t	i_nlink;	/* 链接数 */
 		mode_t	i_mode;		/* 文件类型和访问权限 */
 		off_t	i_size;		/* 文件长度, 以字节计 */
@@ -153,17 +153,17 @@
 
 如果存放逻辑块号的存储单元的值为 0, 说明该单元空闲.
 很容易可以算出一个本文件系统在 32 位平台上所能支持的最大文件为
-`(6 + 512/4 + (512/4) * (512/4)) * 512 = 8259 kB`. `struct m_inode`
+`(6 + 512/4 + (512/4) * (512/4)) * 512 = 8259 kB`. `struct ufs_minode`
 结构中多出来的信息一方面是为了避免重复计算, 另一方面是为完成某些功能, 例如当 i 结点 
 的链接数为 0 且引用次数为 0 时, 才可删除文件并回收资源, "引用次数" 指的是
-打开文件表 `open_files` 中指向该 i 结点的项数.
+打开文件表 `ufs_open_files` 中指向该 i 结点的项数.
 
 ### 1.3.4 目录项
 
-	/* sizeof(struct dir_entry) <= BLK_SIZE */
-	struct dir_entry {
+	/* sizeof(struct ufs_dir_entry) <= UFS_BLK_SIZE */
+	struct ufs_dir_entry {
 		ino_t	de_inum;		/* 文件的 i 结点号 */
-		char	de_name[NAME_LEN + 1];	/* 文件名, 以空字符结尾 */
+		char	de_name[UFS_NAME_LEN + 1];	/* 文件名, 以空字符结尾 */
 	};
 
 每个目录至少含有 2 个目录项: `.` 与 `..`, 文件系统格式化后只含有一个根目录,
@@ -172,16 +172,16 @@
 ### 1.3.5 打开文件表
 
 	struct file {
-		struct m_inode f_inode;		/* 与该文件对应的 i 结点 */
+		struct ufs_minode f_inode;		/* 与该文件对应的 i 结点 */
 		mode_t	f_mode;			/* 文件类型与访问权限 */
 		int	f_flag;			/* 文件打开和控制标志 */
 		int	f_count;		/* 对应文件句柄引用次数 */
 		off_t	f_pos;			/* 当前文件偏移量 */
 	};
 	
-	struct file open_files[OPEN_MAX]; /* 打开文件表 */
+	struct file ufs_open_files[OPEN_MAX]; /* 打开文件表 */
 
-`open_files` 是文件系统存储打开文件信息的表格, 打开文件在表格中的索引将作
+`ufs_open_files` 是文件系统存储打开文件信息的表格, 打开文件在表格中的索引将作
 为文件描述符使用. `f_mode` 字段的含义与 i 结点的 `i_mode` 字段相同. 
 `f_flag` 的标志包括:  
 * 文件访问模式:
@@ -214,11 +214,11 @@
 * 注: 本文提到的磁盘都是指利用普通文件模拟的磁盘, "普通文件" 来源于外部
 文件系统 (例如 Ext4), 磁盘作为文件系统的私有数据使用. 一个文件或作为
 磁盘使用的条件是: 
-  + 大小在 1 MB 到 `DISK_MAX_SIZE` MB 之间
+  + 大小在 1 MB 到 `UFS_DISK_MAX_SIZE` MB 之间
   + 是普通文件
   + 用户可读写
 
-### `int read_sb(const char *diskname)`
+### `int ufs_read_sb(const char *diskname)`
 * 功能: 从磁盘上读超级块
 * 输入参数:
   + `diskname`: 磁盘文件名
@@ -226,12 +226,12 @@
 * 注: 超级块作为文件系统的私有数据使用, 所以未在函数签名中显式给出. 
 磁盘文件必须曾被 `format` 程序格式化过.
 
-### `ino_t new_inode(void)`
+### `ino_t ufs_new_inode(void)`
 * 功能: 获取一个空闲的 i 结点
 * 返回值: 若找到一个空闲的 i 结点, 返回它的 i 结点号; 否则返回 0
 * 注: i 结点号从 1 开始
 
-### `int free_inode(ino_t inum)`
+### `int ufs_free_inode(ino_t inum)`
 * 功能: 释放一个指定的 i 结点
 * 输入参数:
   + `inum`: 将被释放的 i 结点的编号
@@ -239,7 +239,7 @@
   + i 节点号超出范围 返回 `-EINVAL`;
   + i 节点原来就处理空闲状态, 返回  `-EAGAIN`;
 
-### `int rd_inode(ino_t inum, struct d_inode *inode)`
+### `int rufs_dinode(ino_t inum, struct ufs_dinode *inode)`
 * 功能: 读取指定的 i 结点
 * 输入参数:
   + `inum`: 被读取的 i 结点的编号
@@ -249,7 +249,7 @@
   + `inode` 为空, 返回 `-EINVAL`;
   + 被调用函数返回错误值, 将错误值原样返回.
 
-### `int wr_inode(struct m_inode *inode)`
+### `int ufs_wr_inode(struct ufs_minode *inode)`
 * 功能: 将指定的 i 结点写回磁盘
 * 输入参数:
   + `inode`: 需写回磁盘的 i 结点
@@ -257,14 +257,14 @@
   + `-EINVAL`: 输入参数不合法, 包括 `inode` 为空, i 结点号无效;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `blkcnt_t new_zone(void)`
+### `blkcnt_t ufs_new_zone(void)`
 * 功能: 获取一块空闲的逻辑块
 * 返回值: 若找到一块空闲的逻辑块, 返回它的逻辑块号; 否则返回 0
 * 注: 逻辑块用于存储文件数据 (不包括元数据), 是针对于文件系统的; 而磁盘上
 的每 512 字节为一个磁盘块, 磁盘块中可以存储任意的内容 (无论是 i 结点, 还是
 文件数据)
 
-### `int free_zone(blkcnt_t zone_num)`
+### `int ufs_free_zone(blkcnt_t zone_num)`
 * 功能: 释放一个指定的逻辑块
 * 输入参数: 
   + `zone_num`: 将被释放的逻辑块块号
@@ -272,7 +272,7 @@
   + `zone_num` 超出范围, 返回 `-EINVAL`;
   + `zone_num` 原来就处于已释放状态, 返回 `-EAGAIN`;
 
-### `int rd_zone(blkcnt_t zone_num, void *buf, size_t size)`
+### `int ufs_rd_zone(blkcnt_t zone_num, void *buf, size_t size)`
 * 功能: 读一个指定的逻辑块
 * 输入参数: 
   + `zone_num` :将被读取的逻辑块块号
@@ -284,7 +284,7 @@
   + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int wr_zone(blkcnt_t zone_num, void *buf, size_t size)`
+### `int ufs_wr_zone(blkcnt_t zone_num, void *buf, size_t size)`
 * 功能: 将一个指定的逻辑块写入磁盘
 * 输入参数:
   + `zone_num`: 逻辑块块号
@@ -312,7 +312,7 @@
 * 返回值: 编号为 `zone_num` 的逻辑块所在的磁盘块块号. 若 `zone_num`
 无效则返回 0.
 
-### `blkcnt_t datanum2zonenum(struct m_inode *inode, blkcnt_t data_num)`
+### `blkcnt_t datanum2zonenum(struct ufs_minode *inode, blkcnt_t data_num)`
 * 功能: 计算指定的数据块所在逻辑块号
 * 输入参数:
   + `inode`: 数据块所在的 i 结点点指针.
@@ -321,7 +321,7 @@
 * 注: "数据块" 是相对于单个文件的, 从 1 开始编号, 数据块号最大值
 受限于 i 结点所能支持的最大文件大小.
 
-### `int rd_blk(blkcnt_t blk_num, void *buf, size_t size)`
+### `int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)`
 * 功能: 从磁盘上读一块指定的磁盘块
 * 输入参数:
   + `blk_num`: 将被读的磁盘块块号
@@ -335,7 +335,7 @@
 * 注: 磁盘文件上的每 512 字节都算作一个磁盘块, 而不管该磁盘块存放的是什么
 内容, 下同.
 
-### `int wr_blk(blkcnt_t blk_num, void *buf, size_t size)`
+### `int ufs_wr_blk(blkcnt_t blk_num, void *buf, size_t size)`
 * 功能: 写一块指定的磁盘块
 * 输入参数:
   + `blk_num`: 将被写入的磁盘块的块号
@@ -347,7 +347,7 @@
   + `size` 不等于磁盘块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int path2i(const char *path, struct m_inode *inode)`
+### `int ufs_path2i(const char *path, struct ufs_minode *inode)`
 * 功能: 将路径名映射为 i 结点
 * 输入参数:
   + `path`: 被映射的路径名;
@@ -357,7 +357,7 @@
   + `inode` 为空, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int dir2i(const char *dirpath, struct m_inode *dirinode)`
+### `int ufs_dir2i(const char *dirpath, struct ufs_minode *dirinode)`
 * 功能: 将目录的路径名映射为对应的 i 结点;
 * 输入参数: 
   + `dirpath`: 目录的路径名;
@@ -366,7 +366,7 @@
   + 路径引用的文件不是一个目录文件, 返回 `-ENOTDIR`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int find_entry(struct m_inode *parent, const char *filename, struct dir_entry *ent)`
+### `int ufs_find_entry(struct ufs_minode *parent, const char *filename, struct ufs_dir_entry *ent)`
 * 功能: 在指定的目录中查找具有指定文件名的文件
 * 输入参数:
   + `parent`: 查找的位置, 必须是目录;
@@ -378,7 +378,7 @@
   + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int add_entry(struct m_inode *dir, const struct dir_entry *entry)`
+### `int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *entry)`
 * 功能: 在指定的目录中新增一个目录项
 * 输入参数:
   + `dir`: 在该目录中新增一个目录项;

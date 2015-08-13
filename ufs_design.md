@@ -19,22 +19,22 @@
   + 函数过程:
     - 如果 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
     - 若 `path` 超过最大路径长度, 返回 `-ENAMETOOLONG`;
-    - 在 `open_files` 表中查找空闲项, 若无空闲项, 返回 `-ENFILE`; 若找到,
+    - 在 `ufs_open_files` 表中查找空闲项, 若无空闲项, 返回 `-ENFILE`; 若找到,
       记空闲项的索引为 `fd`;
     - 调用 `parpath = dirname(path)` 与 `base = basename(path)`, 获取前缀路径 
       与 新文件名;
-    - 调用 `dir2i(parpath, parinode)` 获取父目录的 i 结点, 若函数出错,
+    - 调用 `ufs_dir2i(parpath, parinode)` 获取父目录的 i 结点, 若函数出错,
       原样返回错误值;
-    - 调用 `find_entry(parinode, base, entry)`, 在父目录查找是否已存在新文件
+    - 调用 `ufs_find_entry(parinode, base, entry)`, 在父目录查找是否已存在新文件
       的目录项;
-    - 若 `find_entry` 的返回值为 0, 返回 `-EEXIST`; 若返回值是除了 `-ENOENT`
+    - 若 `ufs_find_entry` 的返回值为 0, 返回 `-EEXIST`; 若返回值是除了 `-ENOENT`
       之外的其他值, 原样返回错误值.
-    - 调用 `inum = new_inode()` 获取一个空闲的 i 结点, 若返回 值 为0, 返回 `-ENOSPC`;
-    - 初始化一个 i 结点 `inode`, 将它的 i 结点号设置为 `inum`, 并调用 `wr_inode(inode)`,
-      若 `wr_inode` 出错, 原样返回错误值.
-    - 初始化一个新文件的目录项 `entry`, 调用 `add_entry(parinode, entry)`, 在父目录中 
-      添加该目录项, 若 `add_entry` 出错, 原样返回错误值
-    - 用新文件的 i 结点 `inode` 初始化 `open_files[fd]`;
+    - 调用 `inum = ufs_new_inode()` 获取一个空闲的 i 结点, 若返回 值 为0, 返回 `-ENOSPC`;
+    - 初始化一个 i 结点 `inode`, 将它的 i 结点号设置为 `inum`, 并调用 `ufs_wr_inode(inode)`,
+      若 `ufs_wr_inode` 出错, 原样返回错误值.
+    - 初始化一个新文件的目录项 `entry`, 调用 `ufs_add_entry(parinode, entry)`, 在父目录中 
+      添加该目录项, 若 `ufs_add_entry` 出错, 原样返回错误值
+    - 用新文件的 i 结点 `inode` 初始化 `ufs_open_files[fd]`;
     - 在即将返回时, 如果前面发生了错误, 而申请过 i 结点, 则释放申请到的
       i 结点.
   + 注: `creat(const char *path, mode_t mode)` 等价于
@@ -69,18 +69,18 @@
     - 若 `path` 为 `NULL`, 或长度为 0, 返回 `-EINVAL`;
     - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
     - 从 `path` 中分离出前缀目录与新目录名, `dir = dirname(path); base = basename(path);`
-    - 调用 `dir2i(dir, parent)`, 若调用出错, 原样返回错误值;
-    - 调用 `find_entry(parent, base)`, 在父目录 `parent` 中查找新目录名 `base`. 若函数返回
+    - 调用 `ufs_dir2i(dir, parent)`, 若调用出错, 原样返回错误值;
+    - 调用 `ufs_find_entry(parent, base)`, 在父目录 `parent` 中查找新目录名 `base`. 若函数返回
       值是 `0`, 返回 `-EEXIST`; 若返回值不是 `-ENOENT`, 原样返回错误值.
-    - 调用 `new_inode()` 为新目录申请一个 i 结点号, 若返回值为 0, 返回 `-ENOSPC`;
-    - 初始化新目录的 i 结点 `dirinode`, 调用 `add_entry(dirinode, entry)`, 为新目录添加
+    - 调用 `ufs_new_inode()` 为新目录申请一个 i 结点号, 若返回值为 0, 返回 `-ENOSPC`;
+    - 初始化新目录的 i 结点 `dirinode`, 调用 `ufs_add_entry(dirinode, entry)`, 为新目录添加
       两个目录项 `.` 与 `..`, 若出错, 原样返回错误值;
-    - 调用 `wr_inode(dirinode)` 将新目录的 i 结点写盘, 若出错, 原样返回错误值;
-    - 初始化一个新目录的目录项, 调用 `add_entry(parent, entry)`, 在父目录中新增一个目录项,
-      若出错, 原样返回错误值, 更新父目录的 链接数 `i_nlink`,  调用 `wr_inode(parent)` 将父
+    - 调用 `ufs_wr_inode(dirinode)` 将新目录的 i 结点写盘, 若出错, 原样返回错误值;
+    - 初始化一个新目录的目录项, 调用 `ufs_add_entry(parent, entry)`, 在父目录中新增一个目录项,
+      若出错, 原样返回错误值, 更新父目录的 链接数 `i_nlink`,  调用 `ufs_wr_inode(parent)` 将父
       目录的 i 结点写盘; 若出错, 原样返回错误值;
     - 在函数即将返回前, 检查前面的步骤是否有错误发生, 若有, 且已经为新目录申请了 i 结点, 则将
-      新申请的 i 结点释放 (`free_inode(newdirinode->i_ino)`;
+      新申请的 i 结点释放 (`ufs_free_inode(newdirinode->i_ino)`;
     - 返回.
 
 * `int readdir(const char *dirpath)`
@@ -98,11 +98,11 @@
   + 函数过程 
     - 若 `dirpath` 为空或长度为0, 返回 `-EINVAL`;
     - 若 `dirpath` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
-    - 调用 `dir2i(dirpath, dirinode)`, 若返回出错, 原样返回错误值;
-    - 循环读取 `dirinode` 所有的数据块, 对数据块 `dnum`, 调用 `dnum2znum`, 若
+    - 调用 `ufs_dir2i(dirpath, dirinode)`, 若返回出错, 原样返回错误值;
+    - 循环读取 `dirinode` 所有的数据块, 对数据块 `dnum`, 调用 `ufs_dnum2znum`, 若
       返回的逻辑块号 `znum` 为 0, 则递增 `dnum`, 继续循环;
-    - 调用 `rd_zone(znum, buf)`, 从磁盘上读取逻辑块到缓冲区 `buf` 中; 若出错, 原样返回错误值;
-    - 将 `buf` 当作 `struct dir_entry` 的数组来使用; 若读取到一个 `buf[i].de_inum` 不为0 的
+    - 调用 `ufs_rd_zone(znum, buf)`, 从磁盘上读取逻辑块到缓冲区 `buf` 中; 若出错, 原样返回错误值;
+    - 将 `buf` 当作 `struct ufs_dir_entry` 的数组来使用; 若读取到一个 `buf[i].de_inum` 不为0 的
       元素, 则输出目录项, 并递增读取的到目录项项数.
     - 若所有的目录项都已读取完毕, 则退出循环.
     - 若所有的目录项都还没有读完, 但是数据块已经读取完了, 说明程序有错, 返回 `-EIO`
