@@ -1,0 +1,20 @@
+*.c
+mnt
+creat.c
+a.out
+a.c
+*.pdf
+tags
+*.md~
+disk
+*tmp*
+*.o
+.?*
+
+### Makefile ###
+a.out
+creat
+format
+fuse培训要求.pdf
+size
+ufs
