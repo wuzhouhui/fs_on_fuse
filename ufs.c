@@ -6,7 +6,7 @@
 /* errorlog.c needes it */
 int log_to_stderr;
 
-struct file ufs_open_files[OPEN_MAX];
+struct ufs_file ufs_open_files[OPEN_MAX];
 /*
  * just a test function
  static void pr_sb(const struct ufs_msuper_block *sb)
@@ -427,6 +427,7 @@ struct fuse_operations ufs_oper = {
 	.open		= ufs_open,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
+	.unlink		= ufs_unlink,
 };
 
 int main(int argc, char *argv[])

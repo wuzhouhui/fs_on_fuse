@@ -107,3 +107,28 @@
     - 若所有的目录项都已读取完毕, 则退出循环.
     - 若所有的目录项都还没有读完, 但是数据块已经读取完了, 说明程序有错, 返回 `-EIO`
     - 返回.
+* `int unlink(const char *path)`
+  + 功能: 删除一个文件
+  + 输入参数:
+    - `path`: 文件的路径;
+  + 返回值:
+    - 成功返回 0;
+    - `-EINVAL`: 路径为空, 或长度为 0;
+    - `-EACCESS`: 对文件的父目录无写权限, 或对路径中的目录无搜索权限;
+    - `-EISDIR`: 路径名引用的是目录文件;
+    - `-ENAMETOOLONG`: 路径名过长;
+    - `-ENOENT`: 文件不存在, 或路径中的某个目录不存在;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件;
+  + 函数过程:
+    - 若 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
+    - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
+    - 调用 `dir = dirname(path)` 与 `file = basename(path)` 获取路径中的目录中的目录名,
+      与 文件名;
+    - 调用 `ufs_dir2i(dir, parinode)` 获取父目录的的 i 结点, 若函数出错, 原样返回错误值;
+    - 调用 `ufs_rm_entry(parinode, entry)`, 从父目录中删除一个目录项, 若函数出错, 原样返回错误值.
+    - 调用 `ufs_wr_inode(parinode)` 将父目录 i 结点写盘;
+    - 调用 `ufs_rd_inode(entry.de_inum, inode)`, 获取将被删除的文件的 i 结点, 若函数出错, 原样返回错误值;
+    - 为 `inode.i_nlink` 减一, 减 1 后不为零, 调用 `ufs_wr_inode(inode)` 将 i 结点写盘; 若为 0, 调用 
+      `ufs_truncate(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
+      i 结点.
+    - 返回

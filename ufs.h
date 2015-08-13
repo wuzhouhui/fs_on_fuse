@@ -155,7 +155,7 @@ struct ufs_dir_entry {
 
 #define MAX_FILE_SIZE	(8259 << 10)
 
-struct file {
+struct ufs_file {
 	struct ufs_minode f_inode;
 	mode_t	f_mode;	
 	int	f_flag;
@@ -163,14 +163,14 @@ struct file {
 	off_t	f_pos;
 };
 #define OPEN_MAX	64
-extern struct file ufs_open_files[OPEN_MAX];
+extern struct ufs_file ufs_open_files[OPEN_MAX];
 
 
 int ufs_read_sb(const char *);
 int ufs_add_entry(struct ufs_minode *, const struct ufs_dir_entry *);
 ino_t ufs_new_inode(void);
 int ufs_free_inode(ino_t);
-int rufs_dinode(ino_t, struct ufs_dinode *);
+int ufs_rd_inode(ino_t, struct ufs_dinode *);
 int ufs_wr_inode(const struct ufs_minode *);
 blkcnt_t ufs_new_zone(void);
 int ufs_free_zone(blkcnt_t);

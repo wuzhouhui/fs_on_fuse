@@ -128,32 +128,32 @@ out:
 	return(ret);
 }
 
-int rufs_dinode(ino_t inum, struct ufs_dinode *inode)
+int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)
 {
 	int	ret;
 	blkcnt_t bnum;
 	char	buf[UFS_BLK_SIZE];
 
-	log_msg("rufs_dinode called, inode num = %u", (unsigned int)inum);
+	log_msg("ufs_rd_inode called, inode num = %u", (unsigned int)inum);
 	if (inode == NULL) {
 		ret = -EINVAL;
-		log_msg("rufs_dinode: inode is NULL");
+		log_msg("ufs_rd_inode: inode is NULL");
 		goto out;
 	}
 	if (!is_ivalid(inum)) {
 		ret = -EINVAL;
-		log_msg("rufs_dinode: inode number %u out of range",
+		log_msg("ufs_rd_inode: inode number %u out of range",
 				(unsigned int)inum);
 		goto out;
 	}
 	if ((bnum = ufs_inum2bnum(inum)) == 0) {
 		ret = -EINVAL;
-		log_msg("rufs_dinode: block number of inode %u is zero",
+		log_msg("ufs_rd_inode: block number of inode %u is zero",
 				(unsigned int)inum);
 		goto out;
 	}
 	if ((ret = ufs_rd_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("rufs_dinode: ufs_rd_blk error for block %u",
+		log_msg("ufs_rd_inode: ufs_rd_blk error for block %u",
 				(unsigned int)bnum);
 		goto out;
 	}
@@ -161,7 +161,7 @@ int rufs_dinode(ino_t inum, struct ufs_dinode *inode)
 	*inode = ((struct ufs_dinode *)buf)[(inum - 1) % UFS_INUM_PER_BLK];
 	ret = 0;
 out:
-	log_msg("rufs_dinode return %d", ret);
+	log_msg("ufs_rd_inode return %d", ret);
 	return(ret);
 }
 
@@ -673,8 +673,8 @@ int ufs_path2i(const char *path, struct ufs_minode *inode)
 		goto out;
 	}
 	inode->i_ino = UFS_ROOT_INO;
-	if ((ret = rufs_dinode(UFS_ROOT_INO, (struct ufs_dinode *)inode)) < 0) {
-		log_msg("ufs_path2i: rufs_dinode error");
+	if ((ret = ufs_rd_inode(UFS_ROOT_INO, (struct ufs_dinode *)inode)) < 0) {
+		log_msg("ufs_path2i: ufs_rd_inode error");
 		goto out;
 	}
 
@@ -695,9 +695,9 @@ int ufs_path2i(const char *path, struct ufs_minode *inode)
 			goto out;
 		}
 		inode->i_ino = ent.de_inum;
-		ret = rufs_dinode(inode->i_ino, (struct ufs_dinode *)inode);
+		ret = ufs_rd_inode(inode->i_ino, (struct ufs_dinode *)inode);
 		if (ret  < 0) {
-			log_msg("ufs_path2i: rufs_dinode error");
+			log_msg("ufs_path2i: ufs_rd_inode error");
 			goto out;
 		}
 	}

@@ -239,7 +239,7 @@
   + i 节点号超出范围 返回 `-EINVAL`;
   + i 节点原来就处理空闲状态, 返回  `-EAGAIN`;
 
-### `int rufs_dinode(ino_t inum, struct ufs_dinode *inode)`
+### `int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)`
 * 功能: 读取指定的 i 结点
 * 输入参数:
   + `inum`: 被读取的 i 结点的编号
