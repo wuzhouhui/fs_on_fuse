@@ -111,7 +111,7 @@ static int ufs_creat(const char *path, mode_t mode,
 	struct dir_entry entry;
 
 	log_msg("ufs_creat called, path = %s, mode = %o",
-			(path == NULL ? "NULL" : path), mode);
+			(path == NULL ? "NULL" : path), (int)mode);
 	if (path == NULL || path[0] == 0) {
 		ret = -EINVAL;
 		goto out;
@@ -168,7 +168,7 @@ static int ufs_creat(const char *path, mode_t mode,
 	inode.i_gid = getgid();
 	if ((ret = wr_inode(&inode)) < 0) {
 		log_msg("ufs_creat: wr_inode error for inode"
-				" %u", inode.i_ino);
+				" %u", (unsigned int)inode.i_ino);
 		goto out;
 	}
 
@@ -232,7 +232,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 	struct dir_entry entry;
 
 	log_msg("ufs_mkdir called, path = %s, mode = %o",
-			(path == NULL ? "NULL" : path), mode);
+			(path == NULL ? "NULL" : path), (int)mode);
 	if (path == NULL || path[0] == 0) {
 		log_msg("ufs_mkdir: path invalid");
 		ret = -EINVAL;
@@ -321,7 +321,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 out:
 	if (ret < 0 && dirinode.i_ino)
 		free_inode(dirinode.i_ino);
-	log_msg("ufs_mkdir return %d", ret);
+	log_msg("ufs_mkdir return %d", (int)ret);
 	return(ret);
 }
 
@@ -372,7 +372,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		}
 		if ((ret = rd_zone(znum, blkbuf, sizeof(blkbuf))) < 0) {
 			log_msg("ufs_readdir; rd_zone error for zone %u",
-					znum);
+					(unsigned int)znum);
 			goto out;
 		}
 		entptr = (struct dir_entry *)blkbuf;

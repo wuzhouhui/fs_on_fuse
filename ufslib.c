@@ -40,9 +40,10 @@ static blkcnt_t creat_zone(struct m_inode *inode, blkcnt_t dnum)
 blkcnt_t dnum2znum(struct m_inode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("dnum2znum called, inum = %u, dnum = %u", inode->i_ino, dnum);
+	log_msg("dnum2znum called, inum = %u, dnum = %u",
+			(unsigned int)inode->i_ino, (unsigned int)dnum);
 	ret = _dnum2znum(inode, dnum, 0);
-	log_msg("dnum2znum return %u", ret);
+	log_msg("dnum2znum return %u", (unsigned int)ret);
 	return(ret);
 }
 
@@ -105,9 +106,10 @@ int free_inode(ino_t inum)
 	ino_t	n;
 	int	ret;
 
-	log_msg("free_inode called, inum = %u", inum);
+	log_msg("free_inode called, inum = %u", (unsigned int)inum);
 	if (!is_ivalid(inum)) {
-		log_msg("free_inode: inum out of range, inum = %u", inum);
+		log_msg("free_inode: inum out of range, inum = %u",
+				(unsigned int)inum);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -132,7 +134,7 @@ int rd_inode(ino_t inum, struct d_inode *inode)
 	blkcnt_t bnum;
 	char	buf[BLK_SIZE];
 
-	log_msg("rd_inode called, inode num = %u", inum);
+	log_msg("rd_inode called, inode num = %u", (unsigned int)inum);
 	if (inode == NULL) {
 		ret = -EINVAL;
 		log_msg("rd_inode: inode is NULL");
@@ -140,16 +142,19 @@ int rd_inode(ino_t inum, struct d_inode *inode)
 	}
 	if (!is_ivalid(inum)) {
 		ret = -EINVAL;
-		log_msg("rd_inode: inode number %u out of range", inum);
+		log_msg("rd_inode: inode number %u out of range",
+				(unsigned int)inum);
 		goto out;
 	}
 	if ((bnum = inum2bnum(inum)) == 0) {
 		ret = -EINVAL;
-		log_msg("rd_inode: block number of inode %u is zero", inum);
+		log_msg("rd_inode: block number of inode %u is zero",
+				(unsigned int)inum);
 		goto out;
 	}
 	if ((ret = rd_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("rd_inode: rd_blk error for block %u", bnum);
+		log_msg("rd_inode: rd_blk error for block %u",
+				(unsigned int)bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
@@ -175,24 +180,26 @@ int wr_inode(const struct m_inode *inode)
 	if (!is_ivalid(inode->i_ino)) {
 		ret = -EINVAL;
 		log_msg("wr_inode: inode number %u out of range",
-				inode->i_ino);
+				(unsigned int)inode->i_ino);
 		goto out;
 	}
 	if ((bnum = inum2bnum(inode->i_ino)) == 0) {
 		ret = -EINVAL;
 		log_msg("wr_inode: block number of inode %u is zero",
-				inode->i_ino);
+				(unsigned int)inode->i_ino);
 		goto out;
 	}
 	if ((ret = rd_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("wr_inode: rd_blk error for block %u", bnum);
+		log_msg("wr_inode: rd_blk error for block %u",
+				(unsigned int)bnum);
 		goto out;
 	}
 	/* inode started from 1, so substract by 1 */
 	((struct d_inode *)buf)[(inode->i_ino - 1) % INUM_PER_BLK] =
 		*(struct d_inode *)inode;
 	if ((ret = wr_blk(bnum, buf, sizeof(buf))) < 0) {
-		log_msg("wr_inode: wr_blk error for block %u", bnum);
+		log_msg("wr_inode: wr_blk error for block %u",
+				(unsigned int)bnum);
 		goto out;
 	}
 	ret = 0;
@@ -245,9 +252,10 @@ int free_zone(blkcnt_t znum)
 	ino_t	n;
 	int	ret;
 
-	log_msg("free_zone called, znum = %u", znum);
+	log_msg("free_zone called, znum = %u", (unsigned int)znum);
 	if (!is_zvalid(znum)) {
-		log_msg("free_zone: znum out of range, znum = %u", znum);
+		log_msg("free_zone: znum out of range, znum = %u",
+				(unsigned int)znum);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -271,9 +279,10 @@ int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 	int	ret;
 	blkcnt_t bnum;
 
-	log_msg("rd_zone called, zone_num = %u", zone_num);
+	log_msg("rd_zone called, zone_num = %u", (unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("rd_zone: znum out of range, znum = %u", zone_num);
+		log_msg("rd_zone: znum out of range, znum = %u",
+				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -283,13 +292,14 @@ int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 		goto out;
 	}
 	if (size != BLK_SIZE) {
-		log_msg("rd_zone: size = %z, do not equals to %d",
-				size, BLK_SIZE);
+		log_msg("rd_zone: size = %d, do not equals to %d",
+				(int)size, BLK_SIZE);
 		ret = -EINVAL;
 		goto out;
 	}
 	if ((bnum = znum2bnum(zone_num)) == 0) {
-		log_msg("rd_zone: zone %u's block number is zero", zone_num);
+		log_msg("rd_zone: zone %u's block number is zero",
+				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -304,9 +314,11 @@ int wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 	int	ret;
 	blkcnt_t bnum;
 
-	log_msg("wr_zone called, zone_num = %u", zone_num);
+	log_msg("wr_zone called, zone_num = %u",
+			(unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("wr_zone: znum out of range, znum = %u", zone_num);
+		log_msg("wr_zone: znum out of range, znum = %u",
+				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -316,13 +328,14 @@ int wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 		goto out;
 	}
 	if (size != BLK_SIZE) {
-		log_msg("wr_zone: size = %z, do not equals to %d",
-				size, BLK_SIZE);
+		log_msg("wr_zone: size = %d, do not equals to %d",
+				(int)size, BLK_SIZE);
 		ret = -EINVAL;
 		goto out;
 	}
 	if ((bnum = znum2bnum(zone_num)) == 0) {
-		log_msg("wr_zone: zone %u's block number is zero", zone_num);
+		log_msg("wr_zone: zone %u's block number is zero",
+				(unsigned int)zone_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -336,12 +349,13 @@ blkcnt_t inum2bnum(ino_t inum)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("inum2bnum called, inum = %u", inum);
+	log_msg("inum2bnum called, inum = %u", (unsigned int)inum);
 	if (!is_ivalid(inum))
-		log_msg("inum2bnum: inode %u is not valid", inum);
+		log_msg("inum2bnum: inode %u is not valid",
+				(unsigned int)inum);
 	else
 		ret = (inum - 1) / INUM_PER_BLK + sb.s_1st_inode_block;
-	log_msg("inum2bnum return %u", ret);
+	log_msg("inum2bnum return %u", (unsigned int)ret);
 	return(ret);
 }
 
@@ -349,14 +363,15 @@ blkcnt_t znum2bnum(blkcnt_t zone_num)
 {
 	blkcnt_t ret = 0;
 
-	log_msg("znum2bnum called, zone_num = %u", zone_num);
+	log_msg("znum2bnum called, zone_num = %u", (unsigned int)zone_num);
 	if (!is_zvalid(zone_num)) {
-		log_msg("znum2bnum: zone %s is not valid", zone_num);
+		log_msg("znum2bnum: zone %u is not valid",
+				(unsigned int)zone_num);
 		goto out;
 	}
 	ret = (zone_num - 1) + sb.s_1st_zone_block;
 out:
-	log_msg("znum2bnum return %u", ret);
+	log_msg("znum2bnum return %u", (unsigned int)ret);
 	return(ret);
 }
 
@@ -368,12 +383,13 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 	log_msg("_dnum2znum called, inum = %d, dnum = %d, creat = %d",
 			(int)inode->i_ino, (int)dnum, (int)creat);
 	if (!is_ivalid(inode->i_ino)) {
-		log_msg("_dnum2znum: inum %u is not valid", inode->i_ino);
+		log_msg("_dnum2znum: inum %u is not valid",
+				(unsigned int)inode->i_ino);
 		goto out;
 	}
 	if (!is_dvalid(dnum)) {
 		log_msg("_dnum2znum: dnum %u is not valid",
-				dnum);
+				(unsigned int)dnum);
 		goto out;
 	}
 
@@ -434,7 +450,7 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 		inode->i_zones[7] = ret;
 		if (wr_inode(inode) < 0) {
 			log_msg("_dnum2znum: wr_inode error for inode"
-					" %u", inode->i_ino);
+					" %u", (unsigned int)inode->i_ino);
 			goto out;
 		}
 	}
@@ -442,7 +458,7 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 		goto out;
 	if (rd_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
 		log_msg("dnum2znum: rd_zone error for %u",
-				inode->i_zones[7]);
+				(unsigned int)inode->i_zones[7]);
 		ret = 0;
 		goto out;
 	}
@@ -480,7 +496,7 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 		}
 	}
 out:
-	log_msg("_dnum2znum return %u", ret);
+	log_msg("_dnum2znum return %u", (unsigned int)ret);
 	return(ret);
 }
 
@@ -488,9 +504,10 @@ int rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 {
 	int	ret = 0;
 
-	log_msg("rd_blk called, blk_num = %u", blk_num);
+	log_msg("rd_blk called, blk_num = %u", (unsigned int)blk_num);
 	if (!is_bvalid(blk_num)) {
-		log_msg("rd_blk: block num %u is not valid", blk_num);
+		log_msg("rd_blk: block num %u is not valid",
+				(unsigned int)blk_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -500,7 +517,7 @@ int rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 		goto out;
 	}
 	if (size != BLK_SIZE) {
-		log_msg("rd_blk: size = %u", size);
+		log_msg("rd_blk: size = %u", (unsigned int)size);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -519,9 +536,11 @@ int wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 {
 	int	ret;
 
-	log_msg("wr_blk called, blk_num = %u", blk_num);
+	log_msg("wr_blk called, blk_num = %u",
+			(unsigned int)blk_num);
 	if (!is_bvalid(blk_num)) {
-		log_msg("wr_blk: block num %u is not valid", blk_num);
+		log_msg("wr_blk: block num %u is not valid",
+				(unsigned int)blk_num);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -531,7 +550,7 @@ int wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 		goto out;
 	}
 	if (size != BLK_SIZE) {
-		log_msg("wr_blk: size = %u", size);
+		log_msg("wr_blk: size = %u", (unsigned int)size);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -574,7 +593,8 @@ int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 	struct dir_entry *de;
 
 	log_msg("add_entry called, adding %s in %u",
-			(ent == NULL ? "NULL" : ent->de_name), dir->i_ino);
+			(ent == NULL ? "NULL" : ent->de_name),
+			(unsigned int)dir->i_ino);
 	if (dir == NULL || !is_ivalid(dir->i_ino)) {
 		log_msg("add_entry: dirinode not valid");
 		ret = -EINVAL;
@@ -586,7 +606,8 @@ int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 		goto out;
 	}
 	if (!UFS_ISDIR(dir->i_mode)) {
-		log_msg("add_entry: inode %u is not diectory", dir->i_ino);
+		log_msg("add_entry: inode %u is not diectory",
+				(unsigned int)dir->i_ino);
 		ret = -ENOTDIR;
 		goto out;
 	}
@@ -599,7 +620,7 @@ int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 	while (1) {
 		if ((znum = creat_zone(dir, dnum++)) == 0) {
 			log_msg("add_entry: creat_zone return 0 for %u",
-					znum);
+					(unsigned int)znum);
 			ret = -ENOSPC;
 			goto out;
 		}
@@ -683,7 +704,8 @@ int path2i(const char *path, struct m_inode *inode)
 	ret = 0;
 
 out:
-	log_msg("path2i return %d, inum = %u", ret, inode->i_ino);
+	log_msg("path2i return %d, inum = %u", ret,
+			(unsigned int)inode->i_ino);
 	return(ret);
 }
 
@@ -702,8 +724,8 @@ int find_entry(struct m_inode *par, const char *file,
 		ret = -EINVAL;
 		goto out;
 	}
-	log_msg("find_entry: par->i_ino = %u, file = %s", par->i_ino,
-			file);
+	log_msg("find_entry: par->i_ino = %u, file = %s",
+			(unsigned int)par->i_ino, file);
 
 	if (!UFS_ISDIR(par->i_mode)) {
 		ret = -ENOTDIR;
@@ -715,12 +737,12 @@ int find_entry(struct m_inode *par, const char *file,
 	while (i < par->i_size) {
 		if ((znum = dnum2znum(par, dnum++)) == 0) {
 			log_msg("find_entry: dnum2znum return "
-					"zero for data %u", dnum);
+					"zero for data %u", (unsigned int)dnum);
 			break;
 		}
 		if ((ret = rd_zone(znum, buf, sizeof(buf))) < 0) {
 			log_msg("find_entry: rd_zone error for data"
-					" %u", znum);
+					" %u", (unsigned int)znum);
 			goto out;
 		}
 		for (de = (struct dir_entry *)buf, j = 0;
