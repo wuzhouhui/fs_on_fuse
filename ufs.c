@@ -9,37 +9,37 @@ int log_to_stderr;
 struct file open_files[OPEN_MAX];
 /*
  * just a test function
-static void pr_sb(const struct m_super_block *sb)
-{
-	char	buf[BLK_SIZE];
-	struct dir_entry *ent;
-	off_t	offset;
+ static void pr_sb(const struct m_super_block *sb)
+ {
+ char	buf[BLK_SIZE];
+ struct dir_entry *ent;
+ off_t	offset;
 
-	printf("s_magic = %x\n", (int)sb->s_magic);
-	printf("s_imap_blocks = %d\n", (int)sb->s_imap_blocks);
-	printf("s_zmap_blocks = %d\n", (int)sb->s_zmap_blocks);
-	printf("s_inode_blocks = %d\n", (int)sb->s_inode_blocks);
-	printf("s_zone_blocks = %d\n", (int)sb->s_zone_blocks);
-	printf("s_max_size = %d\n", (int)sb->s_max_size);
-	printf("s_imap = %p\n", sb->s_imap);
-	printf("s_zmap = %p\n", sb->s_zmap);
-	printf("s_1st_inode_block = %d\n", (int)sb->s_1st_inode_block);
-	printf("s_1st_zone_block = %d\n", (int)sb->s_1st_zone_block);
-	printf("s_inode_left = %d\n", (int)sb->s_inode_left);
-	printf("s_block_left = %d\n", (int)sb->s_block_left);
-	printf("s_fd = %d\n", (int)sb->s_fd);
-	printf("s_addr = %p\n", sb->s_addr);
+ printf("s_magic = %x\n", (int)sb->s_magic);
+ printf("s_imap_blocks = %d\n", (int)sb->s_imap_blocks);
+ printf("s_zmap_blocks = %d\n", (int)sb->s_zmap_blocks);
+ printf("s_inode_blocks = %d\n", (int)sb->s_inode_blocks);
+ printf("s_zone_blocks = %d\n", (int)sb->s_zone_blocks);
+ printf("s_max_size = %d\n", (int)sb->s_max_size);
+ printf("s_imap = %p\n", sb->s_imap);
+ printf("s_zmap = %p\n", sb->s_zmap);
+ printf("s_1st_inode_block = %d\n", (int)sb->s_1st_inode_block);
+ printf("s_1st_zone_block = %d\n", (int)sb->s_1st_zone_block);
+ printf("s_inode_left = %d\n", (int)sb->s_inode_left);
+ printf("s_block_left = %d\n", (int)sb->s_block_left);
+ printf("s_fd = %d\n", (int)sb->s_fd);
+ printf("s_addr = %p\n", sb->s_addr);
 
-	offset = (1 + sb->s_imap_blocks + sb->s_zmap_blocks +
-			sb->s_inode_blocks) << BLK_SIZE_SHIFT;
-	pread(sb->s_fd, buf, sizeof(buf), offset);
-	ent = (struct dir_entry *)buf;
-	printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
-	ent++;
-	printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
-	return;
-}
-*/
+ offset = (1 + sb->s_imap_blocks + sb->s_zmap_blocks +
+ sb->s_inode_blocks) << BLK_SIZE_SHIFT;
+ pread(sb->s_fd, buf, sizeof(buf), offset);
+ ent = (struct dir_entry *)buf;
+ printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
+ ent++;
+ printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
+ return;
+ }
+ */
 
 static char bit[] = {
 	0, 1, 1, 2,
@@ -106,13 +106,13 @@ static int ufs_creat(const char *path, mode_t mode,
 	int	fd, ret;
 	mode_t	oldmask;
 	char	dir[PATH_LEN + 1], base[NAME_LEN + 1];
-	struct m_inode dirinode;
+	struct m_inode dirinode, inode;
 	char	pathcpy[PATH_LEN + 1];
 	struct dir_entry entry;
 
 	log_msg("ufs_creat called, path = %s, mode = %o",
 			(path == NULL ? "NULL" : path), mode);
-	if (path == NULL) {
+	if (path == NULL || path[0] == 0) {
 		ret = -EINVAL;
 		goto out;
 	}
@@ -120,6 +120,8 @@ static int ufs_creat(const char *path, mode_t mode,
 		ret = -ENAMETOOLONG;
 		goto out;
 	}
+
+	/* find a available entry in open_files */
 	for (fd = 0; fd < OPEN_MAX; fd++)
 		if (open_files[fd].f_count == 0)
 			break;
@@ -128,38 +130,69 @@ static int ufs_creat(const char *path, mode_t mode,
 		ret = -ENFILE;
 		goto out;
 	}
+	memset(&open_files[fd], 0, sizeof(open_files[fd]));
+
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
 	strcpy(base, basename(pathcpy));
-	oldmask = umask(0);
-	mode &= 0777 & (~oldmask);
-	umask(oldmask);
+
 	if ((ret = dir2i(dir, &dirinode)) < 0) {
 		log_msg("ufs_creat: dir2i error for %s", dir);
 		goto out;
 	}
-	if (find_entry(&dirinode, base, &entry) == -ENOENT) {
-
-		if ((ret = add_entry(&dirinode, base, &entry, mode)) < 0) {
-			log_msg("ufs_creat: add_entry error for "
-					"%s in %s", base, dir);
-			goto out;
-		}
-	}
-	ret = rd_inode(entry.de_inum,
-			(struct d_inode *)&open_files[fd].f_inode);
-	if (ret < 0) {
-		log_msg("ufs_creat: rd_inode error for %u", entry.de_inum);
+	ret = find_entry(&dirinode, base, &entry);
+	if (ret == 0) {
+		ret = -EEXIST;
 		goto out;
 	}
-	open_files[fd].f_mode = open_files[fd].f_inode.i_mode;
+	if (ret != -ENOENT)
+		goto out;
+
+
+	/*
+	 * allocate a inode and initialize it.
+	 */
+	memset(&inode, 0, sizeof(inode));
+	if ((inode.i_ino = new_inode()) == 0) {
+		log_msg("creat: new_inode return 0");
+		ret = -ENOSPC;
+		goto out;
+	}
+	inode.i_nlink = 1;
+	oldmask = umask(0);
+	umask(oldmask);
+	inode.i_mode = ((mode & 0777) | UFS_IFREG) & (~oldmask);
+	inode.i_atime = inode.i_mtime = inode.i_ctime = time(NULL);
+	inode.i_uid = getuid();
+	inode.i_gid = getgid();
+	if ((ret = wr_inode(&inode)) < 0) {
+		log_msg("ufs_creat: wr_inode error for inode"
+				" %u", inode.i_ino);
+		goto out;
+	}
+
+	/*
+	 * add an new entry in parent directory
+	 */
+	entry.de_inum = inode.i_ino;
+	strcpy(entry.de_name, base);
+	if ((ret = add_entry(&dirinode, &entry)) < 0) {
+		log_msg("ufs_creat: add_entry error for "
+				"%s in %s", base, dir);
+		goto out;
+	}
+
+	open_files[fd].f_inode = inode;
+	open_files[fd].f_mode = inode.i_mode;
 	open_files[fd].f_flag = UFS_O_WRONLY;
 	open_files[fd].f_count = 1;
 	open_files[fd].f_pos = 0;
 	fi->fh = fd;
 	ret = 0;
 out:
+	if (ret < 0 && inode.i_ino)
+		free_inode(inode.i_ino);
 	log_msg("ufs_creat return %d", ret);
 	return(ret);
 }

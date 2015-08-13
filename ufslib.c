@@ -565,54 +565,28 @@ out:
 	return(ret);
 }
 
-int add_entry(struct m_inode *dirinode, const char *file,
-		struct dir_entry *entry, mode_t mode)
+int add_entry(struct m_inode *dir, const struct dir_entry *ent)
 {
 	int	ret, i;
-	struct m_inode inode;
 	blkcnt_t dnum, znum;
 	char	buf[BLK_SIZE];
 	struct dir_entry *de;
 
 	log_msg("add_entry called, adding %s in %u",
-			(file == NULL ? "NULL" : file), dirinode->i_ino);
-	if (dirinode == NULL || !is_ivalid(dirinode->i_ino)) {
+			(ent == NULL ? "NULL" : ent->de_name), dir->i_ino);
+	if (dir == NULL || !is_ivalid(dir->i_ino)) {
 		log_msg("add_entry: dirinode not valid");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (!UFS_ISDIR(dirinode->i_mode)) {
+	if (ent == NULL) {
+		log_msg("add_entry: ent is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!UFS_ISDIR(dir->i_mode)) {
+		log_msg("add_entry: inode %u is not diectory", dir->i_ino);
 		ret = -ENOTDIR;
-		goto out;
-	}
-	if (file == NULL) {
-		log_msg("add_entry: file is NULL");
-		ret = -EINVAL;
-		goto out;
-	}
-	if (entry == NULL) {
-		log_msg("add_entry: entry is NULL");
-		ret = -EINVAL;
-		goto out;
-	}
-
-	/*
-	 * allocate a new inode and initialize it,
-	 * then write it.
-	 */
-	if ((entry->de_inum = new_inode()) == 0) {
-		log_msg("add_entry: new_inode return zero");
-		ret = -ENOSPC;
-		goto out;
-	}
-	memset(&inode, 0, sizeof(inode));
-	inode.i_nlink = 1;
-	inode.i_mode = UFS_IFREG | mode;
-	inode.i_ino = entry->de_inum;
-	inode.i_uid = getuid();
-	inode.i_gid = getgid();
-	if ((ret = wr_inode(&inode)) < 0) {
-		log_msg("add_entry: wr_inode error");
 		goto out;
 	}
 
@@ -622,7 +596,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	 */
 	dnum = 0;
 	while (1) {
-		if ((znum = creat_zone(dirinode, dnum)) == 0) {
+		if ((znum = creat_zone(dir, dnum)) == 0) {
 			log_msg("add_entry: creat_zone return 0 for %u",
 					znum);
 			ret = -ENOSPC;
@@ -640,10 +614,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 			break;
 	}
 	/* find a available entry in directory */
-	de[i].de_inum = entry->de_inum;
-	strncpy(de[i].de_name, file, NAME_LEN);
-	de[i].de_name[NAME_LEN] = 0;
-	memcpy(entry, &de[i], sizeof(de[i]));
+	memcpy(&de[i], ent, sizeof(de[i]));
 	if ((ret = wr_zone(znum, buf, sizeof(buf))) < 0) {
 		log_msg("add_entry: wr_zone error");
 		goto out;
@@ -651,16 +622,14 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	/*
 	 * update parent directory's inode.
 	 */
-	dirinode->i_size += sizeof(de[i]);
-	if ((ret = wr_inode(dirinode)) < 0) {
+	dir->i_size += sizeof(de[i]);
+	if ((ret = wr_inode(dir)) < 0) {
 		log_msg("add_entry: wr_inode error");
 		goto out;
 	}
 	ret = 0;
 
 out:
-	if (ret && entry->de_inum)
-		free_inode(entry->de_inum);
 	log_msg("add_entry return %d", ret);
 	return(ret);
 }
