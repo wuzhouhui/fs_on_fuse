@@ -1,5 +1,6 @@
 CC = gcc
 # XXX: does -D_FILE_OFFSET_BITS affects sizeof(off_t) ?
+# -D_FILE_OFFSET_BITS affects sizeof(off_t, blkcnt_t and ino_t)
 CFLAGS = -g -Wall `pkg-config fuse --cflags`
 FUSE_LIB = -g -Wall `pkg-config fuse --libs` -L/usr/lib
 
@@ -27,4 +28,4 @@ ignore:
 	done)
 
 clean:
-	rm -f *.o format a.out ufs
+	rm -f *.o format ufs
