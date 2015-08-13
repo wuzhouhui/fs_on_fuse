@@ -245,11 +245,37 @@ out:
 	return(ret);
 }
 
+static int ufs_release(const char *path, struct fuse_file_info *fi)
+{
+	int	ret;
+
+	log_msg("ufs_release called, path = %s, fd = %d",
+			(path == NULL ? "NULL" : path), (int)fi->fh);
+	if (fi->fh < 0 || fi->fh >= OPEN_MAX) {
+		ret = -EBADF;
+		log_msg("ufs_release: fd out of range");
+		goto out;
+	}
+	if (open_files[fi->fh].f_count == 0) {
+		ret = -EBADF;
+		log_msg("ufs_release: open_files[%d] not opened",
+				(int)fi->fh);
+		goto out;
+	}
+	open_files[fi->fh].f_count--;
+	ret = 0;
+
+out:
+	log_msg("ufs_release return %d", ret);
+	return(ret);
+}
+
 struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
 	.open		= ufs_open,
 	.readdir	= ufs_readdir,
+	.release	= ufs_release,
 };
 
 int main(int argc, char *argv[])

@@ -1,6 +1,6 @@
 # u_fs 设计文档
 
-* `creat(const char *path, mode_t mode)`  
+* `int creat(const char *path, mode_t mode)`  
   + 功能: 创建一个新文件
   + 输入参数:
     - `path`: 新文件的路径;
@@ -20,7 +20,16 @@
 `open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`,  但无法通过 fuse 获取不
 定参数, 故无法通过 `open` 实现 `creat`.
 
-* `open(const char *path, int oflag, ... /* mode_t mode */)`
+* `int release(const char *path, int fd)`
+  + 功能: 关闭一个打开文件, 并释放它占用的资源;
+  + 输入参数:
+    - `path`: 将被释放的文件路径名, 不用;
+    - `fd`: 打开文件的描述符;
+  + 返回值:
+    - 若成功返回 0;
+    - `-EBADF`: `fd` 不是一个有效的文件描述符;
+
+* `int open(const char *path, int oflag, ... /* mode_t mode */)`
   + 功能: 打开一个文件, 必要时创建.
   + 输入参数:
     - `path`: 文件的路径名;
