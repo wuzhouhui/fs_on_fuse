@@ -7,7 +7,9 @@
 
 ## 1.2 常量说明
 
+	#define MAGIC		0x7594	/* 文件系统的标识 */
 	#define NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
+	#define PATH_LEN	1024	/* 路径名最大长度, 不包括结尾的空字符 */
 	#define BLK_SIZE        512	/* 磁盘块大小 */
 	#define OPEN_MAX        64	/* 同时打开文件数最大值 */
 	#define DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
@@ -92,7 +94,7 @@
 
 	/*
 	 * 磁盘上的 i 结点.
-	 * sizeof(struct d_inode) == 64 in 32-bit
+	 * sizeof(struct d_inode) <= BLK_SIZE
 	 */
 	struct d_inode {
 		nlink_t	i_nlink;	/* 链接数 */
@@ -158,7 +160,7 @@
 
 ### 1.3.4 目录项
 
-	/* sizeof(struct dir_entry) == 32 in 32-bit */
+	/* sizeof(struct dir_entry) <= BLK_SIZE */
 	struct dir_entry {
 		ino_t	de_inum;		/* 文件的 i 结点号 */
 		char	de_name[NAME_LEN + 1];	/* 文件名, 以空字符结尾 */
@@ -170,7 +172,7 @@
 ### 1.3.5 打开文件表
 
 	struct file {
-		struct m_inode *f_inode;	/* 与该文件对应的 i 结点 */
+		struct m_inode f_inode;		/* 与该文件对应的 i 结点 */
 		mode_t	f_mode;			/* 文件类型与访问权限 */
 		int	f_flag;			/* 文件打开和控制标志 */
 		int	f_count;		/* 对应文件句柄引用次数 */
@@ -187,8 +189,6 @@
   + `O_WRONLY`: 只写打开
   + `O_RDWR`: 读写打开
 * 文件创建与控制标志:
-  + `O_CREAT`: 如果文件不存在则创建;
-  + `O_EXCL`: 如果同时指定了 `O_CREAT`, 若文件已存在则出错;
   + `O_APPEND`: 追加写;
   + `O_TRUNC`: 若打开方式包含写, 则截断文件;
 
@@ -214,7 +214,7 @@
 * 注: 本文提到的磁盘都是指利用普通文件模拟的磁盘, "普通文件" 来源于外部
 文件系统 (例如 Ext4), 磁盘作为文件系统的私有数据使用. 一个文件或作为
 磁盘使用的条件是: 
-  + 大小在 1 兆字节到 `DISK_MAX_SIZE` 字节之间
+  + 大小在 1 MB 到 `DISK_MAX_SIZE` MB 之间
   + 是普通文件
   + 用户可读写
 
@@ -235,25 +235,27 @@
 * 功能: 释放一个指定的 i 结点
 * 输入参数:
   + `inum`: 将被释放的 i 结点的编号
-* 返回值: 若成功返回 0; 若失败返回 -1. 以下情况返回失败:
-  + i 节点号超出范围;
-  + i 节点原来就处理空闲状态.
+* 返回值: 若成功返回 0; 若失败返回对应的 `errno` . 以下情况返回失败:
+  + i 节点号超出范围 返回 `-EINVAL`;
+  + i 节点原来就处理空闲状态, 返回  `-EAGAIN`;
 
 ### `int rd_inode(ino_t inum, struct d_inode *inode)`
 * 功能: 读取指定的 i 结点
 * 输入参数:
   + `inum`: 被读取的 i 结点的编号
   + `inode`: 存放 i 结点的缓冲区
-* 返回值: 若成功返回 0; 失败返回 -1. 以下情况返回失败:
-  + i 节点号超出范围;
-  + `inode` 为空.
+* 返回值: 若成功返回 0; 失败返回对应的 `errno`. 以下情况返回失败:
+  + i 节点号超出范围, 返回 `-EINVAL`
+  + `inode` 为空, 返回 `-EINVAL`;
+  + 被调用函数返回错误值, 将错误值原样返回.
 
-### `int wr_inode(struct d_inode *inode)`
+### `int wr_inode(struct m_inode *inode)`
 * 功能: 将指定的 i 结点写回磁盘
 * 输入参数:
   + `inode`: 需写回磁盘的 i 结点
-* 返回值: 若成功返回 0; 若失败返回 -1. 若 `inode` 为空, 则什么
-也不做, 返回成功.
+* 返回值: 若成功返回 0; 若失败返回 对应的 `errno`. 错误情况包括:
+  + `-EINVAL`: 输入参数不合法, 包括 `inode` 为空, i 结点号无效;
+  + 被调用函数返回出错, 将错误值原样返回.
 
 ### `blkcnt_t new_zone(void)`
 * 功能: 获取一块空闲的逻辑块
@@ -266,9 +268,9 @@
 * 功能: 释放一个指定的逻辑块
 * 输入参数: 
   + `zone_num`: 将被释放的逻辑块块号
-* 返回值: 成功时返回 0; 若失败返回 -1. 以下情况返回失败:
-  + `zone_num` 超出范围;
-  + `zone_num` 原来就处于已释放状态.
+* 返回值: 成功时返回 0; 若失败返回 `errno`. 以下情况返回失败:
+  + `zone_num` 超出范围, 返回 `-EINVAL`;
+  + `zone_num` 原来就处于已释放状态, 返回 `-EAGAIN`;
 
 ### `int rd_zone(blkcnt_t zone_num, void *buf, size_t size)`
 * 功能: 读一个指定的逻辑块
@@ -276,10 +278,11 @@
   + `zone_num` :将被读取的逻辑块块号
   + `buf`: 存储逻辑块数据的缓冲区
   + `size`: 缓冲区大小, 必须等于逻辑块大小
-* 返回值: 若成功, 返回0; 若失败, 返回 -1. 以下情况返回失败:
-  + `zone_num` 超出范围;
-  + `buf` 为空;
-  + `size` 不等于 逻辑块大小
+* 返回值: 若成功, 返回0; 若失败, 返回 `errno`. 以下情况返回失败:
+  + `zone_num` 超出范围, 返回  `-EINVAL`;
+  + `buf` 为空, 返回 `-EINVAL`;
+  + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
 ### `int wr_zone(blkcnt_t zone_num, void *buf, size_t size)`
 * 功能: 将一个指定的逻辑块写入磁盘
@@ -287,10 +290,11 @@
   + `zone_num`: 逻辑块块号
   + `buf`:写入逻辑块的缓冲区
   + `size`: 缓冲区大小, 必须等于逻辑块大小
-* 返回值: 成功返回 0; 失败返回 -1. 以下情况返回失败:
-  + `zone_num` 超出范围;
-  + `buf` 为空;
-  + `size` 不等于 逻辑块大小
+* 返回值: 成功返回 0; 失败返回 `errno`. 以下情况返回失败:
+  + `zone_num` 超出范围, 返回 `-EINVAL`;
+  + `buf` 为空, 返回 `-EINVAL`;
+  + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
 ### `blkcnt_t inum2blknum(ino_t inum)`
 * 功能: 计算指定的 i 结点所在的磁盘块块号
@@ -308,12 +312,12 @@
 * 返回值: 编号为 `zone_num` 的逻辑块所在的磁盘块块号. 若 `zone_num`
 无效则返回 0.
 
-### `blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)`
+### `blkcnt_t datanum2zonenum(struct m_inode *inode, blkcnt_t data_num)`
 * 功能: 计算指定的数据块所在逻辑块号
 * 输入参数:
-  + `inum`: 数据块所在 i 结点号;
+  + `inode`: 数据块所在的 i 结点点指针.
   + `data_num`: 数据块号
-* 返回值: 若数据块号与 i 结点号有效, 返回对应的逻辑块号; 否则返回 0.
+* 返回值: 若数据块号与 i 结点有效, 返回对应的逻辑块号; 否则返回 0.
 * 注: "数据块" 是相对于单个文件的, 从 1 开始编号, 数据块号最大值
 受限于 i 结点所能支持的最大文件大小.
 
@@ -323,10 +327,11 @@
   + `blk_num`: 将被读的磁盘块块号
   + `buf`: 存储磁盘块的缓冲区
   + `size`: 缓冲区大小, 必须等于磁盘块大小
-* 返回值: 若成功返回 0; 失败返回 -1. 以下情况返回失败:
- + `blk_num` 无效;
- + `buf` 为空;
- + `size` 不等于磁盘块大小.
+* 返回值: 若成功返回 0; 失败返回 `errno`. 以下情况返回失败:
+  + `blk_num` 无效, 返回 `-EINVAL`;
+  + `buf` 为空, 返回 `-EINVAL`;
+  + `size` 不等于磁盘块大小, 返回 `-EINVAL`;
+  + 被调用函数返回出错, 将错误值原样返回.
 * 注: 磁盘文件上的每 512 字节都算作一个磁盘块, 而不管该磁盘块存放的是什么
 内容, 下同.
 
@@ -337,150 +342,52 @@
   + `buf`: 写入磁盘块的缓冲区
   + `size`: 缓冲区大小, 必须等于磁盘块大小
 * 返回值: 若成功返回 0; 失败返回 -1, 以下情况返回失败:
- + `blk_num` 无效;
- + `buf` 为空;
- + `size` 不等于磁盘块大小.
+  + `blk_num` 无效, 返回 `-EINVAL`;
+  + `buf` 为空, 返回 `-EINVAL`;
+  + `size` 不等于磁盘块大小, 返回 `-EINVAL`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
-### `int path2dir_ent(const char *path, struct dir_entry *buf)`
-* 功能: 查找指定路径名的目录项
-* 参数: 
-  + `path`: 文件的路径;
-  + `buf`: 存放目录项的缓冲区
-* 返回值: 若找到返回 1; 若 `path` 为空, 或未找到, 返回 0.
-
-### `ino_t path2inum(const char *path)`
+### `int path2i(const char *path, struct m_inode *inode)`
 * 功能: 将路径名映射为 i 结点
 * 输入参数:
-  + `path`: 被映射的路径名
-* 返回值: 成功返回 i 结点号; 失败返回 0
+  + `path`: 被映射的路径名;
+  + `inode`: 存放映射后的 i 结点;
+* 返回值: 成功返回 0, 失败返回 `errno`, 失败包括:
+  + `path` 为空或过长, 返回 `-EINVAL`;
+  + `inode` 为空, 返回 `-EINVAL`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
-### `int srch_dir_entry(struct m_inode *parent, const char *filename, struct dir_entry *ent)`
+### `int dir2i(const char *dirpath, struct m_inode *dirinode)`
+* 功能: 将目录的路径名映射为对应的 i 结点;
+* 输入参数: 
+  + `dirpath`: 目录的路径名;
+  + `dirinode`: 存放映射后的 i 结点;
+* 返回值: 成功返回 0, 失败返回 `errno`, 错误情况包括
+  + 路径引用的文件不是一个目录文件, 返回 `-ENOTDIR`;
+  + 被调用函数返回出错, 将错误值原样返回.
+
+### `int find_entry(struct m_inode *parent, const char *filename, struct dir_entry *ent)`
 * 功能: 在指定的目录中查找具有指定文件名的文件
 * 输入参数:
   + `parent`: 查找的位置, 必须是目录;
   + `filename`: 待查找的文件名;
   + `ent`: 若查找成功, 存放被查找文件的目录项
-* 返回值: 查找成功返回 1; 失败返回 0
+* 返回值: 查找成功返回 0; 失败返回 `errno`, 失败包括:
+  + 任一输入参数为空或无效, 返回 `-EINVAL`;
+  + `parent` 不是一个目录, 返回 `-ENOTDIR`;
+  + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
-### `int add_dir_entry(struct m_inode *dir, const struct dir_entry *entry)`
+### `int add_entry(struct m_inode *dir, const char *file, struct dir_entry *entry)`
 * 功能: 在指定的目录中新增一个目录项
 * 输入参数:
   + `dir`: 在该目录中新增一个目录项;
-  + `entry`: 新增的目录项.
-* 返回值: 添加成功返回 0; 失败返回 -1. 在以下情况返回失败：
-  + `dir` 为空或者不是一个目录；
-  + `entry` 为空, 若 `entry` 的成员具有非法值, 或出现重得.
+  + `file`: 新增目录项的文件名;
+  + `entry`: 若成功, 存放新增的目录项;
+* 返回值: 添加成功返回 0; 失败返回 `errno`. 在以下情况返回失败：
+  + 任一参数为空, 返回 `-EINVAL`;
+  + `dir` 不是一个目录, 返回 `-ENOTDIR`;
+  + 没有磁盘空间存放目录项, 或无空闲的 i 结点, 返回 `-ENOSPC`;
+  + 被调用函数返回出错, 将错误值原样返回.
 
 ## 1.5 功能函数详细流程
-
-	format diskfile
-		// 打开文件 
-		// 获取文件的各种元信息, 以判断该文件是否可作为磁盘使用
-		// 初始一个超级块, 根据文件的大小决定文件系统各个部分的大小
-		// 将超级块写到磁盘文件的第一个块上
-		// 将 i 结点位图与逻辑块位图对应的磁盘块清零, 但将各自的第 1 个位置 1
-		// 创建根目录
-		// 关闭文件并退出
-
-	int read_sb(const char *diskname)
-		// 打开文件, 并读文件的前 512 字节 (超级块)
-		// 判断超级块的合法性 (魔数)
-		// 若超级块合法, 初始化 `struct m_super_block` 的其他字段
-		// 若没有任何问题发生就返回成功; 否则返回失败.
-
-	ino_t new_inode(void)
-		// 先判断磁盘上是否有剩余的 i 结点 (inode_left)
-		// 从 i 结点位图的第 1 个位开始查找.
-		// 如果找到值为 0 的位或超出位图范围, 则退出循环; 否则继续.
-		// 在循环之外, 若循环是因为越界而退出, 则返回 0; 否则 
-		// 置位, 更新 inode_left 并返回该位在位图中的下标.
-
-	int free_inode(ino_t inum)
-		// 判断 inum 的合法性.
-		// 测试 bit[inum] 是否置位
-		// 若未置位则出错; 否则清零并返回成功.
-
-	int rd_inode(ino_t inum, struct d_inode *inode)
-		// 判断 inum 与 inode 的有效性
-		// 计算 inode 所在的磁盘块号.
-		// 读磁盘块, 提取指定的 i 结点 
-		// 将读取到的 i 结点写入 inode,
-		// 返回
-
-	int wr_inode(struct m_inode *inode)
-		// 计算 inode 所在的磁盘块号
-		// 读磁盘块, 修改指定的 i 指点
-		// 写回磁盘
-
-	blkcnt_t new_zone(void)
-		// 检查逻辑块位图是否有空闲位
-		// 检查磁盘上是否有空闲的逻辑块
-		// 若前者都成立, 则置位, 并返回该位在位图中的下标
-		// 否则返回 0
-
-	int free_zone(blkcnt_t blk_num)
-		// 判断 blk_num 的合法性.
-		// 测试 bit[inum] 是否置位
-		// 若未置位则出错; 否则清零并返回.
-
-	int rd_zone(blkcnt_t zone_num, void *buf, size_t size)
-		// 检查 逻辑块号与 缓冲区, 及其大小 的有效性
-		// 由逻辑块号计算磁盘块号
-		// 调用 读磁盘块函数
-		// 返回由 读磁盘函数返回的值
-
-	int wr_zone(blkcnt_t zone_num, void *buf, size_t size)
-		// 检查逻辑块号与缓冲区, 及其大小的有效性
-		// 由逻辑块号计算磁盘块号
-		// 调用 写磁盘块函数
-		// 返回由 写磁盘块函数返回的值
-
-	blkcnt_t inum2blknum(ino_t inum)
-		// 判断 `inum` 的有效性
-		// 根据超级块, i 结点位图, 逻辑块位图占用的逻辑块数,
-		// 以及每块逻辑块包含的 i 结点数计算包含该 i 结点的 
-		// 逻辑块号, 如果逻辑块号有效, 则返回对应的磁盘块号;
-		// 否则返回 0
-
-	blkcnt_t zonenum2blknum(blkcnt_t zone_num)
-		// 判断 zone_num 的有效性
-		// 根据第 1 块逻辑块的磁盘块号 计算与 zone_num 对应的
-		// 磁盘块号, 并返回
-	
-	blkcnt_t datanum2zonenum(ino_t inum, blkcnt_t data_num)
-		// 判断 `inum` 与 `data_num` 的有效性.
-		// 根据 `data_num` 的值判断它是在直接块, 一次间接块, 
-		// 还是在二次间接块中.
-		// 读相应的块并获取与数据块对应的逻辑块号并返回.
-
-	int rd_blk(blkcnt_t blk_num, void *buf, size_t size)
-		// 判断 blk_num, buf, size 的有效性.
-		// 根据块的大小与磁盘块号计算块的起始偏移量,
-		// 调用底层文件系统的读函数
-
-	int wr_blk(blkcnt_t blk_num, void *buf, size_t size)
-		// 判断 blk_num, buf, size 的有效性.
-		// 根据块的大小与磁盘块号计算块的起始偏移量,
-		// 调用底层文件系统的写函数.
-
-	int path2dir_ent(const char *path, struct dir_entry *buf)
-		// 先判断参数的有效性.
-		// 若 path 的长度大于 1 且末尾有 '/', 则删除该字符,
-		// 这是为了避免 "/usr/bin/vi/" 这种情况.
-		// 从根结点开始查找, 遍历根目录的每一个目录项, 当找到期望
-		// 的中间目录项时, 再从该目录项指向的 i 结点开始查找下一
-		// 目标, 一直到查找成功或失败为止.
-
-	int srch_dir_entry(struct m_inode *parent, const char *filename, struct dir_entry *ent)
-		// 检查参数的有效性
-		// 测试 parent 是否是一个目录
-		// 寻索该目录下的每一个目录项, 查看是否有与 filename 相同的项,
-		// 若找到, 将目录项复制到 ent 中, 并返回成功; 否则返回 失败.
-
-	int add_dir_entry(struct m_inode *dir, const struct dir_entry *entry)
-		// 检查参数的有效性
-		// 测试 parent 是否是一个目录
-		// 寻索该目录下的每一个目录项, 查看是否有与 filename 相同的项,
-		// 若未找到, 则搜索一个空闲目录基, 空闲目录项指的是 `de_inum` 为 0 的项
-		// 将新的目录项写到父目录的空闲项中, 并返回
-

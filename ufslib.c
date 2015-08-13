@@ -107,14 +107,14 @@ int free_inode(ino_t inum)
 	log_msg("free_inode called, inum = %u", inum);
 	if (!is_ivalid(inum)) {
 		log_msg("free_inode: inum out of range, inum = %u", inum);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 
 	n = inum >> 3;
 	if ((sb.s_imap[n] & (1 << (inum & 7))) == 0) {
 		log_msg("free_inode: inode %d already freed", (int)inum);
-		ret = -1;
+		ret = -EAGAIN;
 	} else {
 		sb.s_imap[n] &= ~(1 << (inum & 7));
 		ret = 0;
@@ -247,14 +247,14 @@ int free_zone(blkcnt_t znum)
 	log_msg("free_zone called, znum = %u", znum);
 	if (!is_zvalid(znum)) {
 		log_msg("free_zone: znum out of range, znum = %u", znum);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 
 	n = znum >> 3;
 	if ((sb.s_zmap[n] & (1 << (znum & 7))) == 0) {
 		log_msg("free_zone: zone %d already freed", (int)znum);
-		ret = -1;
+		ret = -EAGAIN;
 	} else {
 		sb.s_zmap[n] &= ~(1 << (znum & 7));
 		ret = 0;
@@ -306,23 +306,23 @@ int wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 	log_msg("wr_zone called, zone_num = %u", zone_num);
 	if (!is_zvalid(zone_num)) {
 		log_msg("wr_zone: znum out of range, znum = %u", zone_num);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
 		log_msg("wr_zone: buf is NULL");
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if (size != BLK_SIZE) {
 		log_msg("wr_zone: size = %z, do not equals to %d",
 				size, BLK_SIZE);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	if ((bnum = znum2bnum(zone_num)) == 0) {
 		log_msg("wr_zone: zone %u's block number is zero", zone_num);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 	ret = wr_blk(bnum, buf, size);
@@ -516,23 +516,27 @@ out:
 
 int wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 {
-	int	ret = -1;
+	int	ret;
 
 	log_msg("wr_blk called, blk_num = %u", blk_num);
 	if (!is_bvalid(blk_num)) {
 		log_msg("wr_blk: block num %u is not valid", blk_num);
+		ret = -EINVAL;
 		goto out;
 	}
 	if (buf == NULL) {
 		log_msg("wr_blk: buf is NULL");
+		ret = -EINVAL;
 		goto out;
 	}
 	if (size != BLK_SIZE) {
 		log_msg("wr_blk: size = %u", size);
+		ret = -EINVAL;
 		goto out;
 	}
 	if (pwrite(sb.s_fd, buf, size, blk_num << BLK_SIZE_SHIFT) != size) {
 		log_ret("wr_blk: pwrite error");
+		ret = -errno;
 		goto out;
 	}
 	ret = 0;
@@ -575,6 +579,10 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	if (dirinode == NULL || !is_ivalid(dirinode->i_ino)) {
 		log_msg("add_entry: dirinode not valid");
 		ret = -EINVAL;
+		goto out;
+	}
+	if (!UFS_ISDIR(dirinode->i_mode)) {
+		ret = -ENOTDIR;
 		goto out;
 	}
 	if (file == NULL) {
@@ -668,6 +676,10 @@ int path2i(const char *path, struct m_inode *inode)
 		ret = -EINVAL;
 		goto out;
 	}
+	if (inode == NULL) {
+		ret = -EINVAL;
+		goto out;
+	}
 	inode->i_ino = ROOT_INO;
 	if ((ret = rd_inode(ROOT_INO, (struct d_inode *)inode)) < 0) {
 		log_msg("path2i: rd_inode error");
@@ -714,8 +726,11 @@ int find_entry(struct m_inode *par, const char *file,
 	struct dir_entry *de;
 
 	log_msg("find_entry called");
-	if (par == NULL || file == NULL || res == NULL)
+	if (par == NULL || file == NULL || res == NULL) {
 		log_msg("find_entry: arguments is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
 	log_msg("find_entry: par->i_ino = %u, file = %s", par->i_ino,
 			file);
 
@@ -730,9 +745,9 @@ int find_entry(struct m_inode *par, const char *file,
 		if ((znum = dnum2znum(par, dnum)) == 0) {
 			log_msg("find_entry: dnum2znum return "
 					"zero for data %u", dnum);
-			goto out;
+			break;
 		}
-		if (rd_zone(znum, buf, sizeof(buf)) < 0) {
+		if ((ret = rd_zone(znum, buf, sizeof(buf))) < 0) {
 			log_msg("find_entry: rd_zone error for data"
 					" %u", znum);
 			goto out;

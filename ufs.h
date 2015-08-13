@@ -162,7 +162,7 @@ struct file {
 	off_t	f_pos;
 };
 #define OPEN_MAX	64
-extern struct file open_files[];
+extern struct file open_files[OPEN_MAX];
 
 
 int read_sb(const char *);
