@@ -104,6 +104,7 @@ static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
 	int	fd, ret;
+	mode_t	oldmask;
 	char	dir[PATH_LEN + 1], base[NAME_LEN + 1];
 	struct m_inode dirinode;
 	char	pathcpy[PATH_LEN + 1];
@@ -131,13 +132,16 @@ static int ufs_creat(const char *path, mode_t mode,
 	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
 	strcpy(base, basename(pathcpy));
+	oldmask = umask(0);
+	mode &= 0777 & (~oldmask);
+	umask(oldmask);
 	if ((ret = dir2i(dir, &dirinode)) < 0) {
 		log_msg("ufs_creat: dir2i error for %s", dir);
 		goto out;
 	}
 	if (find_entry(&dirinode, base, &entry) == -ENOENT) {
 
-		if ((ret = add_entry(&dirinode, base, &entry)) < 0) {
+		if ((ret = add_entry(&dirinode, base, &entry, mode)) < 0) {
 			log_msg("ufs_creat: add_entry error for "
 					"%s in %s", base, dir);
 			goto out;

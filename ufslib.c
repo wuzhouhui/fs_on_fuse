@@ -562,7 +562,7 @@ out:
 }
 
 int add_entry(struct m_inode *dirinode, const char *file,
-		struct dir_entry *entry)
+		struct dir_entry *entry, mode_t mode)
 {
 	int	ret, i;
 	struct m_inode inode;
@@ -599,6 +599,7 @@ int add_entry(struct m_inode *dirinode, const char *file,
 	}
 	memset(&inode, 0, sizeof(inode));
 	inode.i_nlink = 1;
+	inode.i_mode = UFS_IFREG | mode;
 	inode.i_ino = entry->de_inum;
 	inode.i_uid = getuid();
 	inode.i_gid = getgid();

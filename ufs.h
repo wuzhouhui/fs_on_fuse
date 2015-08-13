@@ -37,7 +37,7 @@
 
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
-
+#define UFS_IFREG	0
 /* file opened write only */
 #define UFS_O_WRONLY	0x1
 
@@ -166,7 +166,7 @@ extern struct file open_files[];
 
 
 int read_sb(const char *);
-int add_entry(struct m_inode *, const char *, struct dir_entry *);
+int add_entry(struct m_inode *, const char *, struct dir_entry *, mode_t);
 ino_t new_inode(void);
 int free_inode(ino_t);
 int rd_inode(ino_t, struct d_inode *);
