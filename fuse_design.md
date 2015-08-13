@@ -378,16 +378,15 @@
   + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int add_entry(struct m_inode *dir, const char *file, struct dir_entry *entry)`
+### `int add_entry(struct m_inode *dir, const struct dir_entry *entry)`
 * 功能: 在指定的目录中新增一个目录项
 * 输入参数:
   + `dir`: 在该目录中新增一个目录项;
-  + `file`: 新增目录项的文件名;
-  + `entry`: 若成功, 存放新增的目录项;
+  + `entry`: 并增的目录项
 * 返回值: 添加成功返回 0; 失败返回 `errno`. 在以下情况返回失败：
   + 任一参数为空, 返回 `-EINVAL`;
   + `dir` 不是一个目录, 返回 `-ENOTDIR`;
-  + 没有磁盘空间存放目录项, 或无空闲的 i 结点, 返回 `-ENOSPC`;
+  + 没有磁盘空间存放目录项, 返回 `-ENOSPC`;
   + 被调用函数返回出错, 将错误值原样返回.
 
 ## 1.5 功能函数详细流程

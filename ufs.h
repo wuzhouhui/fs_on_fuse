@@ -166,7 +166,7 @@ extern struct file open_files[OPEN_MAX];
 
 
 int read_sb(const char *);
-int add_entry(struct m_inode *, const char *, struct dir_entry *, mode_t);
+int add_entry(struct m_inode *, const struct dir_entry *);
 ino_t new_inode(void);
 int free_inode(ino_t);
 int rd_inode(ino_t, struct d_inode *);
