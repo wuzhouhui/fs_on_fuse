@@ -480,7 +480,7 @@ static blkcnt_t _dnum2znum(struct m_inode *inode, blkcnt_t dnum, int creat)
 		}
 	}
 out:
-	log_msg("dnum2znum return %u", ret);
+	log_msg("_dnum2znum return %u", ret);
 	return(ret);
 }
 

@@ -83,3 +83,27 @@
       新申请的 i 结点释放 (`free_inode(newdirinode->i_ino)`;
     - 返回.
 
+* `int readdir(const char *dirpath)`
+  + 功能: 读某个目录中的所有项
+  + 输入参数:
+    - `dirpath`: 目录的路径;
+  + 返回值:
+    - 若成功, 返回 0;
+    - `-ENOTDIR`: `dirpath` 引用的不是一个目录, 或路径中的某个部分不是一个目录;
+    - `-ENOENT`: 路径中的某个目录不存在
+    - `-ENAMETOOLONG`: 路径名过长
+    - `-EINVAL`: 路径名为空或长度为 0;
+    - `-ENOMEM`: 内存不足;
+    - `-EIO`: 不知名错误;
+  + 函数过程 
+    - 若 `dirpath` 为空或长度为0, 返回 `-EINVAL`;
+    - 若 `dirpath` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
+    - 调用 `dir2i(dirpath, dirinode)`, 若返回出错, 原样返回错误值;
+    - 循环读取 `dirinode` 所有的数据块, 对数据块 `dnum`, 调用 `dnum2znum`, 若
+      返回的逻辑块号 `znum` 为 0, 则递增 `dnum`, 继续循环;
+    - 调用 `rd_zone(znum, buf)`, 从磁盘上读取逻辑块到缓冲区 `buf` 中; 若出错, 原样返回错误值;
+    - 将 `buf` 当作 `struct dir_entry` 的数组来使用; 若读取到一个 `buf[i].de_inum` 不为0 的
+      元素, 则输出目录项, 并递增读取的到目录项项数.
+    - 若所有的目录项都已读取完毕, 则退出循环.
+    - 若所有的目录项都还没有读完, 但是数据块已经读取完了, 说明程序有错, 返回 `-EIO`
+    - 返回.

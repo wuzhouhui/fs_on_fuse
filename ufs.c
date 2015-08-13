@@ -337,48 +337,59 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi)
 {
-	int	ret = 0, j;
-	blkcnt_t dnum, znum;
-	off_t	i;
-	char	blkbuf[BLK_SIZE];
-	struct dir_entry *de;
+	int	ret, i;
 	struct m_inode inode;
+	struct dir_entry *entptr;
+	blkcnt_t dnum, znum;
+	off_t	size;
+	char	blkbuf[BLK_SIZE];
 
-	log_msg("ufs_readdir called, path = %s", path);
-	if ((ret = path2i(path, &inode)) < 0) {
-		log_msg("ufs_readdir: path2i error ");
-		ret = -ENOENT;
+	log_msg("ufs_readdir called, path = %s", (path == NULL ? "NULL" :
+				path));
+	if (path == NULL || path[0] == 0) {
+		ret = -EINVAL;
+		log_msg("ufs_readdir: path invalid");
 		goto out;
 	}
-	i = 0;
+	if (strlen(path) >= PATH_LEN) {
+		ret = -ENAMETOOLONG;
+		log_msg("ufs_readdir: path name too long");
+		goto out;
+	}
+	if ((ret = dir2i(path, &inode)) < 0) {
+		log_msg("ufs_creat: dir2i error for %s", path);
+		goto out;
+	}
+
+	/* iterates all data of directory */
 	dnum = 0;
-	while (i < inode.i_size) {
+	size = 0;
+	while (size < inode.i_size) {
 		if ((znum = dnum2znum(&inode, dnum++)) == 0) {
-			log_msg("readdir: dnum2znum return "
-					"zero for data %u", dnum);
-			ret = -EINVAL;
+			if (size < inode.i_size)
+				ret = -EIO;
 			goto out;
 		}
 		if ((ret = rd_zone(znum, blkbuf, sizeof(blkbuf))) < 0) {
-			log_msg("readdir: rd_zone error for data %u", znum);
+			log_msg("ufs_readdir; rd_zone error for zone %u",
+					znum);
 			goto out;
 		}
-		log_msg("inode.i_size == %u", inode.i_size);
-		de = (struct dir_entry *)blkbuf;
-		for (j = 0; j < ENTRYNUM_PER_BLK && i < inode.i_size; j++) {
-			if (de[j].de_inum == 0)
+		entptr = (struct dir_entry *)blkbuf;
+		for (i = 0; i < ENTRYNUM_PER_BLK; i++) {
+			if (entptr[i].de_inum == 0)
 				continue;
-			i += sizeof(*de);
-			log_msg("de[%d].de_name = %s, de_inum = %u",
-					j, de[j].de_name, de[j].de_inum);
-			if (filler(buf, de[j].de_name, NULL, 0) != 0) {
-				log_msg("readdir: filler error for filling %s",
-						de[j].de_name);
-				ret =  -ENOMEM;
+			size += sizeof(struct dir_entry);
+			log_msg("readdir: entptr[%d].de_name = %s",
+					i, entptr[i].de_name);
+			if (filler(buf, entptr[i].de_name, NULL, 0)) {
+				log_msg("ufs_readdir: filler error");
+				ret = -ENOMEM;
 				goto out;
 			}
 		}
 	}
+	ret = 0;
 out:
 	log_msg("ufs_readdir return %d", ret);
 	return(ret);
