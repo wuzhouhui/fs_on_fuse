@@ -124,11 +124,11 @@
     - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
     - 调用 `dir = dirname(path)` 与 `file = basename(path)` 获取路径中的目录中的目录名,
       与 文件名;
+    - 调用 `ufs_path2i(path, inode)` 获取将被删除的文件的 i 结点, 若函数出错, 原样返回错误值;
+    - 如果 `inode` 是一个目录文件, 返回 `-EISDIR`;
     - 调用 `ufs_dir2i(dir, parinode)` 获取父目录的的 i 结点, 若函数出错, 原样返回错误值;
     - 调用 `ufs_rm_entry(parinode, entry)`, 从父目录中删除一个目录项, 若函数出错, 原样返回错误值.
     - 调用 `ufs_wr_inode(parinode)` 将父目录 i 结点写盘;
-    - 调用 `ufs_rd_inode(entry.de_inum, inode)`, 获取将被删除的文件的 i 结点, 若函数出错, 原样返回错误值;
-    - 如果 `inode` 是一个目录文件, 返回 `-EISDIR`;
     - 为 `inode.i_nlink` 减一, 减 1 后不为零, 调用 `ufs_wr_inode(inode)` 将 i 结点写盘; 若为 0, 调用 
       `ufs_truncate(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
       i 结点.
