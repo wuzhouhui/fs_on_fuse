@@ -38,6 +38,7 @@
 #define UFS_ISREG(mode)	(((mode) & (1 << 9)) == 0)
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
 #define UFS_IFREG	0
+#define UFS_IFDIR	(1 << 9)
 /* file opened write only */
 #define UFS_O_WRONLY	0x1
 

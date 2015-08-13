@@ -222,6 +222,110 @@ out:
 	return(ret);
 }
 
+static int ufs_mkdir(const char *path, mode_t mode)
+{
+	int	ret;
+	mode_t	oldmask;
+	char	pathcpy[PATH_LEN + 1], dir[PATH_LEN + 1],
+		base[NAME_LEN + 1];
+	struct m_inode parinode, dirinode;
+	struct dir_entry entry;
+
+	log_msg("ufs_mkdir called, path = %s, mode = %o",
+			(path == NULL ? "NULL" : path), mode);
+	if (path == NULL || path[0] == 0) {
+		log_msg("ufs_mkdir: path invalid");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) > PATH_LEN) {
+		log_msg("ufs_mkdir: path too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+
+	strcpy(pathcpy, path);
+	strcpy(dir, dirname(pathcpy));
+	strcpy(pathcpy, path);
+	strcpy(base, basename(pathcpy));
+
+	if ((ret = dir2i(dir, &parinode)) < 0) {
+		log_msg("ufs_mkdir: dir2i return %d", ret);
+		goto out;
+	}
+	ret = find_entry(&parinode, base, &entry);
+	if (ret == 0) {
+		log_msg("ufs_mkdir: parent diectory doesn't exist");
+		ret = -EEXIST;
+		goto out;
+	}
+	if (ret != -ENOENT) {
+		log_msg("ufs_mkdir: find_entry error");
+		goto out;
+	}
+
+	memset(&dirinode, 0, sizeof(dirinode));
+	if ((dirinode.i_ino = new_inode()) == 0) {
+		log_msg("ufs_mkdir: new_inode return 0");
+		ret = -ENOSPC;
+		goto out;
+	}
+
+	/*
+	 * initialize an empty directory, empty directory contains 
+	 * . and .. 
+	 */
+	dirinode.i_nlink = 2;
+	oldmask = umask(0);
+	umask(oldmask);
+	dirinode.i_mode = ((mode & 0777) | UFS_IFDIR) & (~oldmask);
+	dirinode.i_size = sizeof(struct dir_entry) * 2;
+	dirinode.i_atime = dirinode.i_ctime = dirinode.i_mtime
+		= time(NULL);
+	dirinode.i_uid = getuid();
+	dirinode.i_gid = getgid();
+	entry.de_inum = dirinode.i_ino;
+	strcpy(entry.de_name, ".");
+	if ((ret = add_entry(&dirinode, &entry)) < 0) {
+		log_msg("ufs_mkdir: add_entry error for adding .");
+		goto out;
+	}
+	entry.de_inum = parinode.i_ino;
+	strcpy(entry.de_name, "..");
+	if ((ret = add_entry(&dirinode, &entry)) < 0) {
+		log_msg("ufs_mkdir: add_entry error for adding ..");
+		goto out;
+	}
+	if ((ret = wr_inode(&dirinode)) < 0) {
+		log_msg("ufs_mkdir: wr_inode error");
+		goto out;
+	}
+
+	/* 
+	 * add an entry of new directory in parent directory
+	 */
+	entry.de_inum = dirinode.i_ino;
+	strcpy(entry.de_name, base);
+	if ((ret = add_entry(&parinode, &entry)) < 0) {
+		log_msg("ufs_mkdir: add_entry error for adding ..");
+		goto out;
+	}
+
+	/* update parent directory's nlinks */
+	parinode.i_nlink++;
+	if ((ret = wr_inode(&parinode)) < 0) {
+		log_msg("ufs_mkdir: wr_inode error for adding ..");
+		goto out;
+	}
+	ret = 0;
+
+out:
+	if (ret < 0 && dirinode.i_ino)
+		free_inode(dirinode.i_ino);
+	log_msg("ufs_mkdir return %d", ret);
+	return(ret);
+}
+
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
 	int	ret = 0;
@@ -310,6 +414,7 @@ out:
 struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
+	.mkdir		= ufs_mkdir,
 	.open		= ufs_open,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,

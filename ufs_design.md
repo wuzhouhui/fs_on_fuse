@@ -50,7 +50,7 @@
     - 若成功返回 0;
     - `-EBADF`: `fd` 不是一个有效的文件描述符;
 
-* `int mkdir(const char *path, mode_t mode)
+* `int mkdir(const char *path, mode_t mode)`
   + 功能: 创建一个空目录;
   + 输入参数:
     - `path`: 新目录的路径名;
@@ -77,7 +77,8 @@
       两个目录项 `.` 与 `..`, 若出错, 原样返回错误值;
     - 调用 `wr_inode(dirinode)` 将新目录的 i 结点写盘, 若出错, 原样返回错误值;
     - 初始化一个新目录的目录项, 调用 `add_entry(parent, entry)`, 在父目录中新增一个目录项,
-      若出错, 原样返回错误值.
+      若出错, 原样返回错误值, 更新父目录的 链接数 `i_nlink`,  调用 `wr_inode(parent)` 将父
+      目录的 i 结点写盘; 若出错, 原样返回错误值;
     - 在函数即将返回前, 检查前面的步骤是否有错误发生, 若有, 且已经为新目录申请了 i 结点, 则将
       新申请的 i 结点释放 (`free_inode(newdirinode->i_ino)`;
     - 返回.
