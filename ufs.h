@@ -100,8 +100,6 @@ struct ufs_dinode {
 	mode_t	i_mode;
 	/* the size of file */
 	off_t	i_size;
-	/* the last time this file accessed */
-	time_t	i_atime;
 	/* the last time this file modifed */
 	time_t	i_mtime;
 	/* the last time this inode changed */
@@ -126,8 +124,6 @@ struct ufs_minode {
 	mode_t	i_mode;
 	/* the size of file */
 	off_t	i_size;
-	/* the last time this file accessed */
-	time_t	i_atime;
 	/* the last time this file modifed */
 	time_t	i_mtime;
 	/* the last time this inode changed */
