@@ -420,6 +420,79 @@ out:
 	return(ret);
 }
 
+static int ufs_unlink(const char *path)
+{
+	int	ret;
+	char	pathcpy[UFS_PATH_LEN + 1], dir[UFS_PATH_LEN + 1],
+		name[UFS_NAME_LEN + 1];
+	struct ufs_minode inode, parinode;
+	struct ufs_dir_entry entry;
+
+	log_msg("ufs_unlink called, path = %s", path == NULL ? "NULL" : path);
+	if (path == NULL || path[0] == 0) {
+		ret = -EINVAL;
+		log_msg("ufs_unlink: path invalid");
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("ufs_unlink: path too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+
+	strcpy(pathcpy, path);
+	strcpy(dir, dirname(pathcpy));
+	strcpy(pathcpy, path);
+	strcpy(name, basename(pathcpy));
+
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_unlink: ufs_path2i error");
+		goto out;
+	}
+	if (UFS_ISDIR(inode.i_mode)) {
+		log_msg("ufs_unlink: %s is directory", path);
+		ret = -EISDIR;
+		goto out;
+	}
+	if ((ret = ufs_dir2i(dir, &parinode)) < 0) {
+		log_msg("ufs_unlink: ufs_dir2i error");
+		goto out;
+	}
+
+	entry.de_inum = inode.i_ino;
+	strcpy(entry.de_name, name);
+	if ((ret = ufs_rm_entry(&parinode, &entry)) < 0) {
+		log_msg("ufs_unlink: ufs_rm_entry error for %s",
+				entry.de_name);
+		goto out;
+	}
+	if ((ret = ufs_wr_inode(&parinode)) < 0) {
+		log_msg("ufs_unlink: ufs_wr_inode error");
+		goto out;
+	}
+
+	if (--inode.i_nlink) {
+		if ((ret = ufs_wr_inode(&inode)) < 0) {
+			log_msg("ufs_unlink: ufs_wr_inode error");
+			goto out;
+		}
+	} else {
+		if ((ret = ufs_truncate(&inode)) < 0) {
+			log_msg("ufs_unlink: ufs_truncate error");
+			goto out;
+		}
+		if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
+			log_msg("ufs_unlink: ufs_free_inode error");
+			goto out;
+		}
+	}
+
+	ret = 0;
+out:
+	log_msg("ufs_unlink return %d", ret);
+	return(ret);
+}
+
 struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
