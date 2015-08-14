@@ -44,29 +44,29 @@
 	 */
 	struct ufs_dsuper_block {
 		unsigned short s_magic; /* 文件系统魔数 */
-		blkcnt_t s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
-		blkcnt_t s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
-		blkcnt_t s_inode_blocks; /* i 结点块数, 以逻辑块计 */
-		blkcnt_t s_zone_blocks;	/* 逻辑块块数 */
+		unsigned int s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
+		unsigned int s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
+		unsigned int s_inode_blocks; /* i 结点块数, 以逻辑块计 */
+		unsigned int s_zone_blocks;	/* 逻辑块块数 */
 		off_t	s_max_size;	/* 最大文件长度 */
 	};
 	
 	/* super block in memeory */
 	struct ufs_msuper_block {
                 unsigned short s_magic; /* 文件系统魔数 */
-		blkcnt_t s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
-		blkcnt_t s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
-		blkcnt_t s_inode_blocks; /* i 结点块数, 以逻辑块计 */
-		blkcnt_t s_zone_blocks;	/* 逻辑块块数 */
+		unsigned int s_imap_blocks;	/* i 结点位图所占块数, 以逻辑块计 */
+		unsigned int s_zmap_blocks;	/* 逻辑块位图所占块数, 以逻辑块计 */
+		unsigned int s_inode_blocks; /* i 结点块数, 以逻辑块计 */
+		unsigned int s_zone_blocks;	/* 逻辑块块数 */
 		off_t	s_max_size;	/* 最大文件长度 */
 
 		/* 下面的字段仅存在于内存中 */
 		char *s_imap;		/* i 结点位图 */
 		char *s_zmap;		/* 逻辑块位图 */
-		blkcnt_t s_1st_inode_block; /* 第 1 块 i 结点块的磁盘块号 */
-		blkcnt_t s_1st_zone_block; /* 第 1 块逻辑块的磁盘块号 */
+		unsigned int s_1st_inode_block; /* 第 1 块 i 结点块的磁盘块号 */
+		unsigned int s_1st_zone_block; /* 第 1 块逻辑块的磁盘块号 */
 		ino_t	s_inode_left;	/* 剩余 i 结点数 */
-		blkcnt_t s_block_left;	/* 剩余 逻辑块数 */
+		unsigned int s_block_left;	/* 剩余 逻辑块数 */
 		int	s_fd;		/* 磁盘文件描述符 */
 		void	*s_addr;	/* 磁盘文件在内存中的地址 */
 	};
@@ -112,7 +112,7 @@
 		 * 6: 一次间接块
 		 * 7: 二次间接块
 		 */
-		blkcnt_t i_zones[8];
+		unsigned int i_zones[8];
 	};
 
 	/* 内存中的 i 结点. */
@@ -132,7 +132,7 @@
 		 * 6: 间接块
 		 * 7: 间间接块
 		 */
-		blkcnt_t i_zones[8];
+		unsigned int i_zones[8];
 
 		/* 下面的字段仅存在于内存中 */
 		ino_t	i_ino;		/* i 结点号, 从 1 开始, 等价于与该 i 结点对应的二进制位在 i 结点位图中的下标 */
@@ -257,14 +257,14 @@
   + `-EINVAL`: 输入参数不合法, 包括 `inode` 为空, i 结点号无效;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `blkcnt_t ufs_new_zone(void)`
+### `unsigned int ufs_new_zone(void)`
 * 功能: 获取一块空闲的逻辑块
 * 返回值: 若找到一块空闲的逻辑块, 返回它的逻辑块号; 否则返回 0
 * 注: 逻辑块用于存储文件数据 (不包括元数据), 是针对于文件系统的; 而磁盘上
 的每 512 字节为一个磁盘块, 磁盘块中可以存储任意的内容 (无论是 i 结点, 还是
 文件数据)
 
-### `int ufs_free_zone(blkcnt_t zone_num)`
+### `int ufs_free_zone(unsigned int zone_num)`
 * 功能: 释放一个指定的逻辑块
 * 输入参数: 
   + `zone_num`: 将被释放的逻辑块块号
@@ -272,7 +272,7 @@
   + `zone_num` 超出范围, 返回 `-EINVAL`;
   + `zone_num` 原来就处于已释放状态, 返回 `-EAGAIN`;
 
-### `int ufs_rd_zone(blkcnt_t zone_num, void *buf, size_t size)`
+### `int ufs_rd_zone(unsigned int zone_num, void *buf, size_t size)`
 * 功能: 读一个指定的逻辑块
 * 输入参数: 
   + `zone_num` :将被读取的逻辑块块号
@@ -284,7 +284,7 @@
   + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int ufs_wr_zone(blkcnt_t zone_num, void *buf, size_t size)`
+### `int ufs_wr_zone(unsigned int zone_num, void *buf, size_t size)`
 * 功能: 将一个指定的逻辑块写入磁盘
 * 输入参数:
   + `zone_num`: 逻辑块块号
@@ -296,7 +296,7 @@
   + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `blkcnt_t inum2blknum(ino_t inum)`
+### `unsigned int inum2blknum(ino_t inum)`
 * 功能: 计算指定的 i 结点所在的磁盘块块号
 * 输入参数:
   + `inum`: 待计算的 i 结点号
@@ -305,14 +305,14 @@
 * 注: 磁盘的第一个块被超级块占用, 故 0 号磁盘块不会被用到, 可用
 作错误的返回值.
 
-### `blkcnt_t zonenum2blknum(blkcnt_t zone_num)`
+### `unsigned int zonenum2blknum(unsigned int zone_num)`
 * 功能: 计算指定的逻辑块所在的磁盘块块号
 * 输入参数:
   + `zone_num`: 待计算的逻辑块块号
 * 返回值: 编号为 `zone_num` 的逻辑块所在的磁盘块块号. 若 `zone_num`
 无效则返回 0.
 
-### `blkcnt_t datanum2zonenum(struct ufs_minode *inode, blkcnt_t data_num)`
+### `unsigned int datanum2zonenum(struct ufs_minode *inode, unsigned int data_num)`
 * 功能: 计算指定的数据块所在逻辑块号
 * 输入参数:
   + `inode`: 数据块所在的 i 结点点指针.
@@ -321,7 +321,7 @@
 * 注: "数据块" 是相对于单个文件的, 从 1 开始编号, 数据块号最大值
 受限于 i 结点所能支持的最大文件大小.
 
-### `int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)`
+### `int ufs_rd_blk(unsigned int blk_num, void *buf, size_t size)`
 * 功能: 从磁盘上读一块指定的磁盘块
 * 输入参数:
   + `blk_num`: 将被读的磁盘块块号
@@ -335,7 +335,7 @@
 * 注: 磁盘文件上的每 512 字节都算作一个磁盘块, 而不管该磁盘块存放的是什么
 内容, 下同.
 
-### `int ufs_wr_blk(blkcnt_t blk_num, void *buf, size_t size)`
+### `int ufs_wr_blk(unsigned int blk_num, void *buf, size_t size)`
 * 功能: 写一块指定的磁盘块
 * 输入参数:
   + `blk_num`: 将被写入的磁盘块的块号

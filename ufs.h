@@ -29,7 +29,7 @@
 /* # inode per block */
 #define UFS_INUM_PER_BLK	(UFS_BLK_SIZE / sizeof(struct ufs_dinode))
 /* # zone nubmer per block */
-#define UFS_ZNUM_PER_BLK	(UFS_BLK_SIZE / sizeof(blkcnt_t))
+#define UFS_ZNUM_PER_BLK	(UFS_BLK_SIZE / sizeof(unsigned int))
 
 #define UFS_ENTRYNUM_PER_BLK	(UFS_BLK_SIZE / sizeof(struct ufs_dir_entry))
 
@@ -47,13 +47,13 @@ struct ufs_dsuper_block {
 	/* magic number of filesystem */
 	unsigned short s_magic;
 	/* # block that inode map used */
-	blkcnt_t s_imap_blocks;
+	unsigned int s_imap_blocks;
 	/* # block that zone map used */
-	blkcnt_t s_zmap_blocks;
+	unsigned int s_zmap_blocks;
 	/* # block that inode used */
-	blkcnt_t s_inode_blocks;
+	unsigned int s_inode_blocks;
 	/* # block that zone used */
-	blkcnt_t s_zone_blocks;
+	unsigned int s_zone_blocks;
 	/* the max file size that filesystem supports */
 	off_t	s_max_size;
 };
@@ -63,13 +63,13 @@ struct ufs_msuper_block {
 	/* magic number of filesystem */
 	unsigned short s_magic;
 	/* # block that inode map used */
-	blkcnt_t s_imap_blocks;
+	unsigned int s_imap_blocks;
 	/* # block that zone map used */
-	blkcnt_t s_zmap_blocks;
+	unsigned int s_zmap_blocks;
 	/* # block that inode used */
-	blkcnt_t s_inode_blocks;
+	unsigned int s_inode_blocks;
 	/* # block that zone used */
-	blkcnt_t s_zone_blocks;
+	unsigned int s_zone_blocks;
 	/* the max file size that filesystem supports */
 	off_t	s_max_size;
 
@@ -79,13 +79,13 @@ struct ufs_msuper_block {
 	/* zone bit map */
 	char	*s_zmap;
 	/* 1st inode block' number in disk */
-	blkcnt_t s_1st_inode_block;
+	unsigned int s_1st_inode_block;
 	/* 1st zone block' number in disk */
-	blkcnt_t s_1st_zone_block;
+	unsigned int s_1st_zone_block;
 	/* available inode left. XXX deprecated. */
 	ino_t	s_inode_left;
 	/* available zone bloc left. XXX deprecated */
-	blkcnt_t s_block_left;
+	unsigned int s_block_left;
 	/* file descriptor of disk file */
 	int	s_fd;
 	/* address of disk file in memeory */
@@ -113,7 +113,7 @@ struct ufs_dinode {
 	 * 6: indirect block.
 	 * 7: double indirect block.
 	 */
-	blkcnt_t i_zones[8];
+	unsigned int i_zones[8];
 };
 
 /* inode in memrory */
@@ -137,7 +137,7 @@ struct ufs_minode {
 	 * 6: indirect block.
 	 * 7: double indirect block.
 	 */
-	blkcnt_t i_zones[8];
+	unsigned int i_zones[8];
 
 	ino_t	i_ino;		/* number of inode */
 	int	i_refcnt;	/* reference count */
@@ -169,15 +169,15 @@ ino_t ufs_new_inode(void);
 int ufs_free_inode(ino_t);
 int ufs_rd_inode(ino_t, struct ufs_dinode *);
 int ufs_wr_inode(const struct ufs_minode *);
-blkcnt_t ufs_new_zone(void);
-int ufs_free_zone(blkcnt_t);
-int ufs_rd_zone(blkcnt_t, void *, size_t);
-int ufs_wr_zone(blkcnt_t, const void *, size_t);
-blkcnt_t ufs_inum2bnum(ino_t inum);
-blkcnt_t ufs_znum2bnum(blkcnt_t);
-blkcnt_t ufs_dnum2znum(struct ufs_minode *, blkcnt_t);
-int ufs_rd_blk(blkcnt_t, void *, size_t);
-int ufs_wr_blk(blkcnt_t, const void *, size_t);
+unsigned int ufs_new_zone(void);
+int ufs_free_zone(unsigned int);
+int ufs_rd_zone(unsigned int, void *, size_t);
+int ufs_wr_zone(unsigned int, const void *, size_t);
+unsigned int ufs_inum2bnum(ino_t inum);
+unsigned int ufs_znum2bnum(unsigned int);
+unsigned int ufs_dnum2znum(struct ufs_minode *, unsigned int);
+int ufs_rd_blk(unsigned int, void *, size_t);
+int ufs_wr_blk(unsigned int, const void *, size_t);
 int ufs_path2i(const char *, struct ufs_minode *);
 int ufs_dir2i(const char *, struct ufs_minode *);
 int ufs_find_entry(struct ufs_minode *, const char *, struct ufs_dir_entry *);

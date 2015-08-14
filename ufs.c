@@ -51,7 +51,7 @@ static char bit[] = {
 struct ufs_msuper_block sb;
 
 /* statistic the number of available entries */
-static unsigned int left_cnt(void *bitmap, blkcnt_t blk, int total)
+static unsigned int left_cnt(void *bitmap, unsigned int blk, int total)
 {
 	char	*c = (char *)bitmap;
 	int	n = blk << UFS_BLK_SIZE_SHIFT;
@@ -93,7 +93,7 @@ static int init(const char *disk_name)
 	sb.s_1st_zone_block = sb.s_1st_inode_block + sb.s_inode_blocks;
 	sb.s_inode_left = (ino_t)left_cnt(sb.s_imap, sb.s_imap_blocks,
 			sb.s_inode_blocks * UFS_INUM_PER_BLK);
-	sb.s_block_left = (blkcnt_t)left_cnt(sb.s_zmap, sb.s_zmap_blocks,
+	sb.s_block_left = (unsigned int)left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
 
 	log_msg("init returned");
@@ -339,7 +339,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	int	ret, i;
 	struct ufs_minode inode;
 	struct ufs_dir_entry *entptr;
-	blkcnt_t dnum, znum;
+	unsigned int dnum, znum;
 	off_t	size;
 	char	blkbuf[UFS_BLK_SIZE];
 

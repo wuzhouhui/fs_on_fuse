@@ -2,7 +2,7 @@
 
 extern struct ufs_msuper_block sb;
 
-static blkcnt_t _ufs_dnum2znum(struct ufs_minode *, blkcnt_t, int);
+static unsigned int _ufs_dnum2znum(struct ufs_minode *, unsigned int, int);
 
 /* determine whether the inode inum is valid */
 static inline int ufs_is_ivalid(ino_t inum)
@@ -10,28 +10,28 @@ static inline int ufs_is_ivalid(ino_t inum)
 	return(inum >= 1 && inum < (sb.s_inode_blocks << (UFS_BLK_SIZE_SHIFT + 3)));
 }
 
-static inline int ufs_is_zvalid(blkcnt_t znum)
+static inline int ufs_is_zvalid(unsigned int znum)
 {
 	return(znum >= 1 && znum <= sb.s_zone_blocks);
 }
 
-static inline int ufs_is_bvalid(blkcnt_t bnum)
+static inline int ufs_is_bvalid(unsigned int bnum)
 {
 	return(bnum >= sb.s_1st_inode_block &&
 			bnum < (sb.s_1st_zone_block + sb.s_zone_blocks));
 }
 
-static inline int ufs_is_dvalid(blkcnt_t dnum)
+static inline int ufs_is_dvalid(unsigned int dnum)
 {
 	return(dnum >= 0  && dnum < (6 + UFS_ZNUM_PER_BLK + UFS_ZNUM_PER_BLK *
 				UFS_ZNUM_PER_BLK));
 }
 
-static int ufs_free_ind(blkcnt_t znum)
+static int ufs_free_ind(unsigned int znum)
 {
 	int	ret, i;
 	char	buf[UFS_BLK_SIZE];
-	blkcnt_t *zptr;
+	unsigned int *zptr;
 
 	log_msg("ufs_free_ind called, znum = %d", (unsigned int)znum);
 	if (znum == 0) {
@@ -43,7 +43,7 @@ static int ufs_free_ind(blkcnt_t znum)
 		goto out;
 	}
 
-	zptr = (blkcnt_t *)buf;
+	zptr = (unsigned int *)buf;
 	for (i = 0; i < UFS_ZNUM_PER_BLK; i++) {
 		if (zptr[i] == 0)
 			continue;
@@ -66,11 +66,11 @@ out:
 	return(ret);
 }
 
-static int ufs_free_dind(blkcnt_t znum)
+static int ufs_free_dind(unsigned int znum)
 {
 	int	ret, i;
 	char	buf[UFS_BLK_SIZE];
-	blkcnt_t *zptr;
+	unsigned int *zptr;
 
 	log_msg("ufs_free_dind called, znum = %u", (unsigned int)znum);
 	if (znum == 0) {
@@ -83,7 +83,7 @@ static int ufs_free_dind(blkcnt_t znum)
 				(unsigned int)znum);
 		goto out;
 	}
-	zptr = (blkcnt_t *)buf;
+	zptr = (unsigned int *)buf;
 	for (i = 0; i < UFS_ZNUM_PER_BLK; i++) {
 		if (zptr[i] == 0)
 			continue;
@@ -106,9 +106,9 @@ out:
 	return(ret);
 }
 
-static blkcnt_t ufs_creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
+static unsigned int ufs_creat_zone(struct ufs_minode *inode, unsigned int dnum)
 {
-	blkcnt_t ret = 0;
+	unsigned int ret = 0;
 	log_msg("ufs_creat_zone called, inum = %d, dnum = %d",
 			(int)inode->i_ino, (int)dnum);
 	ret = _ufs_dnum2znum(inode, dnum, 1);
@@ -116,9 +116,9 @@ static blkcnt_t ufs_creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
 	return(ret);
 }
 
-blkcnt_t ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum)
+unsigned int ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum)
 {
-	blkcnt_t ret = 0;
+	unsigned int ret = 0;
 	log_msg("ufs_dnum2znum called, inum = %u, dnum = %u",
 			(unsigned int)inode->i_ino, (unsigned int)dnum);
 	ret = _ufs_dnum2znum(inode, dnum, 0);
@@ -210,7 +210,7 @@ out:
 int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)
 {
 	int	ret;
-	blkcnt_t bnum;
+	unsigned int bnum;
 	char	buf[UFS_BLK_SIZE];
 
 	log_msg("ufs_rd_inode called, inode num = %u", (unsigned int)inum);
@@ -247,7 +247,7 @@ out:
 int ufs_wr_inode(const struct ufs_minode *inode)
 {
 	int	ret;
-	blkcnt_t bnum;
+	unsigned int bnum;
 	char	buf[UFS_BLK_SIZE];
 
 	log_msg("ufs_wr_inode called");
@@ -287,7 +287,7 @@ out:
 	return(ret);
 }
 
-blkcnt_t ufs_new_zone(void)
+unsigned int ufs_new_zone(void)
 {
 	char	*p = sb.s_zmap;
 	int	n = sb.s_zmap_blocks << UFS_BLK_SIZE_SHIFT;
@@ -326,7 +326,7 @@ out:
 	return(ret);
 }
 
-int ufs_free_zone(blkcnt_t znum)
+int ufs_free_zone(unsigned int znum)
 {
 	ino_t	n;
 	int	ret;
@@ -353,10 +353,10 @@ out:
 	return(ret);
 }
 
-int ufs_rd_zone(blkcnt_t zone_num, void *buf, size_t size)
+int ufs_rd_zone(unsigned int zone_num, void *buf, size_t size)
 {
 	int	ret;
-	blkcnt_t bnum;
+	unsigned int bnum;
 
 	log_msg("ufs_rd_zone called, zone_num = %u", (unsigned int)zone_num);
 	if (!ufs_is_zvalid(zone_num)) {
@@ -388,10 +388,10 @@ out:
 	return(ret);
 }
 
-int ufs_wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
+int ufs_wr_zone(unsigned int zone_num, const void *buf, size_t size)
 {
 	int	ret;
-	blkcnt_t bnum;
+	unsigned int bnum;
 
 	log_msg("ufs_wr_zone called, zone_num = %u",
 			(unsigned int)zone_num);
@@ -424,9 +424,9 @@ out:
 	return(ret);
 }
 
-blkcnt_t ufs_inum2bnum(ino_t inum)
+unsigned int ufs_inum2bnum(ino_t inum)
 {
-	blkcnt_t ret = 0;
+	unsigned int ret = 0;
 
 	log_msg("ufs_inum2bnum called, inum = %u", (unsigned int)inum);
 	if (!ufs_is_ivalid(inum))
@@ -438,9 +438,9 @@ blkcnt_t ufs_inum2bnum(ino_t inum)
 	return(ret);
 }
 
-blkcnt_t ufs_znum2bnum(blkcnt_t zone_num)
+unsigned int ufs_znum2bnum(unsigned int zone_num)
 {
-	blkcnt_t ret = 0;
+	unsigned int ret = 0;
 
 	log_msg("ufs_znum2bnum called, zone_num = %u", (unsigned int)zone_num);
 	if (!ufs_is_zvalid(zone_num)) {
@@ -454,9 +454,9 @@ out:
 	return(ret);
 }
 
-static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int creat)
+static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, int creat)
 {
-	blkcnt_t ret = 0, znum;
+	unsigned int ret = 0, znum;
 	char	buf[UFS_BLK_SIZE];
 
 	log_msg("_ufs_dnum2znum called, inum = %d, dnum = %d, creat = %d",
@@ -509,11 +509,11 @@ static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int crea
 			ret = 0;
 			goto out;
 		}
-		ret = ((blkcnt_t *)buf)[dnum];
+		ret = ((unsigned int *)buf)[dnum];
 		if (ret == 0 && creat) {
 			if ((ret = ufs_new_zone()) == 0)
 				goto out;
-			((blkcnt_t *)buf)[dnum] = ret;
+			((unsigned int *)buf)[dnum] = ret;
 			if (ufs_wr_zone(inode->i_zones[6], buf, sizeof(buf)) < 0) {
 				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
 				ret = 0;
@@ -546,14 +546,14 @@ static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int crea
 		ret = 0;
 		goto out;
 	}
-	ret = ((blkcnt_t *)buf)[dnum / UFS_ZNUM_PER_BLK];
+	ret = ((unsigned int *)buf)[dnum / UFS_ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
 		if ((ret = ufs_new_zone()) == 0) {
 			log_msg("_ufs_dnum2znum: ufs_new_inode return 0 for "
 					"1st level of double");
 			goto out;
 		}
-		((blkcnt_t *)buf)[dnum / UFS_ZNUM_PER_BLK] = ret;
+		((unsigned int *)buf)[dnum / UFS_ZNUM_PER_BLK] = ret;
 		if (ufs_wr_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
 			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
 			goto out;
@@ -566,14 +566,14 @@ static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int crea
 		goto out;
 	}
 	znum = ret;
-	ret = ((blkcnt_t *)buf)[dnum % UFS_ZNUM_PER_BLK];
+	ret = ((unsigned int *)buf)[dnum % UFS_ZNUM_PER_BLK];
 	if (ret == 0 && creat) {
 		if ((ret = ufs_new_zone()) == 0) {
 			log_msg("_ufs_dnum2znum: ufs_new_inode return 0 for "
 					"2nd level of double");
 			goto out;
 		}
-		((blkcnt_t *)buf)[dnum % UFS_ZNUM_PER_BLK] = ret;
+		((unsigned int *)buf)[dnum % UFS_ZNUM_PER_BLK] = ret;
 		if (ufs_wr_zone(znum, buf, sizeof(buf)) < 0) {
 			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
 			goto out;
@@ -584,7 +584,7 @@ out:
 	return(ret);
 }
 
-int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)
+int ufs_rd_blk(unsigned int blk_num, void *buf, size_t size)
 {
 	int	ret = 0;
 
@@ -612,7 +612,7 @@ out:
 	return(ret);
 }
 
-int ufs_wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
+int ufs_wr_blk(unsigned int blk_num, const void *buf, size_t size)
 {
 	int	ret;
 
@@ -664,7 +664,7 @@ out:
 int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
-	blkcnt_t dnum, znum;
+	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	off_t	size;
 	struct ufs_dir_entry *de;
@@ -756,7 +756,7 @@ out:
 int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
-	blkcnt_t dnum, znum;
+	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	struct ufs_dir_entry *de;
 
@@ -882,7 +882,7 @@ int ufs_find_entry(struct ufs_minode *par, const char *file,
 {
 	off_t	i, j;
 	int	ret;
-	blkcnt_t dnum, znum;
+	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	struct ufs_dir_entry *de;
 
