@@ -133,3 +133,31 @@
       `ufs_truncate(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
       i 结点.
     - 返回
+* `int rmdir(const char *path)`
+  + 功能: 删除一个空目录;
+  + 输入参数:
+    - `path`: 目录的路径名;
+  + 返回值:
+    - 成功返回 0;
+    - `-EINVAL`: 目录为空, 或长度为 0;
+    - `-EACCESS`: 对目录的父目录无写权限, 或对路径中的目录无搜索权限;
+    - `-ENAMETOOLONG`: `path` 路径名过长;
+    - `-ENOENT`: 目录不存在, 或路径中的某个目录不存在;
+    - `-ENOTDIR`: `path` 引用的不是一个目录, 或路径中的某个部分不是一个目录;
+    - `-ENOTEMPTY`: `path` 引用的不是一个空目录;
+    - `-EPERM`: `path` 引用的是根目录;
+  + 函数过程:
+    - 若 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
+    - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
+    - 若 `path` 引用是根目录, 返回 `-EPERM`;
+    - 调用 `ufs_dir2i(path, inode)`, 若函数出错, 原样返回错误值;
+    - 如果 `inode` 不是一个目录, 返回 `-ENOTDIR`;
+    - 调用 `ufs_is_empty(inode)`, 如果目录不空, 返回 `-ENOTEMPTY`;
+    - 调用 `dir = dirname(path)` 获取 `path` 的目录部分;
+    - 调用 `ufs_dir2i(dir, parinode)`, 获取父目录的 i 结点, 若函数出错, 原样返回错误值;
+    - 调用 `ufs_rm_entry(parinode, ent)` 移除将被删除的目录的目录项, 若函数出错, 原样返回错误值;
+    - 调用 `ufs_wr_inode(parinode)` 将父目录的 i 结点写盘;
+    - 调用 `ufs_truncate(inode)`, 释放将被删除的目录占用的数据块;
+    - 调用 `ufs_free_inode(inode)` , 释放目录的 i 结点;
+    - 返回.
+

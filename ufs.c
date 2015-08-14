@@ -420,6 +420,79 @@ out:
 	return(ret);
 }
 
+static int ufs_rmdir(const char *path)
+{
+	int	ret = 0;
+	struct ufs_minode inode, parinode;
+	char	pathcpy[UFS_PATH_LEN + 1], dir[UFS_PATH_LEN + 1];
+	struct ufs_dir_entry ent;
+
+	log_msg("ufs_rmdir called, path = %s", path == NULL ? "NULL" : path);
+	if (path == NULL || path[0] == 0) {
+		log_msg("ufs_rmdir path invalid");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("ufs_rmdir path too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if (strcmp("/", path) == 0) {
+		log_msg("ufs_rmdir: root directory can't be removed");
+		ret = -EPERM;
+		goto out;
+	}
+
+	if ((ret = ufs_dir2i(path, &inode)) < 0) {
+		log_msg("ufs_rmdir: ufs_dir2i error for %s", path);
+		goto out;
+	}
+	
+	if (!UFS_ISDIR(inode.i_mode)) {
+		log_msg("ufs_rmdir: %s is not directory", path);
+		ret = -EISDIR;
+		goto out;
+	}
+	if (!ufs_is_empty(&inode)) {
+		log_msg("ufs_rmdir: %s is not empty", path);
+		ret = -ENOTEMPTY;
+		goto out;
+	}
+
+	strcpy(pathcpy, path);
+	strcpy(dir, dirname(pathcpy));
+	if ((ret = ufs_dir2i(dir, &parinode)) < 0) {
+		log_msg("ufs_rmdir: ufs_dir2i error for %s", dir);
+		goto out;
+	}
+	ent.de_inum = inode.i_ino;
+	strcpy(pathcpy, path);
+	strcpy(ent.de_name, basename(pathcpy));
+	if ((ret = ufs_rm_entry(&parinode, &ent)) < 0) {
+		log_msg("ufs_rmdir: ufs_rm_entry error");
+		goto out;
+	}
+	if ((ret = ufs_wr_inode(&parinode)) < 0) {
+		log_msg("ufs_rmdir: ufs_wr_inode error");
+		goto out;
+	}
+
+	if ((ret = ufs_truncate(&inode)) < 0) {
+		log_msg("ufs_rmdir: ufs_truncate error");
+		goto out;
+	}
+	if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
+		log_msg("ufs_rmdir: ufs_free_inode error");
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_rmdir return %d", ret);
+	return(ret);
+}
+
 static int ufs_unlink(const char *path)
 {
 	int	ret;
@@ -500,6 +573,7 @@ struct fuse_operations ufs_oper = {
 	.open		= ufs_open,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
+	.rmdir		= ufs_rmdir,
 	.unlink		= ufs_unlink,
 };
 

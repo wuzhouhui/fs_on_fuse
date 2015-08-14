@@ -977,6 +977,13 @@ out:
 	return(ret);
 }
 
+int ufs_is_empty(struct ufs_minode *inode)
+{
+	if (inode == NULL)
+		return(0);
+	return(inode->i_size == (2 * sizeof(struct ufs_dir_entry)));
+}
+
 /*
  * convert file mode and permission from ufs to
  * UNIX.
