@@ -23,7 +23,7 @@
 #define UFS_BLK_SIZE	(1 << UFS_BLK_SIZE_SHIFT)
 #define UFS_MAGIC		0x7594
 /* max length of file name, null terminator excluded */
-#define UFS_NAME_LEN        27
+#define UFS_NAME_LEN        23
 /* max length of path, null terminator excluded */
 #define UFS_PATH_LEN	1024
 /* # inode per block */
