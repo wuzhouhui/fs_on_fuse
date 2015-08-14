@@ -27,6 +27,85 @@ static inline int ufs_is_dvalid(blkcnt_t dnum)
 				UFS_ZNUM_PER_BLK));
 }
 
+static int ufs_free_ind(blkcnt_t znum)
+{
+	int	ret, i;
+	char	buf[UFS_BLK_SIZE];
+	blkcnt_t *zptr;
+
+	log_msg("ufs_free_ind called, znum = %d", (unsigned int)znum);
+	if (znum == 0) {
+		ret = 0;
+		goto out;
+	}
+	if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_free_ind: ufs_rd_zone error for %d", (int)znum);
+		goto out;
+	}
+
+	zptr = (blkcnt_t *)buf;
+	for (i = 0; i < UFS_ZNUM_PER_BLK; i++) {
+		if (zptr[i] == 0)
+			continue;
+		if ((ret = ufs_free_zone(zptr[i])) < 0) {
+			log_msg("ufs_free_ind: ufs_free_zone error for znum"
+					" %u", (unsigned int)zptr[i]);
+			goto out;
+		}
+	}
+
+	if ((ret = ufs_free_zone(znum)) < 0) {
+		log_msg("ufs_free_ind: ufs_free_zone error for znum %u",
+				(unsigned int)znum);
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_free_ind return %d");
+	return(ret);
+}
+
+static int ufs_free_dind(blkcnt_t znum)
+{
+	int	ret, i;
+	char	buf[UFS_BLK_SIZE];
+	blkcnt_t *zptr;
+
+	log_msg("ufs_free_dind called, znum = %u", (unsigned int)znum);
+	if (znum == 0) {
+		ret = 0;
+		goto out;
+	}
+
+	if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_free_dind: ufs_rd_zone error for znum %u",
+				(unsigned int)znum);
+		goto out;
+	}
+	zptr = (blkcnt_t *)buf;
+	for (i = 0; i < UFS_ZNUM_PER_BLK; i++) {
+		if (zptr[i] == 0)
+			continue;
+		if ((ret = ufs_free_ind(zptr[i])) < 0) {
+			log_msg("ufs_free_dind: ufs_free_ind error for znum"
+					" %u", (unsigned int)zptr[i]);
+			goto out;
+		}
+	}
+
+	if ((ret = ufs_free_zone(znum)) < 0) {
+		log_msg("ufs_free_dind: ufs_free_zone error for znum %u",
+				(unsigned int)znum);
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_free_dind return %d", ret);
+	return(ret);
+}
+
 static blkcnt_t ufs_creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
@@ -596,7 +675,7 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 	log_msg("ufs_rm_entry called, removing %s in %u",
 			(ent == NULL ? "NULL" : ent->de_name),
 			(unsigned int)dir->i_ino);
-	if (dir == NULL || !is_ivalid(dir->i_ino)) {
+	if (dir == NULL || !ufs_is_ivalid(dir->i_ino)) {
 		log_msg("ufs_rm_entry: dirinode not valid");
 		ret = -EINVAL;
 		goto out;
@@ -644,8 +723,8 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 			if (de[i].de_inum == 0)
 				continue;
 			size += sizeof(struct ufs_dir_entry);
-			if (de[i].de_inum == entry->de_inum &&
-				!strcmp(de[i].de_name, entry->de_name)) {
+			if (de[i].de_inum == ent->de_inum &&
+				!strcmp(de[i].de_name, ent->de_name)) {
 				ret = 7594;
 				break;
 			}
@@ -858,6 +937,46 @@ out:
 	log_msg("ufs_find_entry return %d", ret);
 	return(ret);
 }
+
+int ufs_truncate(struct ufs_minode *iptr)
+{
+	int	ret, i;
+
+	log_msg("ufs_truncate called, iptr->i_ino = %u", iptr == NULL ?
+			0 : (unsigned int)iptr->i_ino);
+	
+	if (iptr == NULL) {
+		log_msg("ufs_truncate: iptr is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
+	for (i = 0; i < 6; i++) {
+		if (iptr->i_zones[i] == 0)
+			continue;
+		if ((ret = ufs_free_zone(iptr->i_zones[i])) < 0) {
+			log_msg("ufs_truncate: ufs_free_zone error for "
+					"zone %d", (int)iptr->i_zones[i]);
+			goto out;
+		}
+	}
+	if ((ret = ufs_free_ind(iptr->i_zones[6])) < 0) {
+		log_msg("ufs_truncate: ufs_free_ind error");
+		goto out;
+	}
+	if ((ret = ufs_free_dind(iptr->i_zones[7])) < 0) {
+		log_msg("ufs_truncate: ufs_free_dind error");
+		goto out;
+	}
+	memset(&iptr->i_zones, 0, sizeof(iptr->i_zones));
+	iptr->i_size = 0;
+	iptr->i_mtime = iptr->i_ctime = time(NULL);
+	ret = 0;
+
+out:
+	log_msg("ufs_truncate return %d", ret);
+	return(ret);
+}
+
 /*
  * convert file mode and permission from ufs to
  * UNIX.
