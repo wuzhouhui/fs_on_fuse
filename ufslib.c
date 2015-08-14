@@ -585,6 +585,98 @@ out:
 	return(ret);
 }
 
+int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
+{
+	int	ret, i;
+	blkcnt_t dnum, znum;
+	char	buf[UFS_BLK_SIZE];
+	off_t	size;
+	struct ufs_dir_entry *de;
+
+	log_msg("ufs_rm_entry called, removing %s in %u",
+			(ent == NULL ? "NULL" : ent->de_name),
+			(unsigned int)dir->i_ino);
+	if (dir == NULL || !is_ivalid(dir->i_ino)) {
+		log_msg("ufs_rm_entry: dirinode not valid");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (ent == NULL) {
+		log_msg("ufs_add_entry: ent is NULL");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!UFS_ISDIR(dir->i_mode)) {
+		log_msg("ufs_rm_entry: inode %u is not diectory",
+				(unsigned int)dir->i_ino);
+		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/*
+	 * find the entry in parent directory. remove entry and
+	 * update parent directory's inode.
+	 */
+	dnum = 0;
+	size = 0;
+	ret = -ENOENT;
+	while (size < dir->i_size) {
+		if ((znum = ufs_dnum2znum(dir, dnum++)) == 0) {
+			log_msg("ufs_rm_entry: ufs_creat_zone return 0"
+					" for %u", (unsigned int)znum);
+			if (size < dir->i_size) {
+				log_msg("ufs_rm_entry: the # data blocks "
+					" and the size of directory are not"
+					" matched");
+				ret = -EIO;
+				goto out;
+			}
+			ret = -ENOENT;
+			goto out;
+		}
+		if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+			log_msg("ufs_rm_entry: ufs_rd_zone error");
+			goto out;
+		}
+		for (de = (struct ufs_dir_entry *)buf, i = 0;
+				i < UFS_ENTRYNUM_PER_BLK &&
+				size < dir->i_size; i++) {
+			if (de[i].de_inum == 0)
+				continue;
+			size += sizeof(struct ufs_dir_entry);
+			if (de[i].de_inum == entry->de_inum &&
+				!strcmp(de[i].de_name, entry->de_name)) {
+				ret = 7594;
+				break;
+			}
+		}
+		if (ret == 7594)
+			break;
+	}
+
+	if (ret != 7594) /* not found */
+		goto out;
+
+	memset(&de[i], 0, sizeof(de[i]));
+	if ((ret = ufs_wr_zone(znum, buf, sizeof(buf))) < 0) {
+		log_msg("ufs_rm_entry: ufs_wr_zone error");
+		goto out;
+	}
+	/*
+	 * update parent directory's inode.
+	 */
+	dir->i_size -= sizeof(de[i]);
+	if ((ret = ufs_wr_inode(dir)) < 0) {
+		log_msg("ufs_add_entry: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_add_entry return %d", ret);
+	return(ret);
+}
+
 int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;

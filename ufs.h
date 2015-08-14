@@ -167,6 +167,7 @@ extern struct ufs_file ufs_open_files[OPEN_MAX];
 
 
 int ufs_read_sb(const char *);
+int ufs_rm_entry(struct ufs_minode *, const struct ufs_dir_entry *);
 int ufs_add_entry(struct ufs_minode *, const struct ufs_dir_entry *);
 ino_t ufs_new_inode(void);
 int ufs_free_inode(ino_t);

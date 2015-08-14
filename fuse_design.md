@@ -378,11 +378,24 @@
   + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
   + 被调用函数返回出错, 将错误值原样返回.
 
+### `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_add_entry *
+		entry)`
+* 功能: 从指定的目录中移除一指定的目录项;
+* 输入参数:
+  + `dir`: 在该目录中移除一个目录项;
+  + `entry`: 被移除的目录项;
+* 返回值: 移除成功返回 0; 失败返回 `errno`. 在以下情况返回失败:
+  + 任一参数为空, 返回 `-EINVAL`;
+  + `dir` 不是一个目录, 返回 `-ENOTDIR`;
+  + 目录中不存在被移除的目录项, 返回 `-ENOENT`;
+  + 目录大小与数据块数不匹配, 返回 `-EIO`;
+  + 被调用函数返回出错, 将错误值原样返回.
+
 ### `int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *entry)`
 * 功能: 在指定的目录中新增一个目录项
 * 输入参数:
   + `dir`: 在该目录中新增一个目录项;
-  + `entry`: 并增的目录项
+  + `entry`: 新增的目录项
 * 返回值: 添加成功返回 0; 失败返回 `errno`. 在以下情况返回失败：
   + 任一参数为空, 返回 `-EINVAL`;
   + `dir` 不是一个目录, 返回 `-ENOTDIR`;
