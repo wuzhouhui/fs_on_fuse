@@ -91,7 +91,7 @@ static int init(const char *disk_name)
 	/* plus one for super block */
 	sb.s_1st_inode_block = sb.s_imap_blocks + sb.s_zmap_blocks + 1;
 	sb.s_1st_zone_block = sb.s_1st_inode_block + sb.s_inode_blocks;
-	sb.s_inode_left = (ino_t)left_cnt(sb.s_imap, sb.s_imap_blocks,
+	sb.s_inode_left = (unsigned int)left_cnt(sb.s_imap, sb.s_imap_blocks,
 			sb.s_inode_blocks * UFS_INUM_PER_BLK);
 	sb.s_block_left = (unsigned int)left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);

@@ -65,7 +65,7 @@
 		char *s_zmap;		/* 逻辑块位图 */
 		unsigned int s_1st_inode_block; /* 第 1 块 i 结点块的磁盘块号 */
 		unsigned int s_1st_zone_block; /* 第 1 块逻辑块的磁盘块号 */
-		ino_t	s_inode_left;	/* 剩余 i 结点数 */
+		unsigned int	s_inode_left;	/* 剩余 i 结点数 */
 		unsigned int s_block_left;	/* 剩余 逻辑块数 */
 		int	s_fd;		/* 磁盘文件描述符 */
 		void	*s_addr;	/* 磁盘文件在内存中的地址 */
@@ -135,7 +135,7 @@
 		unsigned int i_zones[8];
 
 		/* 下面的字段仅存在于内存中 */
-		ino_t	i_ino;		/* i 结点号, 从 1 开始, 等价于与该 i 结点对应的二进制位在 i 结点位图中的下标 */
+		unsigned int	i_ino;		/* i 结点号, 从 1 开始, 等价于与该 i 结点对应的二进制位在 i 结点位图中的下标 */
 		int	i_refcnt;	/* i 结点被引用的次数 */
 	}
 
@@ -162,7 +162,7 @@
 
 	/* sizeof(struct ufs_dir_entry) <= UFS_BLK_SIZE */
 	struct ufs_dir_entry {
-		ino_t	de_inum;		/* 文件的 i 结点号 */
+		unsigned int	de_inum;		/* 文件的 i 结点号 */
 		char	de_name[UFS_NAME_LEN + 1];	/* 文件名, 以空字符结尾 */
 	};
 
@@ -226,12 +226,12 @@
 * 注: 超级块作为文件系统的私有数据使用, 所以未在函数签名中显式给出. 
 磁盘文件必须曾被 `format` 程序格式化过.
 
-### `ino_t ufs_new_inode(void)`
+### `unsigned int ufs_new_inode(void)`
 * 功能: 获取一个空闲的 i 结点
 * 返回值: 若找到一个空闲的 i 结点, 返回它的 i 结点号; 否则返回 0
 * 注: i 结点号从 1 开始
 
-### `int ufs_free_inode(ino_t inum)`
+### `int ufs_free_inode(unsigned int inum)`
 * 功能: 释放一个指定的 i 结点
 * 输入参数:
   + `inum`: 将被释放的 i 结点的编号
@@ -239,7 +239,7 @@
   + i 节点号超出范围 返回 `-EINVAL`;
   + i 节点原来就处理空闲状态, 返回  `-EAGAIN`;
 
-### `int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)`
+### `int ufs_rd_inode(unsigned int inum, struct ufs_dinode *inode)`
 * 功能: 读取指定的 i 结点
 * 输入参数:
   + `inum`: 被读取的 i 结点的编号
@@ -296,7 +296,7 @@
   + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `unsigned int inum2blknum(ino_t inum)`
+### `unsigned int inum2blknum(unsigned int inum)`
 * 功能: 计算指定的 i 结点所在的磁盘块块号
 * 输入参数:
   + `inum`: 待计算的 i 结点号

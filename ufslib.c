@@ -5,7 +5,7 @@ extern struct ufs_msuper_block sb;
 static unsigned int _ufs_dnum2znum(struct ufs_minode *, unsigned int, int);
 
 /* determine whether the inode inum is valid */
-static inline int ufs_is_ivalid(ino_t inum)
+static inline int ufs_is_ivalid(unsigned int inum)
 {
 	return(inum >= 1 && inum < (sb.s_inode_blocks << (UFS_BLK_SIZE_SHIFT + 3)));
 }
@@ -147,12 +147,12 @@ int ufs_read_sb(const char *disk_name)
 	return(fd);
 }
 
-ino_t ufs_new_inode(void)
+unsigned int ufs_new_inode(void)
 {
 	char	*p = sb.s_imap;
 	int	n = sb.s_imap_blocks << UFS_BLK_SIZE_SHIFT;
 	int	i, j;
-	ino_t	ret = 0;
+	unsigned int	ret = 0;
 
 	log_msg("ufs_new_inode called");
 
@@ -180,9 +180,9 @@ out:
 	return(ret);
 }
 
-int ufs_free_inode(ino_t inum)
+int ufs_free_inode(unsigned int inum)
 {
-	ino_t	n;
+	unsigned int	n;
 	int	ret;
 
 	log_msg("ufs_free_inode called, inum = %u", (unsigned int)inum);
@@ -207,7 +207,7 @@ out:
 	return(ret);
 }
 
-int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)
+int ufs_rd_inode(unsigned int inum, struct ufs_dinode *inode)
 {
 	int	ret;
 	unsigned int bnum;
@@ -293,7 +293,7 @@ unsigned int ufs_new_zone(void)
 	int	n = sb.s_zmap_blocks << UFS_BLK_SIZE_SHIFT;
 	int	i, j;
 	char	buf[UFS_BLK_SIZE];
-	ino_t	ret = 0;
+	unsigned int	ret = 0;
 
 	log_msg("ufs_new_zone called");
 
@@ -328,7 +328,7 @@ out:
 
 int ufs_free_zone(unsigned int znum)
 {
-	ino_t	n;
+	unsigned int	n;
 	int	ret;
 
 	log_msg("ufs_free_zone called, znum = %u", (unsigned int)znum);
@@ -424,7 +424,7 @@ out:
 	return(ret);
 }
 
-unsigned int ufs_inum2bnum(ino_t inum)
+unsigned int ufs_inum2bnum(unsigned int inum)
 {
 	unsigned int ret = 0;
 

@@ -83,7 +83,7 @@ struct ufs_msuper_block {
 	/* 1st zone block' number in disk */
 	unsigned int s_1st_zone_block;
 	/* available inode left. XXX deprecated. */
-	ino_t	s_inode_left;
+	unsigned int	s_inode_left;
 	/* available zone bloc left. XXX deprecated */
 	unsigned int s_block_left;
 	/* file descriptor of disk file */
@@ -139,13 +139,13 @@ struct ufs_minode {
 	 */
 	unsigned int i_zones[8];
 
-	ino_t	i_ino;		/* number of inode */
+	unsigned int	i_ino;		/* number of inode */
 	int	i_refcnt;	/* reference count */
 };
 
 /* directory entry */
 struct ufs_dir_entry {
-	ino_t	de_inum;
+	unsigned int	de_inum;
 	char	de_name[UFS_NAME_LEN + 1];
 };
 
@@ -165,15 +165,15 @@ extern struct ufs_file ufs_open_files[OPEN_MAX];
 int ufs_read_sb(const char *);
 int ufs_rm_entry(struct ufs_minode *, const struct ufs_dir_entry *);
 int ufs_add_entry(struct ufs_minode *, const struct ufs_dir_entry *);
-ino_t ufs_new_inode(void);
-int ufs_free_inode(ino_t);
-int ufs_rd_inode(ino_t, struct ufs_dinode *);
+unsigned int ufs_new_inode(void);
+int ufs_free_inode(unsigned int);
+int ufs_rd_inode(unsigned int, struct ufs_dinode *);
 int ufs_wr_inode(const struct ufs_minode *);
 unsigned int ufs_new_zone(void);
 int ufs_free_zone(unsigned int);
 int ufs_rd_zone(unsigned int, void *, size_t);
 int ufs_wr_zone(unsigned int, const void *, size_t);
-unsigned int ufs_inum2bnum(ino_t inum);
+unsigned int ufs_inum2bnum(unsigned int inum);
 unsigned int ufs_znum2bnum(unsigned int);
 unsigned int ufs_dnum2znum(struct ufs_minode *, unsigned int);
 int ufs_rd_blk(unsigned int, void *, size_t);
