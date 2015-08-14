@@ -605,11 +605,7 @@ int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 		ret = -EINVAL;
 		goto out;
 	}
-	if (pread(sb.s_fd, buf, size, blk_num << UFS_BLK_SIZE_SHIFT) != size) {
-		log_ret("ufs_rd_blk: pread error");
-		ret = -errno;
-		goto out;
-	}
+	memcpy(buf, sb.s_addr + (blk_num << UFS_BLK_SIZE_SHIFT), size);
 	ret = 0;
 out:
 	log_msg("ufs_rd_blk return %d", ret);
@@ -638,11 +634,7 @@ int ufs_wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 		ret = -EINVAL;
 		goto out;
 	}
-	if (pwrite(sb.s_fd, buf, size, blk_num << UFS_BLK_SIZE_SHIFT) != size) {
-		log_ret("ufs_wr_blk: pwrite error");
-		ret = -errno;
-		goto out;
-	}
+	memcpy(sb.s_addr + (blk_num << UFS_BLK_SIZE_SHIFT), buf, size);
 	ret = 0;
 out:
 	log_msg("ufs_wr_blk return %d", ret);
