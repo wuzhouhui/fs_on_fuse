@@ -502,8 +502,13 @@ static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int crea
 				goto out;
 			}
 		}
-		if (inode->i_zones[6] == 0)
+		if ((ret = inode->i_zones[6]) == 0)
 			goto out;
+		if (ufs_rd_zone(ret, buf, sizeof(buf)) < 0) {
+			log_msg("_ufs_dnum2znum: ufs_rd_zone error");
+			ret = 0;
+			goto out;
+		}
 		ret = ((blkcnt_t *)buf)[dnum];
 		if (ret == 0 && creat) {
 			if ((ret = ufs_new_zone()) == 0)
