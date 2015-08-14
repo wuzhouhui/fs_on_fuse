@@ -163,7 +163,7 @@ static int ufs_creat(const char *path, mode_t mode,
 	oldmask = umask(0);
 	umask(oldmask);
 	inode.i_mode = ((mode & 0777) | UFS_IFREG) & (~oldmask);
-	inode.i_atime = inode.i_mtime = inode.i_ctime = time(NULL);
+	inode.i_mtime = inode.i_ctime = time(NULL);
 	inode.i_uid = getuid();
 	inode.i_gid = getgid();
 	if ((ret = ufs_wr_inode(&inode)) < 0) {
@@ -213,7 +213,6 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 	statptr->st_uid = inode.i_uid;
 	statptr->st_gid = inode.i_gid;
 	statptr->st_size = inode.i_size;
-	statptr->st_atime = inode.i_atime;
 	statptr->st_ctime = inode.i_ctime;
 	statptr->st_mtime = inode.i_mtime;
 	ret = 0;
@@ -279,7 +278,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 	oldmask = umask(0);
 	umask(oldmask);
 	dirinode.i_mode = ((mode & 0777) | UFS_IFDIR) & (~oldmask);
-	dirinode.i_atime = dirinode.i_ctime = dirinode.i_mtime
+	dirinode.i_ctime = dirinode.i_mtime
 		= time(NULL);
 	dirinode.i_uid = getuid();
 	dirinode.i_gid = getgid();
