@@ -602,7 +602,7 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 		goto out;
 	}
 	if (ent == NULL) {
-		log_msg("ufs_add_entry: ent is NULL");
+		log_msg("ufs_rm_entry: ent is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -667,13 +667,13 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 	 */
 	dir->i_size -= sizeof(de[i]);
 	if ((ret = ufs_wr_inode(dir)) < 0) {
-		log_msg("ufs_add_entry: ufs_wr_inode error");
+		log_msg("ufs_rm_entry: ufs_wr_inode error");
 		goto out;
 	}
 	ret = 0;
 
 out:
-	log_msg("ufs_add_entry return %d", ret);
+	log_msg("ufs_rm_entry return %d", ret);
 	return(ret);
 }
 
