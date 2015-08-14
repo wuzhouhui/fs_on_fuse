@@ -5,35 +5,35 @@ extern struct ufs_msuper_block sb;
 static blkcnt_t _ufs_dnum2znum(struct ufs_minode *, blkcnt_t, int);
 
 /* determine whether the inode inum is valid */
-static inline int is_ivalid(ino_t inum)
+static inline int ufs_is_ivalid(ino_t inum)
 {
 	return(inum >= 1 && inum < (sb.s_inode_blocks << (UFS_BLK_SIZE_SHIFT + 3)));
 }
 
-static inline int is_zvalid(blkcnt_t znum)
+static inline int ufs_is_zvalid(blkcnt_t znum)
 {
 	return(znum >= 1 && znum <= sb.s_zone_blocks);
 }
 
-static inline int is_bvalid(blkcnt_t bnum)
+static inline int ufs_is_bvalid(blkcnt_t bnum)
 {
 	return(bnum >= sb.s_1st_inode_block &&
 			bnum < (sb.s_1st_zone_block + sb.s_zone_blocks));
 }
 
-static inline int is_dvalid(blkcnt_t dnum)
+static inline int ufs_is_dvalid(blkcnt_t dnum)
 {
 	return(dnum >= 0  && dnum < (6 + UFS_ZNUM_PER_BLK + UFS_ZNUM_PER_BLK *
 				UFS_ZNUM_PER_BLK));
 }
 
-static blkcnt_t creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
+static blkcnt_t ufs_creat_zone(struct ufs_minode *inode, blkcnt_t dnum)
 {
 	blkcnt_t ret = 0;
-	log_msg("creat_zone called, inum = %d, dnum = %d",
+	log_msg("ufs_creat_zone called, inum = %d, dnum = %d",
 			(int)inode->i_ino, (int)dnum);
 	ret = _ufs_dnum2znum(inode, dnum, 1);
-	log_msg("creat_zone return %d", (int)ret);
+	log_msg("ufs_creat_zone return %d", (int)ret);
 	return(ret);
 }
 
@@ -107,7 +107,7 @@ int ufs_free_inode(ino_t inum)
 	int	ret;
 
 	log_msg("ufs_free_inode called, inum = %u", (unsigned int)inum);
-	if (!is_ivalid(inum)) {
+	if (!ufs_is_ivalid(inum)) {
 		log_msg("ufs_free_inode: inum out of range, inum = %u",
 				(unsigned int)inum);
 		ret = -EINVAL;
@@ -140,7 +140,7 @@ int ufs_rd_inode(ino_t inum, struct ufs_dinode *inode)
 		log_msg("ufs_rd_inode: inode is NULL");
 		goto out;
 	}
-	if (!is_ivalid(inum)) {
+	if (!ufs_is_ivalid(inum)) {
 		ret = -EINVAL;
 		log_msg("ufs_rd_inode: inode number %u out of range",
 				(unsigned int)inum);
@@ -177,7 +177,7 @@ int ufs_wr_inode(const struct ufs_minode *inode)
 		log_msg("ufs_wr_inode: inode is NULL");
 		goto out;
 	}
-	if (!is_ivalid(inode->i_ino)) {
+	if (!ufs_is_ivalid(inode->i_ino)) {
 		ret = -EINVAL;
 		log_msg("ufs_wr_inode: inode number %u out of range",
 				(unsigned int)inode->i_ino);
@@ -253,7 +253,7 @@ int ufs_free_zone(blkcnt_t znum)
 	int	ret;
 
 	log_msg("ufs_free_zone called, znum = %u", (unsigned int)znum);
-	if (!is_zvalid(znum)) {
+	if (!ufs_is_zvalid(znum)) {
 		log_msg("ufs_free_zone: znum out of range, znum = %u",
 				(unsigned int)znum);
 		ret = -EINVAL;
@@ -280,7 +280,7 @@ int ufs_rd_zone(blkcnt_t zone_num, void *buf, size_t size)
 	blkcnt_t bnum;
 
 	log_msg("ufs_rd_zone called, zone_num = %u", (unsigned int)zone_num);
-	if (!is_zvalid(zone_num)) {
+	if (!ufs_is_zvalid(zone_num)) {
 		log_msg("ufs_rd_zone: znum out of range, znum = %u",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
@@ -316,7 +316,7 @@ int ufs_wr_zone(blkcnt_t zone_num, const void *buf, size_t size)
 
 	log_msg("ufs_wr_zone called, zone_num = %u",
 			(unsigned int)zone_num);
-	if (!is_zvalid(zone_num)) {
+	if (!ufs_is_zvalid(zone_num)) {
 		log_msg("ufs_wr_zone: znum out of range, znum = %u",
 				(unsigned int)zone_num);
 		ret = -EINVAL;
@@ -350,7 +350,7 @@ blkcnt_t ufs_inum2bnum(ino_t inum)
 	blkcnt_t ret = 0;
 
 	log_msg("ufs_inum2bnum called, inum = %u", (unsigned int)inum);
-	if (!is_ivalid(inum))
+	if (!ufs_is_ivalid(inum))
 		log_msg("ufs_inum2bnum: inode %u is not valid",
 				(unsigned int)inum);
 	else
@@ -364,7 +364,7 @@ blkcnt_t ufs_znum2bnum(blkcnt_t zone_num)
 	blkcnt_t ret = 0;
 
 	log_msg("ufs_znum2bnum called, zone_num = %u", (unsigned int)zone_num);
-	if (!is_zvalid(zone_num)) {
+	if (!ufs_is_zvalid(zone_num)) {
 		log_msg("ufs_znum2bnum: zone %u is not valid",
 				(unsigned int)zone_num);
 		goto out;
@@ -382,12 +382,12 @@ static blkcnt_t _ufs_dnum2znum(struct ufs_minode *inode, blkcnt_t dnum, int crea
 
 	log_msg("_ufs_dnum2znum called, inum = %d, dnum = %d, creat = %d",
 			(int)inode->i_ino, (int)dnum, (int)creat);
-	if (!is_ivalid(inode->i_ino)) {
+	if (!ufs_is_ivalid(inode->i_ino)) {
 		log_msg("_ufs_dnum2znum: inum %u is not valid",
 				(unsigned int)inode->i_ino);
 		goto out;
 	}
-	if (!is_dvalid(dnum)) {
+	if (!ufs_is_dvalid(dnum)) {
 		log_msg("_ufs_dnum2znum: dnum %u is not valid",
 				(unsigned int)dnum);
 		goto out;
@@ -505,7 +505,7 @@ int ufs_rd_blk(blkcnt_t blk_num, void *buf, size_t size)
 	int	ret = 0;
 
 	log_msg("ufs_rd_blk called, blk_num = %u", (unsigned int)blk_num);
-	if (!is_bvalid(blk_num)) {
+	if (!ufs_is_bvalid(blk_num)) {
 		log_msg("ufs_rd_blk: block num %u is not valid",
 				(unsigned int)blk_num);
 		ret = -EINVAL;
@@ -538,7 +538,7 @@ int ufs_wr_blk(blkcnt_t blk_num, const void *buf, size_t size)
 
 	log_msg("ufs_wr_blk called, blk_num = %u",
 			(unsigned int)blk_num);
-	if (!is_bvalid(blk_num)) {
+	if (!ufs_is_bvalid(blk_num)) {
 		log_msg("ufs_wr_blk: block num %u is not valid",
 				(unsigned int)blk_num);
 		ret = -EINVAL;
@@ -595,7 +595,7 @@ int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 	log_msg("ufs_add_entry called, adding %s in %u",
 			(ent == NULL ? "NULL" : ent->de_name),
 			(unsigned int)dir->i_ino);
-	if (dir == NULL || !is_ivalid(dir->i_ino)) {
+	if (dir == NULL || !ufs_is_ivalid(dir->i_ino)) {
 		log_msg("ufs_add_entry: dirinode not valid");
 		ret = -EINVAL;
 		goto out;
@@ -618,8 +618,8 @@ int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 	 */
 	dnum = 0;
 	while (1) {
-		if ((znum = creat_zone(dir, dnum++)) == 0) {
-			log_msg("ufs_add_entry: creat_zone return 0 for %u",
+		if ((znum = ufs_creat_zone(dir, dnum++)) == 0) {
+			log_msg("ufs_add_entry: ufs_creat_zone return 0 for %u",
 					(unsigned int)znum);
 			ret = -ENOSPC;
 			goto out;
