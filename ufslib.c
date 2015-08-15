@@ -106,7 +106,7 @@ out:
 	return(ret);
 }
 
-static unsigned int ufs_creat_zone(struct ufs_minode *inode, unsigned int dnum)
+unsigned int ufs_creat_zone(struct ufs_minode *inode, unsigned int dnum)
 {
 	unsigned int ret = 0;
 	log_msg("ufs_creat_zone called, inum = %d, dnum = %d",

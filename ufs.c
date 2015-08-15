@@ -346,7 +346,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		if (ufs_open_files[fd].f_count == 0)
 			break;
 	if (fd >= UFS_OPEN_MAX) {
-		log_msg("ufs_open: open_files is full");
+		log_msg("ufs_open: ufs_open_files is full");
 		ret = -ENFILE;
 		goto out;
 	}
@@ -622,6 +622,83 @@ out:
 	return(ret);
 }
 
+static int ufs_write(const char *path, const char *buf, size_t size,
+		off_t offset, struct fuse_file_info *fi)
+{
+	size_t	s, c;
+	unsigned int znum;
+	off_t	pos, p;
+	int	ret;
+	struct ufs_minode *iptr;
+	char	block[UFS_BLK_SIZE];
+
+	log_msg("ufs_write called, path = %s", path == NULL ? "NULL" : path);
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
+		log_msg("ufs_write: fd %d out out range", (int)fi->fh);
+		ret = -EBADF;
+		goto out;
+	}
+	if (ufs_open_files[fi->fh].f_count == 0) {
+		log_msg("ufs_write: file not opened");
+		ret = -EBADF;
+		goto out;
+	}
+	if ((ufs_open_files[fi->fh].f_flag & UFS_O_WRITE) == 0) {
+		log_msg("ufs_write: file not opened for writing");
+		ret = -EBADF;
+		goto out;
+	}
+	if (buf == NULL) {
+		log_msg("ufs_write: buf is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (size <= 0) {
+		log_msg("ufs_write: size is less than or equals to zero");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ? 
+			ufs_open_files[fi->fh].f_inode.i_size :
+			ufs_open_files[fi->fh].f_pos);
+	s = 0;
+	iptr = &ufs_open_files[fi->fh].f_inode;
+	while (s < size) {
+		znum = ufs_creat_zone(iptr, pos >> UFS_BLK_SIZE_SHIFT);
+		if (znum == 0)
+			break;
+		if ((ret = ufs_rd_zone(znum, block, sizeof(block))) < 0) {
+			log_msg("ufs_write: ufs_rd_zone error");
+			goto out;
+		}
+		p = pos % UFS_BLK_SIZE;
+		c = UFS_BLK_SIZE - p;
+		if (c > (size - s))
+			c = size - s;
+		memcpy(block + p, buf + s, c);
+		if ((ret = ufs_wr_zone(znum, block, sizeof(block))) < 0) {
+			log_msg("ufs_write: ufs_wr_zone error");
+			goto out;
+		}
+		s += c;
+		pos += c;
+		if (pos > iptr->i_size) {
+			iptr->i_size = pos;
+			if ((ret = ufs_wr_inode(iptr)) < 0) {
+				log_msg("ufs_write: ufs_wr_inode error");
+				goto out;
+			}
+		}
+	}
+	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_APPEND))
+		ufs_open_files[fi->fh].f_pos = pos;
+out:
+	ret = (s == 0 ? -ENOSPC : s);
+	log_msg("ufs_write return %d", ret);
+	return(ret);
+}
+
 struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
@@ -631,6 +708,7 @@ struct fuse_operations ufs_oper = {
 	.release	= ufs_release,
 	.rmdir		= ufs_rmdir,
 	.unlink		= ufs_unlink,
+	.write		= ufs_write,
 };
 
 int main(int argc, char *argv[])

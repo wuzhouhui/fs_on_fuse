@@ -183,6 +183,7 @@ int ufs_wr_zone(unsigned int, const void *, size_t);
 unsigned int ufs_inum2bnum(unsigned int inum);
 unsigned int ufs_znum2bnum(unsigned int);
 unsigned int ufs_dnum2znum(struct ufs_minode *, unsigned int);
+unsigned int ufs_creat_zone(struct ufs_minode *, unsigned int);
 int ufs_rd_blk(unsigned int, void *, size_t);
 int ufs_wr_blk(unsigned int, const void *, size_t);
 int ufs_path2i(const char *, struct ufs_minode *);
