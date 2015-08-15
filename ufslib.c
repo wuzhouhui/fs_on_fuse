@@ -941,7 +941,7 @@ int ufs_truncate(struct ufs_minode *iptr)
 
 	log_msg("ufs_truncate called, iptr->i_ino = %u", iptr == NULL ?
 			0 : (unsigned int)iptr->i_ino);
-	
+
 	if (iptr == NULL) {
 		log_msg("ufs_truncate: iptr is NULL");
 		ret = -EINVAL;
@@ -1006,7 +1006,7 @@ int ufs_conv_oflag(int oflag)
 		ufsoflag = UFS_O_RDONLY;
 	else if (oflag | O_WRONLY)
 		ufsoflag = UFS_O_WRONLY;
-	else 
+	else
 		ufsoflag = UFS_O_RDWR;
 	if (oflag | O_APPEND)
 		ufsoflag |= UFS_O_APPEND;

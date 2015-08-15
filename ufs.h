@@ -160,7 +160,7 @@ struct ufs_dir_entry {
 
 struct ufs_file {
 	struct ufs_minode f_inode;
-	mode_t	f_mode;	
+	mode_t	f_mode;
 	int	f_flag;
 	int	f_count;
 	off_t	f_pos;

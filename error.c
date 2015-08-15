@@ -1,5 +1,5 @@
 /*
- * error.c copied from Advanced Programming in the UNIX Environment 3rd 
+ * error.c copied from Advanced Programming in the UNIX Environment 3rd
  * Edition, W. Richard Stevens and Stephen A. Rago
  */
 

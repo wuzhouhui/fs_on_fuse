@@ -271,8 +271,8 @@ static int ufs_mkdir(const char *path, mode_t mode)
 	}
 
 	/*
-	 * initialize an empty directory, empty directory contains 
-	 * . and .. 
+	 * initialize an empty directory, empty directory contains
+	 * . and ..
 	 */
 	dirinode.i_nlink = 2;
 	oldmask = umask(0);
@@ -299,7 +299,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 		goto out;
 	}
 
-	/* 
+	/*
 	 * add an entry of new directory in parent directory
 	 */
 	entry.de_inum = dirinode.i_ino;
@@ -350,7 +350,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		ret = -ENFILE;
 		goto out;
 	}
-	
+
 	if ((ret = ufs_path2i(path, &inode)) < 0) {
 		log_msg("ufs_open: ufs_path2i error");
 		goto out;
@@ -504,7 +504,7 @@ static int ufs_rmdir(const char *path)
 		log_msg("ufs_rmdir: ufs_dir2i error for %s", path);
 		goto out;
 	}
-	
+
 	if (!UFS_ISDIR(inode.i_mode)) {
 		log_msg("ufs_rmdir: %s is not directory", path);
 		ret = -EISDIR;
