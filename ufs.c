@@ -384,6 +384,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND ? inode.i_size : 0);
 	fi->fh = fd;
 	ret = 0;
+	log_msg("ufs_open: fi->fd = %d", fd);
 
 out:
 	log_msg("ufs_open return %d", ret);
@@ -400,8 +401,9 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	char	block[UFS_BLK_SIZE];
 	unsigned int znum;
 
-	log_msg("ufs_read called, path = %s", path == NULL ? "NULL" : path);
-	if (fi->fh <= 0 || fi->fh >= UFS_OPEN_MAX) {
+	log_msg("ufs_read called, path = %s, fd = %d",
+			(path == NULL ? "NULL" : path), (int)fi->fh);
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
 		log_msg("ufs_read: fd out of range");
 		ret = -EBADF;
 		goto out;
