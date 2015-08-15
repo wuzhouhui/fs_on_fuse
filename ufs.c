@@ -628,7 +628,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	size_t	s, c;
 	unsigned int znum;
 	off_t	pos, p;
-	int	ret;
+	int	ret = 0;
 	struct ufs_minode *iptr;
 	char	block[UFS_BLK_SIZE];
 
@@ -694,7 +694,8 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_APPEND))
 		ufs_open_files[fi->fh].f_pos = pos;
 out:
-	ret = (s == 0 ? -ENOSPC : s);
+	if (ret >= 0)
+		ret = (s == 0 ? -ENOSPC : s);
 	log_msg("ufs_write return %d", ret);
 	return(ret);
 }
