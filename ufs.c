@@ -390,6 +390,72 @@ out:
 	return(ret);
 }
 
+static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
+		struct fuse_file_info *fi)
+{
+	int	ret = 0;
+	off_t	pos, p;
+	size_t	s, c;
+	struct ufs_minode *iptr;
+	char	block[UFS_BLK_SIZE];
+	unsigned int znum;
+
+	log_msg("ufs_read called, path = %s", path == NULL ? "NULL" : path);
+	if (fi->fh <= 0 || fi->fh >= UFS_OPEN_MAX) {
+		log_msg("ufs_read: fd out of range");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!ufs_open_files[fi->fh].f_count) {
+		log_msg("ufs_read: file not opened");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_READ)) {
+		log_msg("ufs_read: file not opend for reading");
+		ret = -EBADF;
+		goto out;
+	}
+
+	iptr = &ufs_open_files[fi->fh].f_inode;
+	if (!UFS_ISREG(iptr->i_mode)) {
+		log_msg("ufs_read: file is a directory");
+		ret = -EISDIR;
+		goto out;
+	}
+	if (!buf || !size) {
+		ret = 0;
+		goto out;
+	}
+
+	s = 0;
+	pos = ufs_open_files[fi->fh].f_pos;
+	while (s < size && pos < iptr->i_size) {
+		znum = ufs_dnum2znum(iptr, pos >> UFS_BLK_SIZE_SHIFT);
+		if (!znum)
+			break;
+		if ((ret = ufs_rd_zone(znum, block, sizeof(block))) < 0) {
+			log_msg("ufs_read: ufs_rd_zone error");
+			goto out;
+		}
+		p = pos % UFS_BLK_SIZE;
+		c = UFS_BLK_SIZE - p;
+		if (c > (size - s))
+			c = size - s;
+		if (c > iptr->i_size - pos)
+			c = iptr->i_size - pos;
+		memcpy(buf + s, block + p, c);
+		s += c;
+		pos += c;
+		ufs_open_files[fi->fh].f_pos = pos;
+	}
+
+	ret = s;
+out:
+	log_msg("ufs_read return %d");
+	return(ret);
+}
+
 static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi)
 {
@@ -705,6 +771,7 @@ struct fuse_operations ufs_oper = {
 	.getattr	= ufs_getattr,
 	.mkdir		= ufs_mkdir,
 	.open		= ufs_open,
+	.read		= ufs_read,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
 	.rmdir		= ufs_rmdir,
