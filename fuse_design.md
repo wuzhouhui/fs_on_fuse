@@ -11,7 +11,7 @@
 	#define UFS_NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
 	#define UFS_PATH_LEN	1024	/* 路径名最大长度, 不包括结尾的空字符 */
 	#define UFS_BLK_SIZE        512	/* 磁盘块大小 */
-	#define OPEN_MAX        64	/* 同时打开文件数最大值 */
+	#define UFS_OPEN_MAX        64	/* 同时打开文件数最大值 */
 	#define UFS_DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
 	#define UFS_DISK_MIN_SIZE	1	/* 磁盘文件最小值 (MB) */
 	#define UFS_ROOT_INO	1	/* 根目录的 i 结点号 */
@@ -179,7 +179,7 @@
 		off_t	f_pos;			/* 当前文件偏移量 */
 	};
 	
-	struct file ufs_open_files[OPEN_MAX]; /* 打开文件表 */
+	struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
 `ufs_open_files` 是文件系统存储打开文件信息的表格, 打开文件在表格中的索引将作
 为文件描述符使用. `f_mode` 字段的含义与 i 结点的 `i_mode` 字段相同. 

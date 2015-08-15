@@ -6,7 +6,7 @@
 /* errorlog.c needes it */
 int log_to_stderr;
 
-struct ufs_file ufs_open_files[OPEN_MAX];
+struct ufs_file ufs_open_files[UFS_OPEN_MAX];
 /*
  * just a test function
  static void pr_sb(const struct ufs_msuper_block *sb)
@@ -122,10 +122,10 @@ static int ufs_creat(const char *path, mode_t mode,
 	}
 
 	/* find a available entry in ufs_open_files */
-	for (fd = 0; fd < OPEN_MAX; fd++)
+	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
 		if (ufs_open_files[fd].f_count == 0)
 			break;
-	if (fd >= OPEN_MAX) {
+	if (fd >= UFS_OPEN_MAX) {
 		log_msg("ufs_creat: ufs_open_files full");
 		ret = -ENFILE;
 		goto out;
@@ -400,7 +400,7 @@ static int ufs_release(const char *path, struct fuse_file_info *fi)
 
 	log_msg("ufs_release called, path = %s, fd = %d",
 			(path == NULL ? "NULL" : path), (int)fi->fh);
-	if (fi->fh < 0 || fi->fh >= OPEN_MAX) {
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
 		ret = -EBADF;
 		log_msg("ufs_release: fd out of range");
 		goto out;

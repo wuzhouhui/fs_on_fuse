@@ -158,8 +158,8 @@ struct ufs_file {
 	int	f_count;
 	off_t	f_pos;
 };
-#define OPEN_MAX	64
-extern struct ufs_file ufs_open_files[OPEN_MAX];
+#define UFS_OPEN_MAX	64
+extern struct ufs_file ufs_open_files[UFS_OPEN_MAX];
 
 
 int ufs_read_sb(const char *);
