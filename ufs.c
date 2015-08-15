@@ -734,8 +734,13 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	iptr = &ufs_open_files[fi->fh].f_inode;
 	while (s < size) {
 		znum = ufs_creat_zone(iptr, pos >> UFS_BLK_SIZE_SHIFT);
-		if (znum == 0)
-			break;
+		if (znum == 0) {
+			if (iptr->i_size >= sb.s_max_size)
+				ret = -EFBIG;
+			else
+				ret = -ENOSPC;
+			goto out;
+		}
 		if ((ret = ufs_rd_zone(znum, block, sizeof(block))) < 0) {
 			log_msg("ufs_write: ufs_rd_zone error");
 			goto out;
@@ -761,9 +766,8 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	}
 	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_APPEND))
 		ufs_open_files[fi->fh].f_pos = pos;
+	ret = s;
 out:
-	if (ret >= 0)
-		ret = (s == 0 ? -ENOSPC : s);
 	log_msg("ufs_write return %d", ret);
 	return(ret);
 }
