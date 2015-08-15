@@ -39,9 +39,16 @@
 #define UFS_ISDIR(mode)	((mode) & (1 << 9))
 #define UFS_IFREG	0
 #define UFS_IFDIR	(1 << 9)
-/* file opened write only */
-#define UFS_O_WRONLY	0x1
 
+/* file open flags */
+#define UFS_O_RDONLY	0x0
+#define UFS_O_RDWR	0x1
+#define UFS_O_WRONLY	0x2
+#define UFS_O_APPEND	0x4
+#define UFS_O_DIR	0x8
+#define UFS_O_TRUNC	0x10
+#define UFS_O_WRITE	((UFS_O_RDWR) | (UFS_O_WRONLY) | (UFS_O_APPEND) \
+		| (UFS_O_TRUNC))
 /* super block in disk */
 struct ufs_dsuper_block {
 	/* magic number of filesystem */
@@ -184,5 +191,6 @@ int ufs_find_entry(struct ufs_minode *, const char *, struct ufs_dir_entry *);
 int ufs_truncate(struct ufs_minode *);
 int ufs_is_empty(struct ufs_minode *);
 mode_t ufs_conv_fmode(mode_t);
+int ufs_conv_oflag(int oflag);
 
 #endif /* end of _UFS_H */

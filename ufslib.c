@@ -994,3 +994,25 @@ mode_t ufs_conv_fmode(mode_t mode)
 		ret |= S_IFDIR;
 	return(ret);
 }
+
+/*
+ * convert open flags from UNIX to ufs.
+ */
+int ufs_conv_oflag(int oflag)
+{
+	int	ufsoflag = 0;
+
+	if (oflag | O_RDONLY)
+		ufsoflag = UFS_O_RDONLY;
+	else if (oflag | O_WRONLY)
+		ufsoflag = UFS_O_WRONLY;
+	else 
+		ufsoflag = UFS_O_RDWR;
+	if (oflag | O_APPEND)
+		ufsoflag |= UFS_O_APPEND;
+	if (oflag | O_DIRECTORY)
+		ufsoflag |= UFS_O_DIR;
+	if (oflag | O_TRUNC)
+		ufsoflag |= UFS_O_TRUNC;
+	return(ufsoflag);
+}

@@ -30,7 +30,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX];
  printf("s_fd = %d\n", (int)sb->s_fd);
  printf("s_addr = %p\n", sb->s_addr);
 
- offset = (1 + sb->s_imap_blocks + sb->s_zmap_blocks +
+ offset = (1 + sb->s_imap_blocks + sb->s_zmap_blocks
  sb->s_inode_blocks) << UFS_BLK_SIZE_SHIFT;
  pread(sb->s_fd, buf, sizeof(buf), offset);
  ent = (struct ufs_dir_entry *)buf;
@@ -326,9 +326,66 @@ out:
 
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
-	int	ret = 0;
+	int	ret, oflag, fd;
+	struct ufs_minode inode;
 
-	log_msg("ufs_open: path = %s", path);
+	log_msg("ufs_open: path = %s", path == NULL ? "NULL" : path);
+	if (path == NULL || path[0] == 0) {
+		log_msg("ufs_open: path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	oflag = ufs_conv_oflag(fi->flags);
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("ufs_open: path name too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+
+	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
+		if (ufs_open_files[fd].f_count == 0)
+			break;
+	if (fd >= UFS_OPEN_MAX) {
+		log_msg("ufs_open: open_files is full");
+		ret = -ENFILE;
+		goto out;
+	}
+	
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_open: ufs_path2i error");
+		goto out;
+	}
+
+	if ((oflag & UFS_O_WRITE) && UFS_ISDIR(inode.i_mode)) {
+		log_msg("ufs_open: %s is diectory, but flag has write",
+				path);
+		ret = -EISDIR;
+		goto out;
+	}
+	if ((oflag & UFS_O_DIR) && !UFS_ISDIR(inode.i_mode)) {
+		ret = -ENOTDIR;
+		goto out;
+	}
+	if (oflag & UFS_O_TRUNC) {
+		if ((ret = ufs_truncate(&inode)) < 0) {
+			log_msg("ufs_open: ufs_truncate error");
+			goto out;
+		}
+		if ((ret = ufs_wr_inode(&inode)) < 0) {
+			log_msg("ufs_open: ufs_wr_inode error");
+			goto out;
+		}
+	}
+
+	memcpy(&ufs_open_files[fd].f_inode, &inode, sizeof(inode));
+	ufs_open_files[fd].f_mode = inode.i_mode;
+	ufs_open_files[fd].f_flag = oflag;
+	ufs_open_files[fd].f_count = 1;
+	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND ? inode.i_size : 0);
+	fi->fh = fd;
+	ret = 0;
+
+out:
 	log_msg("ufs_open return %d", ret);
 	return(ret);
 }

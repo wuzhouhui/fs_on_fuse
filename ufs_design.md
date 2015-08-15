@@ -161,3 +161,31 @@
     - 调用 `ufs_free_inode(inode)` , 释放目录的 i 结点;
     - 返回.
 
+* `int open(const char *path, int flag)`;
+  + 功能: 打开一个文件;
+  + 输入参数:
+    - `path`: 文件路径;
+    - `flag`: 打开标志, 包括 `UFS_O_RDWR`, `UFS_O_RDONLY`, `UFS_O_WRONLY`, `UFS_O_APPEND`,
+      `UFS_O_DIR`, `UFS_O_TRUNC`;
+  + 返回值:
+    - 若成功返回非负的文件描述符;
+    - `-EINVAL`: `path` 为空或长度为 0;
+    - `-ENOTSUP`: `flag` 包含无效标志;
+    - `-ENAMETOOLONG`: `path` 长度大于最大路径名长度;
+    - `-EACCESS`: 对文件的打开请求不被允许 (例如打开标志指定了 `UFS_O_RDWR`, 但文件不可写), 或路径中的某目录
+      无搜索权限;
+    - `-EISDIR`: `path` 引用的是目录, 而打开标志包含写;
+    - `-ENFILE`: 文件系统无空间存放新打开的文件;
+    - `-ENOENT`: 文件不存在, 或路径中的某个目录不存在;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件, 或打开标志指定了 `UFS_O_DIR`, 但 `path` 不是一个目录文件;
+  + 函数过程:
+    - 若 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
+    - 若 `flag` 包含无效标志 (`UFS_O_RDWR`, `UFS_O_WRONLY` 与 `UFS_O_RDONLY` 三者有且仅有一个被设置, 其他标志是可
+      选的), 返回 `-ENOTSUP`;
+    - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
+    - 遍历 `open_files[]`, 寻找空闲项, 若没有空闲项, 返回 `-ENFILE`; 若找到, 记空闲项下标为 `fd`;
+    - 调用 `ufs_path2i(path, inode)`, 获取文件的 i 结点点, 若函数出错, 原样返回错误值;
+    - 若 `flag` 包含写操作 (`UFS_O_WRONLY`, `UFS_O_RDWR` 等), 而 `path` 是一个目录文件, 返回 `-EISDIR`;
+    - 若 `flag` 指定了 `UFS_O_DIR`, 但 `path` 不是一个目录文件, 返回 `-ENOTDIR`;
+    - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncate(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错, 原样返回错误值;
+    - 初始化 `open_files[fd]`, 返回.
