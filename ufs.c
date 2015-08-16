@@ -594,7 +594,8 @@ static int ufs_rmdir(const char *path)
 	}
 	ent.de_inum = inode.i_ino;
 	strcpy(pathcpy, path);
-	strcpy(ent.de_name, basename(pathcpy));
+	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+	ent.de_name[UFS_NAME_LEN] = 0;
 	if ((ret = ufs_rm_entry(&parinode, &ent)) < 0) {
 		log_msg("ufs_rmdir: ufs_rm_entry error");
 		goto out;
