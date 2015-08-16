@@ -856,6 +856,10 @@ int ufs_path2i(const char *path, struct ufs_minode *inode)
 			i++;
 		if (path[start] == 0) /* /usr/bin/vim/ */
 			break;
+		if (i - start >= UFS_NAME_LEN) {
+			ret = -ENAMETOOLONG;
+			goto out;
+		}
 		memcpy(file, path + start, i - start);
 		file[i - start] = 0;
 		if ((ret = ufs_find_entry(inode, file, &ent)) < 0) {
