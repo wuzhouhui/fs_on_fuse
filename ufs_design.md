@@ -10,7 +10,7 @@
     - `-EACCESS`: 进程无权限搜索目录; 进程无权限写新文件的父目录;
     - `-EEXIST`: 新文件名已存在.
     - `-EISDIR`: `path` 引用的是目录;
-    - `-ENAMETOOLONG`: 新文件名过长, 或路径名过长;
+    - `-ENAMETOOLONG`: 路径名过长;
     - `-ENFILE`: 文件系统无空间存放新打开的文件;
     - `-ENOENT`: `path` 中的某一前缀目录不存在;
     - `-ENOSPC`: 硬盘空间不足;
@@ -23,6 +23,7 @@
       记空闲项的索引为 `fd`;
     - 调用 `parpath = dirname(path)` 与 `base = basename(path)`, 获取前缀路径 
       与 新文件名;
+    - 如果 `base` 长度超过最大文件名长度, 则会被截断;
     - 调用 `ufs_dir2i(parpath, parinode)` 获取父目录的 i 结点, 若函数出错,
       原样返回错误值;
     - 调用 `ufs_find_entry(parinode, base, entry)`, 在父目录查找是否已存在新文件

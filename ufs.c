@@ -135,7 +135,8 @@ static int ufs_creat(const char *path, mode_t mode,
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
-	strcpy(base, basename(pathcpy));
+	strncpy(base, basename(pathcpy), UFS_NAME_LEN);
+	base[UFS_NAME_LEN] = 0;
 
 	if ((ret = ufs_dir2i(dir, &dirinode)) < 0) {
 		log_msg("ufs_creat: ufs_dir2i error for %s", dir);
