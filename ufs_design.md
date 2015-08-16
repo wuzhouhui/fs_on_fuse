@@ -125,7 +125,7 @@
     - 若 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
     - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
     - 调用 `dir = dirname(path)` 与 `file = basename(path)` 获取路径中的目录中的目录名,
-      与 文件名;
+      与 文件名, 若文件名过长, 则会被截断;
     - 调用 `ufs_path2i(path, inode)` 获取将被删除的文件的 i 结点, 若函数出错, 原样返回错误值;
     - 如果 `inode` 是一个目录文件, 返回 `-EISDIR`;
     - 调用 `ufs_dir2i(dir, parinode)` 获取父目录的的 i 结点, 若函数出错, 原样返回错误值;

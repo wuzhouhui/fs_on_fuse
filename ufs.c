@@ -642,7 +642,8 @@ static int ufs_unlink(const char *path)
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
-	strcpy(name, basename(pathcpy));
+	strncpy(name, basename(pathcpy), UFS_NAME_LEN);
+	name[UFS_NAME_LEN] = 0;
 
 	if ((ret = ufs_path2i(path, &inode)) < 0) {
 		log_msg("ufs_unlink: ufs_path2i error");
