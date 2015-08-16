@@ -247,7 +247,8 @@ static int ufs_mkdir(const char *path, mode_t mode)
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
 	strcpy(pathcpy, path);
-	strcpy(base, basename(pathcpy));
+	strncpy(base, basename(pathcpy), UFS_NAME_LEN);
+	base[UFS_NAME_LEN] = 0;
 
 	if ((ret = ufs_dir2i(dir, &parinode)) < 0) {
 		log_msg("ufs_mkdir: ufs_dir2i return %d", ret);

@@ -69,7 +69,8 @@
   + 函数过程:
     - 若 `path` 为 `NULL`, 或长度为 0, 返回 `-EINVAL`;
     - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
-    - 从 `path` 中分离出前缀目录与新目录名, `dir = dirname(path); base = basename(path);`
+    - 从 `path` 中分离出前缀目录与新目录名, `dir = dirname(path); base = basename(path)`, 若路径部分 `path` 过长, 返回 `-ENAMETOOLONG`, 若 `base` 过长,
+    则会被截断;
     - 调用 `ufs_dir2i(dir, parent)`, 若调用出错, 原样返回错误值;
     - 调用 `ufs_find_entry(parent, base)`, 在父目录 `parent` 中查找新目录名 `base`. 若函数返回
       值是 `0`, 返回 `-EEXIST`; 若返回值不是 `-ENOENT`, 原样返回错误值.
