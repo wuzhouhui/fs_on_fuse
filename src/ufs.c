@@ -591,6 +591,186 @@ out:
 	return(ret);
 }
 
+static int ufs_rename(const char *oldpath, const char *newpath)
+{
+	int	ret = 0;
+	struct ufs_minode opi;	/* old path's inode */
+	struct ufs_minode npi;	/* new path's inode */
+	struct ufs_minode oppi;	/* old path parent's inode */
+	struct ufs_minode nppi;	/* new path parent's inode */
+	struct ufs_dir_entry ent;
+	char	pathcpy[UFS_PATH_LEN + 1], dir[UFS_PATH_LEN + 1];
+	char	base[UFS_NAME_LEN + 1];
+
+	log_msg("ufs_rename called, oldpath = %s, newpath = %s",
+			(oldpath == NULL ? "NULL" : oldpath),
+			(newpath == NULL ? "NULL" : newpath));
+	if (!oldpath || !oldpath[0] || !newpath || !newpath[0]) {
+		log_msg("ufs_rename: path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!strncmp(oldpath, newpath, strlen(oldpath))) {
+		log_msg("ufs_rename: oldpath is prefix of newpath");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(oldpath) >= UFS_PATH_LEN || strlen(newpath) >=
+			UFS_PATH_LEN) {
+		log_msg("path name is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+
+	if ((ret = ufs_path2i(oldpath, &opi)) < 0) {
+		log_msg("ufs_rename: ufs_path2i error for %s", oldpath);
+		goto out;
+	}
+
+	strcpy(pathcpy, oldpath);
+	strcpy(dir, dirname(pathcpy));
+	if ((ret = ufs_dir2i(dir, &oppi)) < 0) {
+		log_msg("ufs_rename: ufs_dir2i error for %s", dir);
+		goto out;
+	}
+
+	strcpy(pathcpy, newpath);
+	strcpy(dir, dirname(pathcpy));
+	if ((ret = ufs_dir2i(dir, &nppi)) < 0) {
+		log_msg("ufs_rename: ufs_dir2i error for %s", dir);
+		goto out;
+	}
+
+	strcpy(pathcpy, newpath);
+	strncpy(base, basename(pathcpy), UFS_NAME_LEN);
+	base[UFS_NAME_LEN] = 0;
+	ret = ufs_find_entry(&nppi, base, &ent);
+	if (!ret) {
+		/* newpath existed */
+
+		if ((ret = ufs_path2i(newpath, &npi)) < 0) {
+			log_msg("ufs_rename: ufs_path2i error for newpath");
+			goto out;
+		}
+		if (UFS_ISDIR(npi.i_mode)) {
+			if (!UFS_ISDIR(opi.i_mode)) {
+				ret = -EISDIR;
+				goto out;
+			}
+			if (!ufs_is_dirempty(&npi)) {
+				ret = -ENOTEMPTY;
+				goto out;
+			}
+
+			/*
+			 * both oldpath and newpath are directory, and 
+			 * newpath is an empty directory.
+			 */
+			ent.de_inum = opi.i_ino;
+			strcpy(pathcpy, oldpath);
+			strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+			ent.de_name[UFS_NAME_LEN] = 0;
+			if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
+				log_msg("ufs_rename: ufs_rm_entry error");
+				goto out;
+			}
+
+			ent.de_inum = npi.i_ino;
+			strcpy(pathcpy, newpath);
+			strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+			ent.de_name[UFS_NAME_LEN] = 0;
+			if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
+				log_msg("ufs_rename: ufs_rm_entry error");
+				goto out;
+			}
+			if ((ret = ufs_truncate(&npi)) < 0) {
+				log_msg("ufs_rename: ufs_truncate error");
+				goto out;
+			}
+			if ((ret = ufs_free_inode(opi.i_ino)) < 0) {
+				log_msg("ufs_rename: ufs_free_inode error");
+				goto out;
+			}
+			ent.de_inum = opi.i_ino;
+			if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
+				log_msg("ufs_rename: ufs_add_entry error");
+				goto out;
+			}
+			goto out;
+		}
+
+		/*
+		 * newpath is a file.
+		 */
+		if (UFS_ISDIR(opi.i_mode)) {
+			ret = -ENOTDIR;
+			goto out;
+		}
+
+		/*
+		 * both oldpath and newpath is a file.
+		 */
+		ent.de_inum = opi.i_ino;
+		strcpy(pathcpy, oldpath);
+		strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+		ent.de_name[UFS_NAME_LEN] = 0;
+		if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
+			log_msg("ufs_rename: ufs_rm_entry error");
+			goto out;
+		}
+		ent.de_inum = npi.i_ino;
+		strcpy(pathcpy, newpath);
+		strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+		ent.de_name[UFS_NAME_LEN] = 0;
+		if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
+			log_msg("ufs_rename: ufs_rm_entry error");
+			goto out;
+		}
+		if (--npi.i_nlink) {
+			if ((ret = ufs_wr_inode(&npi)) < 0) {
+				log_msg("ufs_rename: ufs_wr_inode error");
+				goto out;
+			}
+		} else {
+			if ((ret = ufs_truncate(&npi)) < 0) {
+				log_msg("ufs_rename: ufs_truncate error");
+				goto out;
+			}
+			if ((ret = ufs_free_inode(opi.i_ino)) < 0) {
+				log_msg("ufs_rename: ufs_free_inode error");
+				goto out;
+			}
+		}
+		ent.de_inum = opi.i_ino;
+		if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
+			log_msg("ufs_rename: ufs_add_entry error");
+			goto out;
+		}
+		goto out;
+	}
+
+	/* newpath doesn't existed */
+	ent.de_inum = opi.i_ino;
+	strcpy(pathcpy, oldpath);
+	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+	ent.de_name[UFS_NAME_LEN] = 0;
+	if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
+		log_msg("ufs_rename: ufs_rm_entry error");
+		goto out;
+	}
+	ent.de_inum = npi.i_ino;
+	strcpy(pathcpy, newpath);
+	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
+	ent.de_name[UFS_NAME_LEN] = 0;
+	if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
+		log_msg("ufs_rename: ufs_rm_entry error");
+		goto out;
+	}
+out:
+	log_msg("ufs_rename return %d\n");
+	return(ret);
+}
+
 static int ufs_rmdir(const char *path)
 {
 	int	ret = 0;
@@ -830,6 +1010,7 @@ struct fuse_operations ufs_oper = {
 	.read		= ufs_read,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
+	.rename		= ufs_rename,
 	.rmdir		= ufs_rmdir,
 	.unlink		= ufs_unlink,
 	.write		= ufs_write,
