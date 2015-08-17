@@ -763,7 +763,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
 	}
-	ent.de_inum = npi.i_ino;
+	ent.de_inum = opi.i_ino;
 	strcpy(pathcpy, newpath);
 	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 	ent.de_name[UFS_NAME_LEN] = 0;
