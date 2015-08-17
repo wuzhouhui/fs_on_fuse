@@ -434,7 +434,7 @@
   + `iptr` 为空返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int ufs_is_empty(struct ufs_minode *inode)`
+### `int ufs_is_dirempty(struct ufs_minode *inode)`
 * 功能: 判断目录是否为空 (即只包含 `.` 与 `..` 这两个目录项);
 * 输入参数:
   + `inode`: 目录的 i 结点;

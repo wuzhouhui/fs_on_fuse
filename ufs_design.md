@@ -159,7 +159,7 @@
     - 若 `path` 引用是根目录, 返回 `-EPERM`;
     - 调用 `ufs_dir2i(path, inode)`, 若函数出错, 原样返回错误值;
     - 如果 `inode` 不是一个目录, 返回 `-ENOTDIR`;
-    - 调用 `ufs_is_empty(inode)`, 如果目录不空, 返回 `-ENOTEMPTY`;
+    - 调用 `ufs_is_dirempty(inode)`, 如果目录不空, 返回 `-ENOTEMPTY`;
     - 调用 `dir = dirname(path)` 获取 `path` 的目录部分;
     - 调用 `ufs_dir2i(dir, parinode)`, 获取父目录的 i 结点, 若函数出错, 原样返回错误值;
     - 调用 `ufs_rm_entry(parinode, ent)` 移除将被删除的目录的目录项, 若函数出错, 原样返回错误值;

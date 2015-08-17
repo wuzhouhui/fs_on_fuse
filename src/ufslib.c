@@ -978,9 +978,9 @@ out:
 	return(ret);
 }
 
-int ufs_is_empty(struct ufs_minode *inode)
+int ufs_is_dirempty(struct ufs_minode *inode)
 {
-	if (inode == NULL)
+	if (inode == NULL || !UFS_ISDIR(inode->i_mode))
 		return(0);
 	return(inode->i_size == (2 * sizeof(struct ufs_dir_entry)));
 }

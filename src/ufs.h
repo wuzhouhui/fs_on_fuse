@@ -192,7 +192,7 @@ int ufs_path2i(const char *, struct ufs_minode *);
 int ufs_dir2i(const char *, struct ufs_minode *);
 int ufs_find_entry(struct ufs_minode *, const char *, struct ufs_dir_entry *);
 int ufs_truncate(struct ufs_minode *);
-int ufs_is_empty(struct ufs_minode *);
+int ufs_is_dirempty(struct ufs_minode *);
 mode_t ufs_conv_fmode(mode_t);
 int ufs_conv_oflag(int oflag);
 

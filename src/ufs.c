@@ -581,7 +581,7 @@ static int ufs_rmdir(const char *path)
 		ret = -EISDIR;
 		goto out;
 	}
-	if (!ufs_is_empty(&inode)) {
+	if (!ufs_is_dirempty(&inode)) {
 		log_msg("ufs_rmdir: %s is not empty", path);
 		ret = -ENOTEMPTY;
 		goto out;
