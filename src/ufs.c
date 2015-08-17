@@ -484,7 +484,7 @@ static int ufs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		goto out;
 	}
 	if ((ret = ufs_dir2i(path, &inode)) < 0) {
-		log_msg("ufs_creat: ufs_dir2i error for %s", path);
+		log_msg("ufs_readdir: ufs_dir2i error for %s", path);
 		goto out;
 	}
 
