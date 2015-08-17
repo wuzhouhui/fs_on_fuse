@@ -32,16 +32,18 @@ int main(int argc, char *argv[])
 
 	sb.s_magic = UFS_MAGIC;
 	if (size_mb <= 10) {
+		sb.s_imap_blocks = 1;
 		sb.s_zmap_blocks = 5;
 		sb.s_inode_blocks = 256;
 	} else if (size_mb >= 21) {
+		sb.s_imap_blocks = 2;
 		sb.s_zmap_blocks = 16;
 		sb.s_inode_blocks = 1024;
 	} else {
+		sb.s_imap_blocks = 1;
 		sb.s_zmap_blocks = 11;
 		sb.s_inode_blocks = 512;
 	}
-	sb.s_imap_blocks = 1;
 	/* minus one for super block */
 	sb.s_zone_blocks = (stat.st_size >> UFS_BLK_SIZE_SHIFT) - 1
 		- sb.s_zmap_blocks - sb.s_imap_blocks - sb.s_inode_blocks;
