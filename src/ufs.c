@@ -49,6 +49,7 @@ static char bit[] = {
 };
 
 struct ufs_msuper_block sb;
+static int ufs_release(const char *, struct fuse_file_info *);
 
 /* statistic the number of available entries */
 static unsigned int left_cnt(void *bitmap, unsigned int blk, int total)
@@ -369,6 +370,40 @@ out:
 		ufs_free_inode(dirinode.i_ino);
 	log_msg("ufs_mkdir return %d", (int)ret);
 	return(ret);
+}
+
+static int ufs_mknod(const char *path, mode_t mode, dev_t dev)
+{
+	int	ret;
+	struct fuse_file_info fi;
+
+	log_msg("ufs_mknod called, path = %s, mode = %d",
+			path == NULL ?  "NULL" : path, mode);
+	if (!path || !path[0]) {
+		log_msg("ufs_mknod: path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("ufs_mknod: path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if (!S_ISREG(mode)) {
+		log_msg("ufs_mknod: file type unsupported");
+		ret = -ENOTSUP;
+		goto out;
+	}
+	if ((ret = ufs_creat(path, mode, &fi)) < 0) {
+		log_msg("ufs_mknod: ufs_creat error");
+		goto out;
+	}
+	ufs_release(path, &fi);
+	ret = 0;
+
+out:
+	log_msg("ufs_mknod return %d", ret);
+	return(0);
 }
 
 static int ufs_open(const char *path, struct fuse_file_info *fi)
@@ -1023,6 +1058,7 @@ struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
 	.mkdir		= ufs_mkdir,
+	.mknod		= ufs_mknod,
 	.open		= ufs_open,
 	.read		= ufs_read,
 	.readdir	= ufs_readdir,
