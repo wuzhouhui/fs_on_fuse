@@ -627,6 +627,11 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		goto out;
 	}
 
+	if (!strcmp(oldpath, newpath)) {
+		ret = 0;
+		goto out;
+	}
+
 	strcpy(pathcpy, oldpath);
 	strcpy(dir, dirname(pathcpy));
 	if ((ret = ufs_dir2i(dir, &oppi)) < 0) {
