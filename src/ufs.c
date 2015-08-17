@@ -749,6 +749,11 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		goto out;
 	}
 
+	if (ret != -ENOENT) {
+		log_msg("ufs_rename: ufs_find_entry error");
+		goto out;
+	}
+
 	/* newpath doesn't existed */
 	ent.de_inum = opi.i_ino;
 	strcpy(pathcpy, oldpath);
@@ -766,8 +771,9 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
 	}
+	ret = 0;
 out:
-	log_msg("ufs_rename return %d\n");
+	log_msg("ufs_rename return %d", ret);
 	return(ret);
 }
 
