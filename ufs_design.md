@@ -185,12 +185,12 @@
     - 若 `flag` 包含无效标志 (`UFS_O_RDWR`, `UFS_O_WRONLY` 与 `UFS_O_RDONLY` 三者有且仅有一个被设置, 其他标志是可
       选的), 返回 `-ENOTSUP`;
     - 若 `path` 长度大于最大路径名长度, 返回 `-ENAMETOOLONG`;
-    - 遍历 `open_files[]`, 寻找空闲项, 若没有空闲项, 返回 `-ENFILE`; 若找到, 记空闲项下标为 `fd`;
+    - 遍历 `ufs_open_files[]`, 寻找空闲项, 若没有空闲项, 返回 `-ENFILE`; 若找到, 记空闲项下标为 `fd`;
     - 调用 `ufs_path2i(path, inode)`, 获取文件的 i 结点点, 若函数出错, 原样返回错误值;
     - 若 `flag` 包含写操作 (`UFS_O_WRONLY`, `UFS_O_RDWR` 等), 而 `path` 是一个目录文件, 返回 `-EISDIR`;
     - 若 `flag` 指定了 `UFS_O_DIR`, 但 `path` 不是一个目录文件, 返回 `-ENOTDIR`;
     - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncate(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错, 原样返回错误值;
-    - 初始化 `open_files[fd]`, 返回.
+    - 初始化 `ufs_open_files[fd]`, 返回.
 
 * `int write(int fd, const void *buf, size_t size)`
   + 功能: 写一个文件;
@@ -234,7 +234,7 @@
   + 函数过程:
     - 若 `fd` 无效, 或未打开, 或打开时没有指定读标志, 返回 `-EBADF`;
     - 若 `buf` 为空, 或 `size` 为 0, 返回 0;
-    - 若 `open_files[fd].f_inode` 引用的是一个目录文件, 返回 `-EISDIR`;
+    - 若 `ufs_open_files[fd].f_inode` 引用的是一个目录文件, 返回 `-EISDIR`;
     - 获取文件的当前读偏移量 `pos`;
     - 当未遇到文件末尾且未读满 `size` 个字节时, 循环;
     - 将读到的数据复制到 `buf` 中, 若出错, 原样返回错误值;
