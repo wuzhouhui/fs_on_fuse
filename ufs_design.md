@@ -274,7 +274,7 @@
     - 若成功返回 0;
     - `-EINVAL`: `path` 为空, 或长度为 0, 或 `mode` 包含无效参数 (除了
       `F_OK`, `R_OK`, `W_OK`, `X-OK`)
-    - `-EACCESS`: 请求的权限被拒绝, 或 `path` 中某个前缀目录不允许搜索;
+    - `-EACCES`: 请求的权限被拒绝, 或 `path` 中某个前缀目录不允许搜索;
     - `-ENAMETOOLONG`: 路径名过长, 或文件名过长;
     - `-ENOENT`: 路径中的某一部分不存在;
     - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件;
@@ -285,5 +285,6 @@
     - 若 `path` 长度超过最大文件名长度, 返回 `-ENAMETOOLONG`;
     - 调用 `ufs_path2i(path, inode)`, 若函数出错, 原样返回错误值;
     - 若 `mode == F_OK`, 返回 0;
-    - 若 `inode.i_mode` 具备 `mode` 所请求的权限, 返回 0, 否则返回
-      `-EACCESS`;
+    - 根据进程的身份, 取出与它对应的文件权限, 
+      若 `inode.i_mode` 具备 `mode` 所请求的权限, 返回 0, 否则返回
+      `-EACCES`;
