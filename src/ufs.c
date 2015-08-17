@@ -679,6 +679,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			strcpy(pathcpy, newpath);
 			strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 			ent.de_name[UFS_NAME_LEN] = 0;
+			if (oppi.i_ino == nppi.i_ino)
+				memcpy(&nppi, &oppi, sizeof(oppi));
 			if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
@@ -722,6 +724,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		strcpy(pathcpy, newpath);
 		strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 		ent.de_name[UFS_NAME_LEN] = 0;
+		if (oppi.i_ino == nppi.i_ino)
+			memcpy(&nppi, &oppi, sizeof(oppi));
 		if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
 			log_msg("ufs_rename: ufs_rm_entry error");
 			goto out;
@@ -767,6 +771,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 	strcpy(pathcpy, newpath);
 	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 	ent.de_name[UFS_NAME_LEN] = 0;
+	if (oppi.i_ino == nppi.i_ino)
+		memcpy(&nppi, &oppi, sizeof(oppi));
 	if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
