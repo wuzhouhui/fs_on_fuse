@@ -3,17 +3,17 @@
 ## 1.1 文件系统在磁盘上的布局
 
 ![](./layout.png)  
-图 1-1 文件系统各个字段在磁盘上的布局
+图 1-1 文件系统各个功能区在磁盘上的布局
 
 ## 1.2 常量说明
 
-	#define UFS_MAGIC		0x7594	/* 文件系统的标识 */
-	#define UFS_NAME_LEN        27	/* 文件名的最大长度, 不包括结尾的空字符 */
+	#define UFS_MAGIC	0x7594	/* 文件系统的标识 */
+	#define UFS_NAME_LEN    27	/* 文件名的最大长度, 不包括结尾的空字符 */
 	#define UFS_PATH_LEN	1024	/* 路径名最大长度, 不包括结尾的空字符 */
-	#define UFS_BLK_SIZE        512	/* 磁盘块大小 */
-	#define UFS_OPEN_MAX        64	/* 同时打开文件数最大值 */
+	#define UFS_BLK_SIZE    512	/* 磁盘块大小 */
+	#define UFS_OPEN_MAX    64	/* 同时打开文件数最大值 */
 	#define UFS_DISK_MAX_SIZE   32	/* 磁盘文件最大值 (MB) */
-	#define UFS_DISK_MIN_SIZE	1	/* 磁盘文件最小值 (MB) */
+	#define UFS_DISK_MIN_SIZE   1	/* 磁盘文件最小值 (MB) */
 	#define UFS_ROOT_INO	1	/* 根目录的 i 结点号 */
 
 ## 1.3 主要数据结构
@@ -82,6 +82,24 @@
 是 i 结点相应的位在位图中的下标. 逻辑块位图除了每一个位表示一个逻辑块外,
 其他的与 i 结点位图相同.
 
+`s_imap_blocks`, `s_zmap_blocks`, `s_inode_blocks` 与 `s_zone_blocks`
+这四个字段需要根据磁盘文件大小动态计算. 本文件系统支持的磁盘大小在 1 MB 到 32 MB 之间,
+将该区间分成三个子区间, 对每个子区间的分配策略如下  
+* `1 <= size_in_MB <= 10`
+  + `s_imap_blocks = 1`;
+  + `s_zmap_blocks = 5`;
+  + `s_inode_blocks = 256`;
+* `10 < size_in_MB < 21`
+  + `s_imap_blocks = 1`;
+  + `s_zmap_blocks = 11`;
+  + `s_inode_blocks = 512`;
+* `21 <= size_in_MB <= 32`
+  + `s_imap_blocks = 2`;
+  + `s_zmap_blocks = 16`;
+  + `s_inode_blocks = 1024`;
+
+一旦确定了前三个字段, 最后一个字段 `s_zone_blocks` 便很容易计算得到.
+
 之所以分成 "磁盘上的超级块" 与 "内存中的超级块" 是为了兼顾使用的方便与信息的最
 小化. `struct ufs_msuper_block` 结构中多出来的信息可以通过 "磁盘上的超级块" 计算得到,
 但如果每次使用时都重新计算比较浪费时间, 所以将这些辅助信息事先计算并存储起来.
@@ -100,7 +118,6 @@
 		nlink_t	i_nlink;	/* 链接数 */
 		mode_t	i_mode;		/* 文件类型和访问权限 */
 		off_t	i_size;		/* 文件长度, 以字节计 */
-		time_t	i_atime;	/* 文件内容最后一次被访问的时间 */
 		time_t	i_mtime;	/* 文件内容最后一次被修改的时间 */
 		time_t	i_ctime;	/* i 结点最后一次被修改的时间 */
 		uid_t	i_uid;		/* 拥有此文件的用户 id */
@@ -120,7 +137,6 @@
 		nlink_t	i_nlink;	/* 链接数 */
 		mode_t	i_mode;		/* 文件类型和访问权限 */
 		off_t	i_size;		/* 文件长度, 以字节计 */
-		time_t	i_atime;	/* 文件内容最后一次被访问的时间 */
 		time_t	i_mtime;	/* 文件内容最后一次被修改的时间 */
 		time_t	i_ctime;	/* i 结点最后一次被修改的时间 */
 		uid_t	i_uid;		/* 拥有此文件的用户 id */
@@ -137,7 +153,7 @@
 		/* 下面的字段仅存在于内存中 */
 		unsigned int	i_ino;		/* i 结点号, 从 1 开始, 等价于与该 i 结点对应的二进制位在 i 结点位图中的下标 */
 		int	i_refcnt;	/* i 结点被引用的次数 */
-	}
+	};
 
 `i_nlink` 是指向该 i 结点的目录项的个数, 可用于实现硬链接. `i_mode` 包含了有关文件属性与
 权限的信息, 该字段包含的信息如下图
@@ -204,7 +220,7 @@
 
 ## 1.4 功能函数 (或命令)
 
-### `format`
+### `format` _`diskfile`_
 * 功能: 格式化一个文件系统
 * 命令行参数:
   + 磁盘文件路径, 在挂载文件系统之后, 磁盘文件必须存放在另一个
@@ -296,7 +312,7 @@
   + `size` 不等于 逻辑块大小, 返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `unsigned int inum2blknum(unsigned int inum)`
+### `unsigned int inum2bnum(unsigned int inum)`
 * 功能: 计算指定的 i 结点所在的磁盘块块号
 * 输入参数:
   + `inum`: 待计算的 i 结点号
@@ -305,21 +321,29 @@
 * 注: 磁盘的第一个块被超级块占用, 故 0 号磁盘块不会被用到, 可用
 作错误的返回值.
 
-### `unsigned int zonenum2blknum(unsigned int zone_num)`
+### `unsigned int znum2bnum(unsigned int zone_num)`
 * 功能: 计算指定的逻辑块所在的磁盘块块号
 * 输入参数:
   + `zone_num`: 待计算的逻辑块块号
 * 返回值: 编号为 `zone_num` 的逻辑块所在的磁盘块块号. 若 `zone_num`
 无效则返回 0.
 
-### `unsigned int datanum2zonenum(struct ufs_minode *inode, unsigned int data_num)`
-* 功能: 计算指定的数据块所在逻辑块号
+### `unsigned int dnum2znum(struct ufs_minode *inode, unsigned int data_num)`
+* 功能: 计算指定的数据块所在的逻辑块号
 * 输入参数:
-  + `inode`: 数据块所在的 i 结点点指针.
+  + `inode`: 数据块所在的 i 结点指针.
   + `data_num`: 数据块号
-* 返回值: 若数据块号与 i 结点有效, 返回对应的逻辑块号; 否则返回 0.
+* 返回值: 若数据块号与 i 结点有效, 且数据块存在, 返回对应的逻辑块号; 否则返回 0.
 * 注: "数据块" 是相对于单个文件的, 从 1 开始编号, 数据块号最大值
 受限于 i 结点所能支持的最大文件大小.
+
+### `unsigned int ufs_creat_zone(struct ufs_minode *inode, unsigned int data_num)`
+* 功能: 计算指定的数据块所在的逻辑块号, 若不存在则创建一块;
+* 输入参数:
+  + `inode`: 数据块所在的 i 结点指针;
+  + `data_num`: 数据块块号;
+* 返回值: 若数据块号与 i 结点有效, 文件大小未达到上限且磁盘有空闲逻辑块,
+则返回对应的逻辑块号; 否则返回 0.
 
 ### `int ufs_rd_blk(unsigned int blk_num, void *buf, size_t size)`
 * 功能: 从磁盘上读一块指定的磁盘块
@@ -378,7 +402,7 @@
   + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_add_entry *entry)`
+### `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *entry)`
 * 功能: 从指定的目录中移除一指定的目录项;
 * 输入参数:
   + `dir`: 在该目录中移除一个目录项;
@@ -409,5 +433,14 @@
   + 成功返回 0; 失败返回 `errno`. 在以下情况返回失败:
   + `iptr` 为空返回 `-EINVAL`;
   + 被调用函数返回出错, 将错误值原样返回.
+
+### `int ufs_is_empty(struct ufs_minode *inode)`
+* 功能: 判断目录是否为空 (即只包含 `.` 与 `..` 这两个目录项);
+* 输入参数:
+  + `inode`: 目录的 i 结点;
+* 返回值: 若 目录只包含 `.` 与 `..` 这两个目录项, 返回 1; 以下情况返回 0:
+  - `inode` 为空;
+  - `inode` 不是一个目录文件;
+  - `inode` 包含除了 `.` 与 `..` 之外的目录项;
 
 ## 1.5 功能函数详细流程
