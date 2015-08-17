@@ -261,5 +261,6 @@
   + 函数过程: 
     - 若 `path` 为空, 或长度为 0, 或 `st` 是空指针, 返回 `-EINVAL`;
     - 调用 `ufs_path2i(path, inode)`, 若函数出错, 原样返回错误值;
-    - 将 `inode` 的字段赋值给 `st`, 并进行适当的转换 (`inode.i_mode`);
+    - 将 `inode` 的字段赋值给 `st`,  并调用 `ufs_conv_fmode(inode.i_mode)`
+      将 文件类型及权限转换为标准格式.
     - 返回.

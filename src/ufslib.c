@@ -991,7 +991,7 @@ int ufs_is_empty(struct ufs_minode *inode)
  */
 mode_t ufs_conv_fmode(mode_t mode)
 {
-	mode_t ret = mode & 0x1ff;
+	mode_t ret = mode & 0x1ff; /* low 9 bits are user permission */
 	if (UFS_ISREG(mode))
 		ret |= S_IFREG;
 	if (UFS_ISDIR(mode))

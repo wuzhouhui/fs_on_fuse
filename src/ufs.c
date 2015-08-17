@@ -203,7 +203,8 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 	int	ret = 0;
 	struct ufs_minode inode;
 
-	log_msg("ufs_getattr called, path = %s", path);
+	log_msg("ufs_getattr called, path = %s", path == NULL ? "NULL" :
+			path);
 	if ((ret = ufs_path2i(path, &inode)) < 0) {
 		log_msg("ufs_getattr: ufs_path2i error");
 		goto out;
