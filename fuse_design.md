@@ -378,8 +378,7 @@
   + 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_add_entry *
-		entry)`
+### `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_add_entry *entry)`
 * 功能: 从指定的目录中移除一指定的目录项;
 * 输入参数:
   + `dir`: 在该目录中移除一个目录项;
