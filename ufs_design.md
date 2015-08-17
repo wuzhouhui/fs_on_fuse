@@ -264,3 +264,27 @@
     - 将 `inode` 的字段赋值给 `st`,  并调用 `ufs_conv_fmode(inode.i_mode)`
       将 文件类型及权限转换为标准格式.
     - 返回.
+
+* `int access(const char *path, int mode)`
+  + 功能: 按照进程的实际用户 ID 与实际组 ID 来测试文件的读写权限;
+  + 输入参数:
+    - `path`: 文件的路径;
+    - `mode`: 需要检查的权限;
+  + 返回值:
+    - 若成功返回 0;
+    - `-EINVAL`: `path` 为空, 或长度为 0, 或 `mode` 包含无效参数 (除了
+      `F_OK`, `R_OK`, `W_OK`, `X-OK`)
+    - `-EACCES`: 请求的权限被拒绝, 或 `path` 中某个前缀目录不允许搜索;
+    - `-ENAMETOOLONG`: 路径名过长, 或文件名过长;
+    - `-ENOENT`: 路径中的某一部分不存在;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件;
+    - `-EIO`: 发生了一个 I/O 错误;
+  + 函数过程:
+    - 若 `path` 为空, 或长度为 0, 返回 `-EINVAL`;
+    - 若 `mode` 包含无效参数, 返回 `-EINVAL`;
+    - 若 `path` 长度超过最大文件名长度, 返回 `-ENAMETOOLONG`;
+    - 调用 `ufs_path2i(path, inode)`, 若函数出错, 原样返回错误值;
+    - 若 `mode == F_OK`, 返回 0;
+    - 根据进程的身份, 取出与它对应的文件权限, 
+      若 `inode.i_mode` 具备 `mode` 所请求的权限, 返回 0, 否则返回
+      `-EACCES`;

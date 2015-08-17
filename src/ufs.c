@@ -100,6 +100,50 @@ static int init(const char *disk_name)
 	return(0);
 }
 
+static int ufs_access(const char *path, int mode)
+{
+	int	ret = 0, m;
+	struct ufs_minode inode;
+
+	log_msg("ufs_access called, path = %s, mode = %o", path == NULL ?
+			"NULL" : path, mode);
+
+	if (!path || !path[0]) {
+		log_msg("path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!(mode == F_OK || (mode & (R_OK | W_OK | X_OK)))) {
+		log_msg("mode invalid");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("path too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_path2i error");
+		goto out;
+	}
+	if (mode == F_OK) {
+		ret = 0;
+		goto out;
+	}
+
+	if (getuid() == inode.i_uid)
+		m = (inode.i_mode >> 6) & 0x7;
+	else if (getgid() == inode.i_gid)
+		m = (inode.i_mode >> 3) & 0x7;
+	else
+		m = inode.i_mode & 0x7;
+	ret = ((m & mode) == mode) ? 0 : -EACCES;
+out:
+	log_msg("ufs_access return %d", ret);
+	return(ret);
+}
+
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
@@ -778,6 +822,7 @@ out:
 }
 
 struct fuse_operations ufs_oper = {
+	.access		= ufs_access,
 	.create		= ufs_creat,
 	.getattr	= ufs_getattr,
 	.mkdir		= ufs_mkdir,
