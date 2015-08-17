@@ -49,7 +49,12 @@
     - `fd`: 打开文件的描述符;
   + 返回值:
     - 若成功返回 0;
-    - `-EBADF`: `fd` 不是一个有效的文件描述符;
+    - `-EBADF`: `fd` 超出有效范围, 或文件未打开;
+  + 函数过程:
+    - 判断 `fd` 是否在有效范围内, 若不是, 返回 `-EBADF`;
+    - 判断 `ufs_open_files[fd]` 是否已打开 (即判断 `ufs_open_files[fd].f_count` 是否非 0),
+      若未打开, 返回 `-EBADF`;
+    - `ufs_open_files[fs].f_count` 减 一.
 
 * `int mkdir(const char *path, mode_t mode)`
   + 功能: 创建一个空目录;
