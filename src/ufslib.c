@@ -971,6 +971,10 @@ int ufs_truncate(struct ufs_minode *iptr)
 	memset(&iptr->i_zones, 0, sizeof(iptr->i_zones));
 	iptr->i_size = 0;
 	iptr->i_mtime = iptr->i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(iptr)) < 0) {
+		log_msg("ufs_truncate: ufs_wr_inode error");
+		goto out;
+	}
 	ret = 0;
 
 out:
