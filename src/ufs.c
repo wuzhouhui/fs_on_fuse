@@ -55,12 +55,12 @@ static int ufs_release(const char *, struct fuse_file_info *);
 static unsigned int left_cnt(void *bitmap, unsigned int blk, int total)
 {
 	char	*c = (char *)bitmap;
-	int	n = blk << UFS_BLK_SIZE_SHIFT;
 	int	one, i;
 
-	for (one = i = 0; i < n; i++) {
+	blk <<= UFS_BLK_SIZE_SHIFT;
+	for (one = i = 0; i < blk; i++) {
 		one += bit[c[i] & 0xf];
-		one += bit[c[i] >> 4];
+		one += bit[(c[i] >> 4) & 0xf];
 	}
 
 	/* 1st bit of bit map reserved, but 1st entry still available */
