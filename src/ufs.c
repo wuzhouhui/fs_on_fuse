@@ -52,7 +52,7 @@ struct ufs_msuper_block sb;
 static int ufs_release(const char *, struct fuse_file_info *);
 
 /* statistic the number of available entries */
-static unsigned int left_cnt(void *bitmap, unsigned int blk, int total)
+static unsigned int ufs_left_cnt(void *bitmap, unsigned int blk, int total)
 {
 	char	*c = (char *)bitmap;
 	int	one, i;
@@ -92,9 +92,9 @@ static int init(const char *disk_name)
 	/* plus one for super block */
 	sb.s_1st_inode_block = sb.s_imap_blocks + sb.s_zmap_blocks + 1;
 	sb.s_1st_zone_block = sb.s_1st_inode_block + sb.s_inode_blocks;
-	sb.s_inode_left = (unsigned int)left_cnt(sb.s_imap, sb.s_imap_blocks,
+	sb.s_inode_left = (unsigned int)ufs_left_cnt(sb.s_imap, sb.s_imap_blocks,
 			sb.s_inode_blocks * UFS_INUM_PER_BLK);
-	sb.s_block_left = (unsigned int)left_cnt(sb.s_zmap, sb.s_zmap_blocks,
+	sb.s_block_left = (unsigned int)ufs_left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
 
 	log_msg("init returned");
@@ -914,11 +914,11 @@ static int ufs_statfs(const char *path, struct statvfs *stat)
 		goto out;
 	}
 	stat->f_bsize	= UFS_BLK_SIZE;
-	stat->f_bfree	= left_cnt(sb.s_zmap, sb.s_zmap_blocks,
+	stat->f_bfree	= ufs_left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
 	stat->f_bavail	= stat->f_bfree;
 	stat->f_files	= sb.s_inode_blocks * UFS_INUM_PER_BLK;
-	stat->f_ffree	= left_cnt(sb.s_imap, sb.s_imap_blocks,
+	stat->f_ffree	= ufs_left_cnt(sb.s_imap, sb.s_imap_blocks,
 			stat->f_files);
 	stat->f_namemax	= UFS_NAME_LEN;
 	ret = 0;
