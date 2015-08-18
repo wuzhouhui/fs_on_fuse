@@ -1010,7 +1010,7 @@ static int ufs_statfs(const char *path, struct statvfs *stat)
 	ret = 0;
 out:
 	log_msg("ufs_statfs return %d", ret);
-	return(0);
+	return(ret);
 }
 
 static int ufs_unlink(const char *path)
