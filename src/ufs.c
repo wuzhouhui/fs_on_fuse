@@ -606,7 +606,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 
 	ret = s;
 out:
-	log_msg("ufs_read return %d");
+	log_msg("ufs_read return %d", ret);
 	return(ret);
 }
 
