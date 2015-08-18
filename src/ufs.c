@@ -897,6 +897,36 @@ out:
 	return(ret);
 }
 
+static int ufs_statfs(const char *path, struct statvfs *stat)
+{
+	int	ret = 0;
+
+	log_msg("ufs_statfs called, path = %s", path == NULL ? "NULL" :
+			path);
+	if (!path || !path[0]) {
+		log_msg("ufs_statfs: path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!stat) {
+		log_msg("ufs_statfs: stat is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	stat->f_bsize	= UFS_BLK_SIZE;
+	stat->f_bfree	= left_cnt(sb.s_zmap, sb.s_zmap_blocks,
+			sb.s_zone_blocks);
+	stat->f_bavail	= stat->f_bfree;
+	stat->f_files	= sb.s_inode_blocks * UFS_INUM_PER_BLK;
+	stat->f_ffree	= left_cnt(sb.s_imap, sb.s_imap_blocks,
+			stat->f_files);
+	stat->f_namemax	= UFS_NAME_LEN;
+	ret = 0;
+out:
+	log_msg("ufs_statfs return %d", ret);
+	return(0);
+}
+
 static int ufs_unlink(const char *path)
 {
 	int	ret;
@@ -1065,6 +1095,7 @@ struct fuse_operations ufs_oper = {
 	.release	= ufs_release,
 	.rename		= ufs_rename,
 	.rmdir		= ufs_rmdir,
+	.statfs		= ufs_statfs,
 	.unlink		= ufs_unlink,
 	.write		= ufs_write,
 };
