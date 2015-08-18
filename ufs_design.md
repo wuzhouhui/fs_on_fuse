@@ -365,3 +365,20 @@
     - 总是返回 0 (成功);
   + 函数过程:
     - 函数体无实质性内容, 直接返回 0;
+
+* `int fsync(const char *path, int datasync, struct fuse_file_info *fi)`
+  + 功能: 同步文件;
+  + 输入参数:
+    - `path`: 不用;
+    - `datasync`: 同步标志, 非 0 则仅同步数据; 0 则同步数据与元数据;
+    - `fi`: 不用;
+  + 返回值:
+    - 若成功返回 0;
+    - `-EBADF`: 文件描述符无效;
+    - `-EIO`: 发生了一个 I/O 错误;
+    - `-EINVAL`: 文件不支持 同步.
+  + 函数过程:
+    - 若 `datasync` 非 0, 调用 `fdatasync(sb.s_fd)`, 若函数出错, 返回 
+      `-errno`; 成功返回 0;
+    - 若 `datasync` 为 0, 调用 `fsync(sb.s_fd)`, 若函数出错, 返回 `-errno`;
+      成功返回 0;
