@@ -659,6 +659,22 @@ out:
 	return(ret);
 }
 
+static int ufs_releasedir(const char *path, struct fuse_file_info *fi)
+{
+	int	ret;
+
+	log_msg("ufs_releasedir called, path = %s", path == NULL ?
+			"NULL" : path);
+	if (!fi->fh) {
+		ret = -EBADF;
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_releasedir return %d", ret);
+	return(ret);
+}
+
 static int ufs_rename(const char *oldpath, const char *newpath)
 {
 	int	ret = 0;
@@ -1127,6 +1143,7 @@ struct fuse_operations ufs_oper = {
 	.read		= ufs_read,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
+	.release	= ufs_releasedir,
 	.rename		= ufs_rename,
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
