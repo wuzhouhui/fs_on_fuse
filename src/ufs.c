@@ -243,6 +243,14 @@ out:
 	return(ret);
 }
 
+static int ufs_flush(const char *path, struct fuse_file_info *fi)
+{
+	log_msg("ufs_flush called, path = %s", path == NULL ? "NULL" :
+			path);
+	log_msg("ufs_flush return 0");
+	return(0);
+}
+
 static int ufs_getattr(const char *path, struct stat *statptr)
 {
 	int	ret = 0;
@@ -1135,6 +1143,7 @@ out:
 struct fuse_operations ufs_oper = {
 	.access		= ufs_access,
 	.create		= ufs_creat,
+	.flush		= ufs_flush,
 	.getattr	= ufs_getattr,
 	.mkdir		= ufs_mkdir,
 	.mknod		= ufs_mknod,
