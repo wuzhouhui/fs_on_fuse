@@ -251,6 +251,35 @@ static int ufs_flush(const char *path, struct fuse_file_info *fi)
 	return(0);
 }
 
+static int ufs_fsync(const char *path, int datasync,
+		struct fuse_file_info *fi)
+{
+	int	ret;
+
+	log_msg("ufs_fsync called, path = %s, datasync = %d",
+			(!path) ? "NULL" : path, datasync);
+	if (datasync) {
+		if (fdatasync(sb.s_fd) < 0) {
+			log_msg("ufs_fsync: fdatasync error");
+			ret = -errno;
+			goto out;
+		}
+		ret = 0;
+		goto out;
+	}
+
+	if (fsync(sb.s_fd) < 0) {
+		log_msg("ufs_fsync: fsync error");
+		ret = -errno;
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_fsync return %d", ret);
+	return(ret);
+}
+
 static int ufs_getattr(const char *path, struct stat *statptr)
 {
 	int	ret = 0;
@@ -1144,6 +1173,7 @@ struct fuse_operations ufs_oper = {
 	.access		= ufs_access,
 	.create		= ufs_creat,
 	.flush		= ufs_flush,
+	.fsync		= ufs_fsync,
 	.getattr	= ufs_getattr,
 	.mkdir		= ufs_mkdir,
 	.mknod		= ufs_mknod,
