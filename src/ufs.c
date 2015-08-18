@@ -473,6 +473,39 @@ out:
 	return(ret);
 }
 
+static int ufs_opendir(const char *path, struct fuse_file_info *fi)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_opendir called, path = %s", path == NULL ? "NULL" :
+			path);
+	if (!path || !path[0]) {
+		log_msg("ufs_opendir: path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("ufs_opendir: path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_dir2i(path, &inode)) < 0) {
+		log_msg("ufs_opendir: ufs_dir2i error");
+		goto out;
+	}
+	/*
+	 * opendir() return nonnull pointer if successed, and fi->fh is
+	 * returned as opendir()'s return value.
+	 */
+	fi->fh = !0;
+	ret = 0;
+
+out:
+	log_msg("ufs_opendir return %d", ret);
+	return(0);
+}
+
 static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		struct fuse_file_info *fi)
 {
@@ -703,7 +736,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			}
 
 			/*
-			 * both oldpath and newpath are directory, and 
+			 * both oldpath and newpath are directory, and
 			 * newpath is an empty directory.
 			 */
 			ent.de_inum = opi.i_ino;
@@ -1038,7 +1071,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		goto out;
 	}
 
-	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ? 
+	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ?
 			ufs_open_files[fi->fh].f_inode.i_size :
 			ufs_open_files[fi->fh].f_pos);
 	s = 0;
@@ -1090,6 +1123,7 @@ struct fuse_operations ufs_oper = {
 	.mkdir		= ufs_mkdir,
 	.mknod		= ufs_mknod,
 	.open		= ufs_open,
+	.opendir	= ufs_opendir,
 	.read		= ufs_read,
 	.readdir	= ufs_readdir,
 	.release	= ufs_release,
