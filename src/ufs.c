@@ -1097,7 +1097,8 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	struct ufs_minode *iptr;
 	char	block[UFS_BLK_SIZE];
 
-	log_msg("ufs_write called, path = %s", path == NULL ? "NULL" : path);
+	log_msg("ufs_write called, path = %s, fi->fh = %d",
+			(path == NULL ? "NULL" : path), (int)fi->fh);
 	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
 		log_msg("ufs_write: fd %d out out range", (int)fi->fh);
 		ret = -EBADF;
