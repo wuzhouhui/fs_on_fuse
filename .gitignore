@@ -1,3 +1,4 @@
+Makefile
 *.odt
 *.c
 mnt
@@ -13,10 +14,7 @@ disk
 .?*
 
 ### Makefile ###
-a.out
 creat
 format
-fuse培训要求.pdf
-mkdir
-size
 ufs
+write

@@ -197,24 +197,26 @@
     - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncate(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错, 原样返回错误值;
     - 初始化 `ufs_open_files[fd]`, 返回.
 
-* `int write(int fd, const void *buf, size_t size)`
+* `int write(int fd, const void *buf, size_t size, off_t offset)`
   + 功能: 写一个文件;
   + 输入参数:
     - `fd`: 打开文件描述符;
     - `buf`: 数据缓冲区;
     - `size`: 写入的数据量, 数据量大于 0;
+    - `offset`: 写入点的起始偏移量;
   + 返回值:
     - 若成功返回 写入的数据量;
     - `-EBADF`: `fd` 不是一个有效的文件描述符, 或没有打开, 或打开文件时没有指定写标志;
     - `-EIO`: 底层写函数出错;
     - `-ENOSPC`: 磁盘空间不足;
-    - `-EINVAL`: `buf` 为空, 或 `size` 小于等于 0;
+    - `-EINVAL`: `buf` 为空, 或 `size` 小于等于 0, 或 `offset` 超过文件大小;
     - `-EFBIG`: 文件过大;
   + 函数过程:
     - 若 `fd` 不是一个有效的文件描述符, 或没有打开, 或打开文件时没有指定写标志, 返回 `-EBADF`;
     - 若 `buf` 为空, 或 `size` 小于等于 0, 返回 `-EINVAL`;
-    - 获取文件的当前读写偏移量 `pos`, 若打开文件时指定 了 `UFS_O_APPEND`, 将 `pos` 设置为
-      文件的当前大小;
+    - 若 `offset` 大于等于文件大小, 返回 `-EINVAL`;
+    - 将文件的当前读写偏移量 `pos` 设置为 `offset`, 若打开文件时指定了 `UFS_O_APPEND`, 将 `pos`
+      设置为文件的当前大小;
     - 当还有剩余的数据未写时, 循环;
     - 利用 除运算与取模运算, 计算当前要写的偏移在文件中的数据块号, 与数据块内的偏移量;
       调用 `ufs_creat_zone(dnum)` 获取数据块号对应的逻辑块号, 若返回 0, 判断是否是因为文件过大,
