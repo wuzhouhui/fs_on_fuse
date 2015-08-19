@@ -1,3 +1,4 @@
+*.exe
 Makefile
 *.odt
 *.c
