@@ -817,7 +817,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 				log_msg("ufs_rename: ufs_truncate error");
 				goto out;
 			}
-			if ((ret = ufs_free_inode(opi.i_ino)) < 0) {
+			if ((ret = ufs_free_inode(npi.i_ino)) < 0) {
 				log_msg("ufs_rename: ufs_free_inode error");
 				goto out;
 			}
@@ -868,7 +868,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 				log_msg("ufs_rename: ufs_truncate error");
 				goto out;
 			}
-			if ((ret = ufs_free_inode(opi.i_ino)) < 0) {
+			if ((ret = ufs_free_inode(npi.i_ino)) < 0) {
 				log_msg("ufs_rename: ufs_free_inode error");
 				goto out;
 			}
