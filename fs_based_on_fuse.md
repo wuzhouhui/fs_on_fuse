@@ -919,7 +919,9 @@ VFS
   + 输入参数:
     - `oldpath`: 旧文件的路径;
     - `newpath`: 新文件的路径;
-  + 函数过程: **TODO flow chart**
+  + 函数过程 (流程图中未画出的分支都表示出错):  
+![](./rename_1.png)
+![](./rename_2.png)
 
 * `int mkdir(const char *path, mode_t mode)`
   + 功能: 创建一个空目录;
