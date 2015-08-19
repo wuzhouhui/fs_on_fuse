@@ -553,8 +553,10 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	char	block[UFS_BLK_SIZE];
 	unsigned int znum;
 
-	log_msg("ufs_read called, path = %s, fd = %d",
-			(path == NULL ? "NULL" : path), (int)fi->fh);
+	log_msg("ufs_read called, path = %s, fd = %d, size = %d, "
+			"offset = %d",
+			(path == NULL ? "NULL" : path), (int)fi->fh,
+			(int)size, (int)offset);
 	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
 		log_msg("ufs_read: fd out of range");
 		ret = -EBADF;
@@ -583,7 +585,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	}
 
 	s = 0;
-	pos = ufs_open_files[fi->fh].f_pos;
+	pos = offset;
 	while (s < size && pos < iptr->i_size) {
 		znum = ufs_dnum2znum(iptr, pos >> UFS_BLK_SIZE_SHIFT);
 		if (!znum)
