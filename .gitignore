@@ -1,3 +1,11 @@
+fs_on_fuse.toc
+*.out
+*.tex
+*.log
+*.aux
+*.log1
+*.pdf
+*.aux
 Makefile
 *.odt
 *.c
