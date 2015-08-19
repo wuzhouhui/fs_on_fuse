@@ -919,6 +919,22 @@ VFS
   + 输入参数:
     - `oldpath`: 旧文件的路径;
     - `newpath`: 新文件的路径;
+  + 返回值:
+    - 成功返回 0;
+    - `-EINVAL`: 路径名为空或长度为 0; 或试图将某个目录作为它自己的子
+      目录;
+    - `-EACCES`: 对 `oldpath` 或 `newpath` 的父目录无写权限; 或者对路径
+      中的某一前缀目录无搜索权限; 或者 `oldpath` 是一个目录文件, 但是对
+      用户对该目录无写权限 (需要更新 `..` 目录项);
+    - `-EBUSY`: `oldpath` 或 `newpath` 是根目录;
+    - `-EISDIR`: `newpath` 是一个已存在的目录, 但是 `oldpath` 不是一个目录 
+      文件;
+    - `-ENAMETOOLONG`: `oldpath` 或 `newpath` 长度大于最大路径名长度;
+    - `-ENOENT`: `oldpath` 不存在, 或 `newpath` 中某个前缀目录部分不存在;
+    - `-ENOSPC`: 没有多余的空间存放新目录项;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件; 或 `oldpath` 是一 
+      个目录文件, 但是 `newpath` 已存在, 但不是一个目录文件;
+    - `-ENOTEMPTY`: `newpath` 是一个非空目录;
   + 函数过程 (流程图中未画出的分支都表示出错):  
 ![](./rename_1.png)
 ![](./rename_2.png)
