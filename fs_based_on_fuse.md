@@ -1329,7 +1329,7 @@ VFS
 `disk` 作为磁盘.
 
 * 卸载文件系统  
-	`fusermount mnt/`
+	`fusermount -u mnt/`
 
 ### 测试内容与步骤
 
