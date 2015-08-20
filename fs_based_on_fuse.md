@@ -4,7 +4,7 @@
 
 ### [fuse-1.3 的工作方式](http://fuse.sourceforge.net/doxygen/index.html#section1)
 
-![fuse 与其他模块的关系](./FUSE_structure.svg.png)  
+![fuse 与其他模块的关系](./images/./FUSE_structure.svg.png)  
 图 1-1, 来源 http://en.wikipedia.org/wiki/File:FUSE_structure.svg  
 
 #### 内核模块
@@ -388,7 +388,7 @@ VFS
 
 ### 文件系统在磁盘上的布局
 
-![](./layout.png)  
+![](./images/./layout.png)  
 图 2-1 文件系统各个功能区在磁盘上的布局
 
 ### 常量说明
@@ -545,13 +545,13 @@ VFS
 `i_nlink` 是指向该 i 结点的目录项的个数, 可用于实现硬链接. `i_mode` 包含了有关文件属性与
 权限的信息, 该字段包含的信息如下图
 
-![](./imode.png)  
+![](./images/./imode.png)  
 图 2-2 `i_mode` 字段中每一位的作用.
 
 `i_mode` 的高位在左, 低位在右. 低 9 位用于判断三类用户对该文件的读写权限,
 位 9 用于判断文件类型, 其余位不用.
 
-![](./i_zones_array.png)  
+![](./images/./i_zones_array.png)  
 图 2-3 i 结点逻辑块块号数组的功能
 
 如果存放逻辑块号的存储单元的值为 0, 说明该单元空闲.
@@ -596,7 +596,7 @@ VFS
   + `O_APPEND`: 追加写;
   + `O_TRUNC`: 若打开方式包含写, 则截断文件;
 
-![](./file_mode.png)  
+![](./images/./file_mode.png)  
 图 1-4 `f_mode` 字段各位的作用, 高位在左, 低位在右.
 
 3 种文件访问模式必须指定且只能指定一种, 但是文件创建与控制标志都是
@@ -890,8 +890,8 @@ VFS
 `open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`,  但无法通过 fuse 获取不
 定参数, 故无法通过 `open` 实现 `creat`.
   + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
-![](./creat_1.png)
-![](./creat_2.png)
+![](./images/./creat_1.png)
+![](./images/./creat_2.png)
 
 * `int release(const char *path, int fd)`
   + 功能: 关闭一个打开文件, 并释放它占用的资源;
@@ -939,8 +939,8 @@ VFS
       个目录文件, 但是 `newpath` 已存在, 但不是一个目录文件;
     - `-ENOTEMPTY`: `newpath` 是一个非空目录;
   + 流程图 (图中未画出的分支都表示出错):  
-![](./rename_1.png)
-![](./rename_2.png)
+![](./images/./rename_1.png)
+![](./images/./rename_2.png)
 
 * `int mkdir(const char *path, mode_t mode)`
   + 功能: 创建一个空目录;
@@ -976,8 +976,8 @@ VFS
       新申请的 i 结点释放 (`ufs_free_inode(newdirinode->i_ino)`;
     - 返回.
   + 流程图 (图中未画出的分支都表示出错):  
-![](./mkdir_1.png)
-![](./mkdir_2.png)
+![](./images/./mkdir_1.png)
+![](./images/./mkdir_2.png)
 
 * `int readdir(const char *dirpath)`
   + 功能: 读某个目录中的所有项
@@ -1030,8 +1030,8 @@ VFS
       i 结点.
     - 返回
   + 流程图 (图中未画出的分支都表示出错):  
-![](./unlink_1.png)
-![](./unlink_2.png)
+![](./images/./unlink_1.png)
+![](./images/./unlink_2.png)
 
 * `int rmdir(const char *path)`
   + 功能: 删除一个空目录;
@@ -1061,8 +1061,8 @@ VFS
     - 调用 `ufs_free_inode(inode)`, 释放目录的 i 结点;
     - 返回.
   + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
-![](./rmdir_1.png)
-![](./rmdir_2.png)
+![](./images/./rmdir_1.png)
+![](./images/./rmdir_2.png)
 
 * `int open(const char *path, int flag)`;
   + 功能: 打开一个文件;
@@ -1093,8 +1093,8 @@ VFS
       原样返回错误值;
     - 初始化 `ufs_open_files[fd]` 的各个字段, 返回 `fd`;
   + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
-![](./open_1.png)
-![](./open_2.png)
+![](./images/./open_1.png)
+![](./images/./open_2.png)
 
 * `int write(int fd, const void *buf, size_t size, off_t offset)`
   + 功能: 写一个文件;
@@ -1127,8 +1127,8 @@ VFS
     - 在循环结束后, 如果文件打开时没有设置追加写, 则更新文件当前读写偏移量;
     - 若前面没有出错, 返回已写的数据量, 否则返回错误值;
   + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
-![](./write_1.png)
-![](./write_2.png)
+![](./images/./write_1.png)
+![](./images/./write_2.png)
 
 * `int read(int fd, void *buf, size_t size)`
   + 功能: 读一个文件;
@@ -1151,8 +1151,8 @@ VFS
     - 每读完一个单元的数据, 就更新文件的当前读写偏移量.
     - 退出循环后, 返回读到的数据量.
   + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
-![](./read_1.png)
-![](./read_2.png)
+![](./images/./read_1.png)
+![](./images/./read_2.png)
 
 * `int getattr(const char *path, struct stat *st)`
   + 功能: 获取文件的元数据;
@@ -1338,80 +1338,80 @@ VFS
 
 * 创建文件
   + 创建一个普通空文件 `./creat file`;  
-  ![](./creat_t1.png)
+  ![](./images/./creat_t1.png)
   + 创建一个大小达到上限的文件 `dd if=/dev/zero of=bigest bs=1024 count=8259`;  
-  ![](./creat_t2.png)
+  ![](./images/./creat_t2.png)
   + 创建一个大小超过上限的文件 `dd if=/dev/zero of=large bs=1M count=9`;  
-  ![](./creat_t3.png)
+  ![](./images/./creat_t3.png)
   + 创建一个已存在的文件 `./creat file_existed`;  
-  ![](./creat_t4.png)
+  ![](./images/./creat_t4.png)
 * 创建目录
   + 创建一个空目录 `mkdir emptydir`;  
-  ![](./mkdir_t1.png)
+  ![](./images/./mkdir_t1.png)
   + 创建一个已存在的目录 `mkdir dir_existed`;  
-  ![](./mkdir_t2.png)
+  ![](./images/./mkdir_t2.png)
 * 删除文件
   + 删除一个已存在的文件 `rm file_existed`;  
-  ![](./rm_t1.png)
+  ![](./images/./rm_t1.png)
   + 删除一个不存在的文件 `rm file_not_existed`;  
-  ![](./rm_t2.png)
+  ![](./images/./rm_t2.png)
   + 删除一个已存在的目录文件 `rm dir_existed`;  
-  ![](./rm_t3.png)
+  ![](./images/./rm_t3.png)
 * 删除目录
   + 删除已存在的空目录 `rmdir dir_empty`;  
-  ![](./rmdir_t1.png)
+  ![](./images/./rmdir_t1.png)
   + 删除已存在的非空目录 `rmdir dir_nonempty`;  
-  ![](./rmdir_t2.png)
+  ![](./images/./rmdir_t2.png)
   + 删除不存在的目录 `rmdir dir_noexisted`;  
-  ![](./rmdir_t3.png)
+  ![](./images/./rmdir_t3.png)
 * 读文件
   + 读一个不存在的文件 `./read file_not_existed 0 1`;  
-  ![](./read_t1.png)
+  ![](./images/./read_t1.png)
   + 从偏移位置 3 读 4 个字节 `./read file_existed 3 4`;  
-  ![](./read_t2.png)
+  ![](./images/./read_t2.png)
   + 读一个目录文件 `./read dir_existed 0 1`;  
-  ![](./read_t3.png)
+  ![](./images/./read_t3.png)
 * 写文件
   + 在偏移位置 7 写 "wzh" `./write file_existed 7 wzh`;  
-  ![](./write_t1.png)
+  ![](./images/./write_t1.png)
   + 写一个不存在的文件 `./write file_not_existed 0 string`;  
-  ![](./write_t2.png)
+  ![](./images/./write_t2.png)
   + 写一个目录文件 ./write dir_existed 0 string`;  
-  ![](./write_t3.png)
+  ![](./images/./write_t3.png)
   + 从文件的末尾写一个大小已达到上限的文件 `./write bigest 8457216 string`;  
-  ![](./write_t4.png)
+  ![](./images/./write_t4.png)
 * 写目录
   + 在一个不存在的目录中创建新目录项 `mkdir dir_noexisted/dir`;  
-  ![](./write_dir_t1.png)
+  ![](./images/./write_dir_t1.png)
   + 在一个已存在的目录中创建新目录项 `mkdir dir_existed/dir`;  
-  ![](./write_dir_t2.png)
+  ![](./images/./write_dir_t2.png)
   + 耗尽某个目录可用的目录项, 一个目录可包含的目录项数上限为 `8259 * 1024 / 32 = 264288`,
     但用于测试的文件系统 i 结点数只有 8192 个, 故只能通过硬链接来测试, 但本文件系统目前还
     不支持硬链接, 故无法测试;  
 * 重命名
   + 源文件不存在 `./mv file_not_existed file`;  
-  ![](./mv_t1.png)
+  ![](./images/./mv_t1.png)
   + 源文件是文件, 目标不存在 `./mv file_existed file_not_existed`;  
-  ![](./mv_t2.png)
+  ![](./images/./mv_t2.png)
   + 源文件是目录, 目标不存在 `./mv dir_existed dir_noexisted`;  
-  ![](./mv_t3.png)
+  ![](./images/./mv_t3.png)
   + 源文件是文件, 目标是目录 `./mv file_existed dir_existed`;  
-  ![](./mv_t4.png)
+  ![](./images/./mv_t4.png)
   + 源文件是目录, 目标是文件 `./mv dir_existed file_existed`;  
-  ![](./mv_t5.png)
+  ![](./images/./mv_t5.png)
   + 源文件是目录, 目标是空目录 `./mv dir_existed dir_empty`;  
-  ![](./mv_t6.png)
+  ![](./images/./mv_t6.png)
   + 源文件是目录, 目标是非空目录 `./mv dir_existed dir_nonempty`;  
-  ![](./mv_t7.png)
+  ![](./images/./mv_t7.png)
   + 源文件是目录, 目标是源目录的子目录
     `./mv dir_existed dir_existed/sub`;  
-  ![](./mv_t8.png)
+  ![](./images/./mv_t8.png)
 
 * 极端条件测试
   + 创建一个名字过长的文件 `./creat llllllllllllllllllllllllllll`;
-  ![](./name_too_long.png)
+  ![](./images/./name_too_long.png)
   + 耗尽所有的 i 结点 (根结点事先占用一个 i 结点):  
-  ![](./exhausted_1.png)
+  ![](./images/./exhausted_1.png)
 		# exhausted.sh
 		for ((i = 0; i < 8190; i++))
 		do
@@ -1422,7 +1422,7 @@ VFS
   多余的位图空间, 因此系统也无法使用最后一个 i 结点.
 
   + 耗尽所有的逻辑块  
-  ![](./exhausted_2.png)
+  ![](./images/./exhausted_2.png)
 		# exhausted.sh
 		dd if=/dev/zero of=mnt/file1 bs=1024 count=8259
 		dd if=/dev/zero of=mnt/file2 bs=1024 count=8259
