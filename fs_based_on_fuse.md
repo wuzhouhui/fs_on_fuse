@@ -843,9 +843,6 @@ VFS
   + 返回值:
     - 本文件系统的支持的打开标志, 无出错标志;
 
-### 功能函数详细流程
-**TODO**
-
 ### 系统调用接口
 
 * `int creat(const char *path, mode_t mode)`  
