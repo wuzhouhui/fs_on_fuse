@@ -1408,21 +1408,25 @@ VFS
   + 创建一个名字过长的文件 `./creat llllllllllllllllllllllllllll`;
   ![](./images/./name_too_long.png)
   + 耗尽所有的 i 结点 (根结点事先占用一个 i 结点):  
-  ![](./images/./exhausted_1.png)
+
 		# exhausted.sh
 		for ((i = 0; i < 8190; i++))
 		do
 			./creat mnt/file$i
-		done
+		done  
+
+	![](./images/./exhausted_1.png)
+
   回忆 "测试环境" 一节说过的话, 虽然磁盘中共了 8192 个 i 结点, 但是 i 结点 
   位图只能管理 8191 个, 虽然磁盘上还剩余一个 i 结点, 但是由于没有
   多余的位图空间, 因此系统也无法使用最后一个 i 结点.
 
   + 耗尽所有的逻辑块  
-  ![](./images/./exhausted_2.png)
+
 		# exhausted.sh
 		dd if=/dev/zero of=mnt/file1 bs=1024 count=8259
 		dd if=/dev/zero of=mnt/file2 bs=1024 count=8259
 		dd if=/dev/zero of=mnt/file3 bs=1024 count=8259
-		dd if=/dev/zero of=mnt/file4 bs=1024 count=8259
+		dd if=/dev/zero of=mnt/file4 bs=1024 count=8259  
 
+	![](./images/./exhausted_2.png)
