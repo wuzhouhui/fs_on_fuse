@@ -803,6 +803,8 @@ VFS
     - `path` 为空或过长, 返回 `-EINVAL`;
     - `inode` 为空, 返回 `-EINVAL`;
     - 被调用函数返回出错, 将错误值原样返回.
+  + 流程图 (图中未画出的判断分支都表示出错返回)  
+    ![](./images/path2i.png)
 
 * `int ufs_dir2i(const char *dirpath, struct ufs_minode *dirinode)`
   + 功能: 将目录的路径名映射为对应的 i 结点;
