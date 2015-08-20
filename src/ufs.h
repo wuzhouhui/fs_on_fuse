@@ -15,6 +15,9 @@
 #include <syslog.h>
 #include <libgen.h>
 
+/* turn off logging */
+#define log_msg(...)
+
 /* the max and min size of disk file, in megabyte */
 #define UFS_DISK_MAX_SIZE	32
 #define UFS_DISK_MIN_SIZE	1
