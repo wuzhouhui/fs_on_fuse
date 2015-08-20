@@ -1089,6 +1089,9 @@ VFS
     - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncate(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错,
       原样返回错误值;
     - 初始化 `ufs_open_files[fd]` 的各个字段, 返回 `fd`;
+  + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
+![](./open_1.png)
+![](./open_2.png)
 
 * `int write(int fd, const void *buf, size_t size, off_t offset)`
   + 功能: 写一个文件;
