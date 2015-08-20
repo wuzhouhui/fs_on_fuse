@@ -975,6 +975,9 @@ VFS
     - 在函数即将返回前, 检查前面的步骤是否有错误发生, 若有, 且已经为新目录申请了 i 结点, 则将
       新申请的 i 结点释放 (`ufs_free_inode(newdirinode->i_ino)`;
     - 返回.
+  + 流程图 (图中未画出的分支都表示出错):  
+![](./mkdir_1.png)
+![](./mkdir_2.png)
 
 * `int readdir(const char *dirpath)`
   + 功能: 读某个目录中的所有项
@@ -1054,6 +1057,9 @@ VFS
     - 调用 `ufs_truncate(inode)`, 释放将被删除的目录占用的数据块;
     - 调用 `ufs_free_inode(inode)`, 释放目录的 i 结点;
     - 返回.
+  + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
+![](./rmdir_1.png)
+![](./rmdir_2.png)
 
 * `int open(const char *path, int flag)`;
   + 功能: 打开一个文件;
