@@ -1,3 +1,4 @@
+*.sh
 fs_on_fuse.toc
 *.out
 *.tex
@@ -25,5 +26,8 @@ disk
 ### Makefile ###
 creat
 format
+mv
+read
+statvfs
 ufs
 write

@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
 	offset = atoi(argv[2]);
 	size = atoi(argv[3]);
-	if (pread(fd, buf, size, offset) < 0)
+	if ((n = pread(fd, buf, size, offset)) < 0)
 		err_sys("pread error");
 	buf[n] = 0;
 	printf("%s\n", buf);

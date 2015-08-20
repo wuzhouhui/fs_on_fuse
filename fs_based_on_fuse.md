@@ -1337,59 +1337,95 @@ VFS
 在 `mnt/` 目录下, 也就是在用户实现的文件系统当中.
 
 * 创建文件
-  + 创建一个普通空文件 `./creat file`;
-  + 创建一个大小达到上限的文件 `dd if=/dev/zero of=bigest bs=1024 count=8259`
-  + 创建一个大小超过上限的文件 `dd if=/dev/zero of=large bs=1M count=9`
-  + 创建一个已存在的文件 `./creat file_existed`
+  + 创建一个普通空文件 `./creat file`;  
+  ![](./creat_t1.png)
+  + 创建一个大小达到上限的文件 `dd if=/dev/zero of=bigest bs=1024 count=8259`;  
+  ![](./creat_t2.png)
+  + 创建一个大小超过上限的文件 `dd if=/dev/zero of=large bs=1M count=9`;  
+  ![](./creat_t3.png)
+  + 创建一个已存在的文件 `./creat file_existed`;  
+  ![](./creat_t4.png)
 * 创建目录
-  + 创建一个空目录 `mkdir emptydir`;
-  + 创建一个已存在的目录 `mkdir dir_existed`;
+  + 创建一个空目录 `mkdir emptydir`;  
+  ![](./mkdir_t1.png)
+  + 创建一个已存在的目录 `mkdir dir_existed`;  
+  ![](./mkdir_t2.png)
 * 删除文件
-  + 删除一个已存在的文件 `rm file_existed`;
-  + 删除一个不存在的文件 `rm file_not_existed`;
-  + 删除一个已存在的目录文件 `rm dir_existed`;
+  + 删除一个已存在的文件 `rm file_existed`;  
+  ![](./rm_t1.png)
+  + 删除一个不存在的文件 `rm file_not_existed`;  
+  ![](./rm_t2.png)
+  + 删除一个已存在的目录文件 `rm dir_existed`;  
+  ![](./rm_t3.png)
 * 删除目录
-  + 删除已存在的空目录 `rmdir dir_empty`;
-  + 删除已存在的非空目录 `rmdir dir_nonempty`, `rm -r dir_nonempty`;
-  + 删除不存在的目录 `rmdir dir_noexisted`, `rm -r dir_noexisted`;
+  + 删除已存在的空目录 `rmdir dir_empty`;  
+  ![](./rmdir_t1.png)
+  + 删除已存在的非空目录 `rmdir dir_nonempty`;  
+  ![](./rmdir_t2.png)
+  + 删除不存在的目录 `rmdir dir_noexisted`;  
+  ![](./rmdir_t3.png)
 * 读文件
-  + 读一个不存在的文件 `./read file_not_existed 0 1`;
-  + 从偏移位置 3 读 5 个字节 `./read file_existed 3 5`;
-  + 读一个目录文件 `./read dir_existed 0 1`;
+  + 读一个不存在的文件 `./read file_not_existed 0 1`;  
+  ![](./read_t1.png)
+  + 从偏移位置 3 读 4 个字节 `./read file_existed 3 4`;  
+  ![](./read_t2.png)
+  + 读一个目录文件 `./read dir_existed 0 1`;  
+  ![](./read_t3.png)
 * 写文件
-  + 在偏移位置 7 写 "wzh" `./write file_existed 7 wzh`;
-  + 写一个不存在的文件 `./write file_not_existed 0 string`;
-  + 写一个目录文件 ./write dir_existed 0 string`;
-  + 从文件的末尾写一个大小已达到上限的文件 `./write bigest 8457216 string`;
+  + 在偏移位置 7 写 "wzh" `./write file_existed 7 wzh`;  
+  ![](./write_t1.png)
+  + 写一个不存在的文件 `./write file_not_existed 0 string`;  
+  ![](./write_t2.png)
+  + 写一个目录文件 ./write dir_existed 0 string`;  
+  ![](./write_t3.png)
+  + 从文件的末尾写一个大小已达到上限的文件 `./write bigest 8457216 string`;  
+  ![](./write_t4.png)
 * 写目录
-  + 在一个不存在的目录中创建新目录项 `mkdir dir_noexisted/dir`
-  + 在一个已存在的目录中创建新目录项 `mkdir dir_existed/dir`;
+  + 在一个不存在的目录中创建新目录项 `mkdir dir_noexisted/dir`;  
+  ![](./write_dir_t1.png)
+  + 在一个已存在的目录中创建新目录项 `mkdir dir_existed/dir`;  
+  ![](./write_dir_t2.png)
   + 耗尽某个目录可用的目录项, 一个目录可包含的目录项数上限为 `8259 * 1024 / 32 = 264288`,
     但用于测试的文件系统 i 结点数只有 8192 个, 故只能通过硬链接来测试, 但本文件系统目前还
-    不支持硬链接, 故无法测试;
+    不支持硬链接, 故无法测试;  
 * 重命名
-  + 源文件不存在 `./mv file_not_existed file`;
-  + 源文件是文件, 目标不存在 `./mv file_existed file_not_existed`
-  + 源文件是目录, 目标不存在 `./mv dir_existed dir_noexisted`;
-  + 源文件是文件, 目标是目录 `./mv file_existed dir_existed`;
-  + 源文件是目录, 目标是文件 `./mv dir_existed file_existed`;
-  + 源文件是目录, 目标是空目录 `./mv dir_existed dir_empty`;
-  + 源文件是目录, 目标是非空目录 ./mv dir_existed dir_nonempty`;
-  + 源文件是目录, 目标是源目录的子目录 ./mv dir_existed dir_existed/sub`;
+  + 源文件不存在 `./mv file_not_existed file`;  
+  ![](./mv_t1.png)
+  + 源文件是文件, 目标不存在 `./mv file_existed file_not_existed`;  
+  ![](./mv_t2.png)
+  + 源文件是目录, 目标不存在 `./mv dir_existed dir_noexisted`;  
+  ![](./mv_t3.png)
+  + 源文件是文件, 目标是目录 `./mv file_existed dir_existed`;  
+  ![](./mv_t4.png)
+  + 源文件是目录, 目标是文件 `./mv dir_existed file_existed`;  
+  ![](./mv_t5.png)
+  + 源文件是目录, 目标是空目录 `./mv dir_existed dir_empty`;  
+  ![](./mv_t6.png)
+  + 源文件是目录, 目标是非空目录 `./mv dir_existed dir_nonempty`;  
+  ![](./mv_t7.png)
+  + 源文件是目录, 目标是源目录的子目录
+    `./mv dir_existed dir_existed/sub`;  
+  ![](./mv_t8.png)
 
 * 极端条件测试
   + 创建一个名字过长的文件 `./creat llllllllllllllllllllllllllll`;
+  ![](./name_too_long.png)
   + 耗尽所有的 i 结点 (根结点事先占用一个 i 结点):  
+  ![](./exhausted_1.png)
+		# exhausted.sh
 		for ((i = 0; i < 8190; i++))
 		do
-			echo "creat mnt/file$i"
 			./creat mnt/file$i
 		done
+  回忆 "测试环境" 一节说过的话, 虽然磁盘中共了 8192 个 i 结点, 但是 i 结点 
+  位图只能管理 8191 个, 虽然磁盘上还剩余一个 i 结点, 但是由于没有
+  多余的位图空间, 因此系统也无法使用最后一个 i 结点.
 
   + 耗尽所有的逻辑块  
-		dd if=/dev/zero of=file1 bs=1024 count=8259
-		dd if=/dev/zero of=file2 bs=1024 count=8259
-		dd if=/dev/zero of=file3 bs=1024 count=8259
-		# 根结点事先占用一块
-		dd if=/dev/zero of=file4 bs=512 count=10842
+  ![](./exhausted_2.png)
+		# exhausted.sh
+		dd if=/dev/zero of=mnt/file1 bs=1024 count=8259
+		dd if=/dev/zero of=mnt/file2 bs=1024 count=8259
+		dd if=/dev/zero of=mnt/file3 bs=1024 count=8259
+		dd if=/dev/zero of=mnt/file4 bs=1024 count=8259
 
