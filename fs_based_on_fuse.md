@@ -889,6 +889,9 @@ VFS
   + 注: `creat(const char *path, mode_t mode)` 等价于
 `open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`,  但无法通过 fuse 获取不
 定参数, 故无法通过 `open` 实现 `creat`.
+  + 流程图 (图中未画出的判断分支都表示返回或出错返回)  
+![](./creat_1.png)
+![](./creat_2.png)
 
 * `int release(const char *path, int fd)`
   + 功能: 关闭一个打开文件, 并释放它占用的资源;
