@@ -965,6 +965,7 @@ static int ufs_rmdir(const char *path)
 		log_msg("ufs_rmdir: ufs_rm_entry error");
 		goto out;
 	}
+	parinode.i_nlink--;
 	if ((ret = ufs_wr_inode(&parinode)) < 0) {
 		log_msg("ufs_rmdir: ufs_wr_inode error");
 		goto out;
