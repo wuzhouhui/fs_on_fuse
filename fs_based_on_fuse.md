@@ -827,6 +827,8 @@ VFS
     - `parent` 不是一个目录, 返回 `-ENOTDIR`;
     - 未找到与 `filename` 对应 的目录项, 返回 `-ENOENT`;
     - 被调用函数返回出错, 将错误值原样返回.
+  + 流程图 (图中未画出的分支都表示出错)  
+  ![](./images/find_entry.png)
 
 * `int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *entry)`
   + 功能: 从指定的目录中移除指定的目录项;
