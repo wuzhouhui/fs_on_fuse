@@ -1293,3 +1293,78 @@ VFS
       `-errno`; 成功返回 0;
     - 若 `datasync` 为 0, 调用 `fsync(sb.s_fd)`, 若函数出错, 返回 `-errno`;
       成功返回 0;
+
+## 测试与演示
+
+### 测试环境
+  * ubuntu 14.04 32-bits
+  * fuse 2.9.4
+  * 磁盘文件 30 MB
+    + i 结点位图块数为 2 块, 可管理 `2 * 512 * 8 - 1 = 8191` 个 i 结点;
+    + i 结点数据块数为 1024 块, 包含 `512 / 64 * 1024 = 8192` 个 i 结点;
+    + 逻辑块位图块数为 16, 可管理 `16 * 512 * 8 = 65536` 个逻辑块 (32 MB);
+    + 文件系统逻辑块块数为 60397 块;
+  * 最大文件长度 8259 KB;
+  * 最大文件名长度 27 B;
+  * 带有前缀 `./` 的命令都是用户自已开放的命令, 非系统提供, 测试者可在
+    tools/ 目录下找到命令的源代码.
+
+### 测试内容与步骤
+
+* 创建文件
+  + 创建一个普通空文件 `./creat file`;
+  + 创建一个大小达到上限的文件 `dd if=/dev/zero of=bigest bs=1024 count=8259`
+  + 创建一个大小超过上限的文件 `dd if=/dev/zero of=large bs=1M count=9`
+  + 创建一个已存在的文件 `./creat file_existed`
+* 创建目录
+  + 创建一个空目录 `mkdir emptydir`;
+  + 创建一个已存在的目录 `mkdir dir_existed`;
+* 删除文件
+  + 删除一个已存在的文件 `rm file_existed`;
+  + 删除一个不存在的文件 `rm file_not_existed`;
+  + 删除一个已存在的目录文件 `rm dir_existed`;
+* 删除目录
+  + 删除已存在的空目录 `rmdir dir_empty`;
+  + 删除已存在的非空目录 `rmdir dir_nonempty`, `rm -r dir_nonempty`;
+  + 删除不存在的目录 `rmdir dir_noexisted`, `rm -r dir_noexisted`;
+* 读文件
+  + 读一个不存在的文件 `./read file_not_existed 0 1`;
+  + 从偏移位置 3 读 5 个字节 `./read file_existed 3 5`;
+  + 读一个目录文件 `./read dir_existed 0 1`;
+* 写文件
+  + 在偏移位置 7 写 "wzh" `./write file_existed 7 wzh`;
+  + 写一个不存在的文件 `./write file_not_existed 0 string`;
+  + 写一个目录文件 ./write dir_existed 0 string`;
+  + 从文件的末尾写一个大小已达到上限的文件 `./write bigest 8457216 string`;
+* 写目录
+  + 在一个不存在的目录中创建新目录项 `mkdir dir_noexisted/dir`
+  + 在一个已存在的目录中创建新目录项 `mkdir dir_existed/dir`;
+  + 耗尽某个目录可用的目录项, 一个目录可包含的目录项数上限为 `8259 * 1024 / 32 = 264288`,
+    但用于测试的文件系统 i 结点数只有 8192 个, 故只能通过硬链接来测试, 但本文件系统目前还
+    不支持硬链接, 故无法测试;
+* 重命名
+  + 源文件不存在 `./mv file_not_existed file`;
+  + 源文件是文件, 目标不存在 `./mv file_existed file_not_existed`
+  + 源文件是目录, 目标不存在 `./mv dir_existed dir_noexisted`;
+  + 源文件是文件, 目标是目录 `./mv file_existed dir_existed`;
+  + 源文件是目录, 目标是文件 `./mv dir_existed file_existed`;
+  + 源文件是目录, 目标是空目录 `./mv dir_existed dir_empty`;
+  + 源文件是目录, 目标是非空目录 ./mv dir_existed dir_nonempty`;
+  + 源文件是目录, 目标是源目录的子目录 ./mv dir_existed dir_existed/sub`;
+
+* 极端条件测试
+  + 创建一个名字过长的文件 `./creat llllllllllllllllllllllllllll`;
+  + 耗尽所有的 i 结点 (根结点事先占用一个 i 结点):  
+		for ((i = 0; i < 8190; i++))
+		do
+			echo "creat mnt/file$i"
+			./creat mnt/file$i
+		done
+
+  + 耗尽所有的逻辑块  
+		dd if=/dev/zero of=file1 bs=1024 count=8259
+		dd if=/dev/zero of=file2 bs=1024 count=8259
+		dd if=/dev/zero of=file3 bs=1024 count=8259
+		# 根结点事先占用一块
+		dd if=/dev/zero of=file4 bs=512 count=10842
+
