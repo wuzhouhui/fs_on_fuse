@@ -1029,6 +1029,9 @@ VFS
       `ufs_truncate(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
       i 结点.
     - 返回
+  + 流程图 (图中未画出的分支都表示出错):  
+![](./unlink_1.png)
+![](./unlink_2.png)
 
 * `int rmdir(const char *path)`
   + 功能: 删除一个空目录;
