@@ -814,6 +814,7 @@ VFS
   + 返回值: 成功返回 0, 失败返回 `errno`, 错误情况包括
     - 路径引用的文件不是一个目录文件, 返回 `-ENOTDIR`;
     - 被调用函数返回出错, 将错误值原样返回.
+  + 注: 函数过程与 `ufs_path2i()` 非常类似, 但是将 `path` 限制为目录文件.
 
 * `int ufs_find_entry(struct ufs_minode *parent, const char *filename, struct ufs_dir_entry *ent)`
   + 功能: 在指定的目录中查找具有指定文件名的文件
