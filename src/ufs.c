@@ -168,6 +168,42 @@ out:
 	return(ret);
 }
 
+static int ufs_chown(const char *path, uid_t uid, gid_t gid)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_chown called, path = %s, uid = %d, gid = %d",
+			!path ? "NULL" : path, (int)uid, (int)gid);
+	if (!path || !path[0]) {
+		log_msg("path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_chown: ufs_path2i error");
+		goto out;
+	}
+	if (uid != -1)
+		inode.i_uid = uid;
+	if (gid != -1)
+		inode.i_gid = gid;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_chown: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_chown return %d", ret);
+	return(ret);
+}
+
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
@@ -1248,6 +1284,7 @@ out:
 struct fuse_operations ufs_oper = {
 	.access		= ufs_access,
 	.chmod		= ufs_chmod,
+	.chown		= ufs_chown,
 	.create		= ufs_creat,
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
