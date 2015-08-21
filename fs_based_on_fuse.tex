@@ -2646,9 +2646,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 那么当前工作目录就是 在 \texttt{mnt/} 目录下,
 也就是在用户实现的文件系统当中.
 
-\begin{itemize}
-\item
-  创建文件
+\subsubsection{创建文件}
 \begin{itemize}
 \item
   创建一个事先不存在的普通空文件 \texttt{echo > file};\\
@@ -2667,8 +2665,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   出现 \texttt{Function not implemented} 的原因是创建一个已存在的文件,
   会先将文件截断 (\texttt{truncate()}), 而本文件系统目前还未实现截断.
 \end{itemize}
-\item
-  创建目录
+\subsubsection{创建目录}
 \begin{itemize}
 \item
   创建一个空目录 \texttt{mkdir emptydir};\\
@@ -2677,8 +2674,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   创建一个已存在的目录 \texttt{mkdir dir\_existed};\\
   \includegraphics[width=14cm]{./images/./mkdir_t2.png}
 \end{itemize}
-\item
-  删除文件
+\subsubsection{删除文件}
 \begin{itemize}
 \item
   删除一个已存在的文件 \texttt{rm file\_existed};\\
@@ -2690,8 +2686,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   删除一个已存在的目录文件 \texttt{rm dir\_existed};\\
   \includegraphics[width=14cm]{./images/./rm_t3.png}
 \end{itemize}
-\item
-  删除目录
+\subsubsection{删除目录}
 \begin{itemize}
 \item
   删除已存在的空目录 \texttt{rmdir dir\_empty};\\
@@ -2703,8 +2698,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   删除不存在的目录 \texttt{rmdir dir\_noexisted};\\
   \includegraphics[width=14cm]{./images/./rmdir_t3.png}
 \end{itemize}
-\item
-  读文件
+\subsubsection{读文件}
 \begin{itemize}
     \item 读一个已存在的文件 \texttt{cat file\_existed} \\
     \includegraphics[width=14cm]{./images/read_t0.png}
@@ -2722,8 +2716,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   读一个目录文件 \texttt{./read dir\_existed 0 1};\\
   \includegraphics[width=14cm]{./images/./read_t3.png}
 \end{itemize}
-\item
-  写文件
+\subsubsection{写文件}
 \begin{itemize}
     \item 在文件尾端写 \verb'"wzh"': \verb'echo wzh >> file_existed' \\
         \includegraphics[width=14cm]{./images/write_t0.png}
@@ -2752,8 +2745,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     写 10 个字符, 写完之后, 文件大小应增长为 40 字节 (偏移量从 0 开始). \\
     \includegraphics[width=14cm]{./images/write_t5.png}
 \end{itemize}
-\item
-  写目录
+\subsubsection{写目录}
 \begin{itemize}
 \item
   在一个不存在的目录中创建新目录项 \texttt{mkdir dir\_noexisted/dir};\\
@@ -2767,8 +2759,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   8192 个, 故只能通过硬链接来测试, 但本文件系统目前还 不支持硬链接,
   故无法测试;
 \end{itemize}
-\item
-  重命名
+\subsubsection{重命名}
 \begin{itemize}
 \item
   源文件不存在 \texttt{mv file\_not\_existed file};\\
@@ -2802,8 +2793,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \texttt{mv dir\_existed dir\_existed/sub};\\
   \includegraphics[width=14cm]{./images/./mv_t8.png}
 \end{itemize}
-\item
-  极端条件测试
+\subsubsection{极端条件测试}
 \begin{itemize}
 \item
   创建一个名字过长的文件 \\
@@ -2841,6 +2831,5 @@ dd if=/dev/zero of=mnt/file4 bs=1024 count=8259
 \end{verbatim}
 
   \includegraphics[width=14cm]{./images/./exhausted_2.png}
-\end{itemize}
 \end{itemize}
 \end{document}
