@@ -25,7 +25,9 @@
 
 \subsection{fuse-1.3 的工作方式}
 
-\includegraphics[width=15cm]{./images/./FUSE_structure.svg.png}
+\begin{center}
+\includegraphics[width=12cm]{./images/./FUSE_structure.svg.png}
+\end{center}
 \captionof{figure}{fuse-1.3 结构图及其工作流程}
 \label{fig:fuse_structure}
 
@@ -523,7 +525,9 @@ mount -t fusectl none /sys/fs/fuse/connections
 
 \subsection{文件系统在磁盘上的布局}\label{ux6587ux4ef6ux7cfbux7edfux5728ux78c1ux76d8ux4e0aux7684ux5e03ux5c40}
 
-\includegraphics[width=15cm]{./images/./layout.png}
+\begin{center}
+\includegraphics[width=12cm]{./images/./layout.png}
+\end{center}
 \captionof{figure}{文件系统各个功能区在磁盘上的布局}
 \label{fig:layout}
 
@@ -725,14 +729,18 @@ struct ufs_minode {
 \texttt{i\_nlink} 是指向该 i 结点的目录项的个数, 可用于实现硬链接.
 \texttt{i\_mode} 包含了有关文件属性与 权限的信息, 该字段包含的信息如下图
 
-\includegraphics[width=15cm]{./images/./imode.png}
+\begin{center}
+\includegraphics[width=10cm]{./images/./imode.png}
+\end{center}
 \captionof{figure}{文件类型与访问权限}
 \label{fig:i_mode}
 
 \texttt{i\_mode} 的高位在左, 低位在右. 低 9
 位用于判断三类用户对该文件的读写权限, 位 9 用于判断文件类型, 其余位不用.
 
+\begin{center}
 \includegraphics[width=15cm]{./images/./i_zones_array.png}
+\end{center}
 \captionof{figure}{i 结点逻辑块块号数组的功能}
 \label{fig:i_node}
 
@@ -749,7 +757,7 @@ struct ufs_minode {
 \begin{verbatim}
 /* sizeof(struct ufs_dir_entry) <= UFS_BLK_SIZE */
 struct ufs_dir_entry {
-    unsigned int    de_inum;        /* 文件的 i 结点号 */
+    unsigned int    de_inum;            /* 文件的 i 结点号 */
     char    de_name[UFS_NAME_LEN + 1];  /* 文件名, 以空字符结尾 */
 };
 \end{verbatim}
@@ -799,7 +807,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
         \end{itemize}
 \end{itemize}
 
-\includegraphics[width=15cm]{./images/./file_mode.png}
+\begin{center}
+\includegraphics[width=12cm]{./images/./file_mode.png}
+\end{center}
 \captionof{figure}{文件打开和控制标志, 高位在左, 低位在右}
 \label{fig:f_mode}
 
@@ -1270,7 +1280,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
 \item
   流程图 (图中未画出的判断分支都表示出错返回)\\
-  \includegraphics[width=15cm]{./images/path2i.png}
+  \includegraphics[width=12cm]{./images/path2i.png}
   \end{itemize}
   \subsubsection{\texttt{int ufs\_dir2i(const char *dirpath, struct ufs\_minode *dirinode)}}
 
@@ -1329,7 +1339,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
 \item
   流程图 (图中未画出的分支都表示出错)\\
-  \includegraphics[width=15cm]{./images/find_entry.png}
+  \includegraphics[width=12cm]{./images/find_entry.png}
   \end{itemize}
 
   \subsubsection{\texttt{int ufs\_rm\_entry(struct ufs\_minode *dir, const struct ufs\_dir\_entry *entry)}}
@@ -1566,9 +1576,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的判断分支都表示返回或出错返回)
 
-  \includegraphics[width=15cm]{./images/./creat_1.png}
+  \includegraphics[width=12cm]{./images/./creat_1.png}
 
-  \includegraphics[width=15cm]{./images/./creat_2.png}
+  \includegraphics[width=12cm]{./images/./creat_2.png}
   \end{itemize}
   \subsubsection{\texttt{int release(const char *path, int fd)}}
   \begin{itemize}
@@ -1685,9 +1695,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的分支都表示出错):
 
-  \includegraphics[width=15cm]{./images/./rename_1.png}
+  \includegraphics[width=12cm]{./images/./rename_1.png}
 
-  \includegraphics[width=15cm]{./images/./rename_2.png}
+  \includegraphics[width=12cm]{./images/./rename_2.png}
   \end{itemize}
   \subsubsection{\texttt{int mkdir(const char *path, mode\_t mode)}}
   \begin{itemize}
@@ -1772,9 +1782,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的分支都表示出错):
 
-  \includegraphics[width=15cm]{./images/./mkdir_1.png}
+  \includegraphics[width=12cm]{./images/./mkdir_1.png}
 
-  \includegraphics[width=15cm]{./images/./mkdir_2.png}
+  \includegraphics[width=12cm]{./images/./mkdir_2.png}
   \end{itemize}
   \subsubsection{\texttt{int readdir(const char *dirpath)}}
   \begin{itemize}
@@ -1895,7 +1905,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     调用 \texttt{ufs\_wr\_inode(parinode)} 将父目录 i 结点写盘;
   \item
-    为 \texttt{inode.i\_nlink} 减一, 减 1 后不为零, 调用
+    为 \texttt{inode.i\_nlink} 减 1, 减 1 后若不为零, 调用
     \texttt{ufs\_wr\_inode(inode)} 将 i 结点写盘; 若为 0, 调用
     \texttt{ufs\_truncate(inode)} 将文件截断, 若出错, 原样返回错误值,
     截断后调用 \\
@@ -1907,9 +1917,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的分支都表示出错):
 
-  \includegraphics[width=15cm]{./images/./unlink_1.png}
+  \includegraphics[width=12cm]{./images/./unlink_1.png}
 
-  \includegraphics[width=15cm]{./images/./unlink_2.png}
+  \includegraphics[width=12cm]{./images/./unlink_2.png}
   \end{itemize}
   \subsubsection{\texttt{int rmdir(const char *path)}}
   \begin{itemize}
@@ -1984,9 +1994,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的判断分支都表示返回或出错返回)
 
-  \includegraphics[width=15cm]{./images/./rmdir_1.png}
+  \includegraphics[width=12cm]{./images/./rmdir_1.png}
 
-  \includegraphics[width=15cm]{./images/./rmdir_2.png}
+  \includegraphics[width=12cm]{./images/./rmdir_2.png}
   \end{itemize}
   \subsubsection{\texttt{int open(const char *path, int flag)};}
   \begin{itemize}
@@ -2066,9 +2076,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的判断分支都表示返回或出错返回)
 
-  \includegraphics[width=15cm]{./images/./open_1.png}
+  \includegraphics[width=12cm]{./images/./open_1.png}
 
-  \includegraphics[width=15cm]{./images/./open_2.png}
+  \includegraphics[width=12cm]{./images/./open_2.png}
   \end{itemize}
   \subsubsection{\texttt{int write(int fd, const void *buf, size\_t size, off\_t offset)}}
   \begin{itemize}
@@ -2148,9 +2158,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的判断分支都表示返回或出错返回)
 
-  \includegraphics[width=15cm]{./images/./write_1.png}
+  \includegraphics[width=12cm]{./images/./write_1.png}
 
-  \includegraphics[width=15cm]{./images/./write_2.png}
+  \includegraphics[width=12cm]{./images/./write_2.png}
   \end{itemize}
   \subsubsection{\texttt{int read(int fd, void *buf, size\_t size)}}
   \begin{itemize}
@@ -2207,9 +2217,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图
   (图中未画出的判断分支都表示返回或出错返回)
 
-  \includegraphics[width=15cm]{./images/./read_1.png}
+  \includegraphics[width=12cm]{./images/./read_1.png}
 
-  \includegraphics[width=15cm]{./images/./read_2.png}
+  \includegraphics[width=12cm]{./images/./read_2.png}
   \end{itemize}
   \subsubsection{\texttt{int getattr(const char *path, struct stat *st)}}
   \begin{itemize}
@@ -2635,94 +2645,94 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \begin{itemize}
 \item
   创建一个普通空文件 \texttt{./creat file};\\
-  \includegraphics[width=15cm]{./images/./creat_t1.png}
+  \includegraphics[width=12cm]{./images/./creat_t1.png}
 \item
   创建一个大小达到上限的文件
   \texttt{dd if=/dev/zero of=bigest bs=1024 count=8259};\\
-  \includegraphics[width=15cm]{./images/./creat_t2.png}
+  \includegraphics[width=12cm]{./images/./creat_t2.png}
 \item
   创建一个大小超过上限的文件
   \texttt{dd if=/dev/zero of=large bs=1M count=9};\\
-  \includegraphics[width=15cm]{./images/./creat_t3.png}
+  \includegraphics[width=12cm]{./images/./creat_t3.png}
 \item
   创建一个已存在的文件 \texttt{./creat file\_existed};\\
-  \includegraphics[width=15cm]{./images/./creat_t4.png}
+  \includegraphics[width=12cm]{./images/./creat_t4.png}
 \end{itemize}
 \item
   创建目录
 \begin{itemize}
 \item
   创建一个空目录 \texttt{mkdir emptydir};\\
-  \includegraphics[width=15cm]{./images/./mkdir_t1.png}
+  \includegraphics[width=12cm]{./images/./mkdir_t1.png}
 \item
   创建一个已存在的目录 \texttt{mkdir dir\_existed};\\
-  \includegraphics[width=15cm]{./images/./mkdir_t2.png}
+  \includegraphics[width=12cm]{./images/./mkdir_t2.png}
 \end{itemize}
 \item
   删除文件
 \begin{itemize}
 \item
   删除一个已存在的文件 \texttt{rm file\_existed};\\
-  \includegraphics[width=15cm]{./images/./rm_t1.png}
+  \includegraphics[width=12cm]{./images/./rm_t1.png}
 \item
   删除一个不存在的文件 \texttt{rm file\_not\_existed};\\
-  \includegraphics[width=15cm]{./images/./rm_t2.png}
+  \includegraphics[width=12cm]{./images/./rm_t2.png}
 \item
   删除一个已存在的目录文件 \texttt{rm dir\_existed};\\
-  \includegraphics[width=15cm]{./images/./rm_t3.png}
+  \includegraphics[width=12cm]{./images/./rm_t3.png}
 \end{itemize}
 \item
   删除目录
 \begin{itemize}
 \item
   删除已存在的空目录 \texttt{rmdir dir\_empty};\\
-  \includegraphics[width=15cm]{./images/./rmdir_t1.png}
+  \includegraphics[width=12cm]{./images/./rmdir_t1.png}
 \item
   删除已存在的非空目录 \texttt{rmdir dir\_nonempty};\\
-  \includegraphics[width=15cm]{./images/./rmdir_t2.png}
+  \includegraphics[width=12cm]{./images/./rmdir_t2.png}
 \item
   删除不存在的目录 \texttt{rmdir dir\_noexisted};\\
-  \includegraphics[width=15cm]{./images/./rmdir_t3.png}
+  \includegraphics[width=12cm]{./images/./rmdir_t3.png}
 \end{itemize}
 \item
   读文件
 \begin{itemize}
 \item
   读一个不存在的文件 \texttt{./read file\_not\_existed 0 1};\\
-  \includegraphics[width=15cm]{./images/./read_t1.png}
+  \includegraphics[width=12cm]{./images/./read_t1.png}
 \item
   从偏移位置 3 读 4 个字节 \texttt{./read file\_existed 3 4};\\
-  \includegraphics[width=15cm]{./images/./read_t2.png}
+  \includegraphics[width=12cm]{./images/./read_t2.png}
 \item
   读一个目录文件 \texttt{./read dir\_existed 0 1};\\
-  \includegraphics[width=15cm]{./images/./read_t3.png}
+  \includegraphics[width=12cm]{./images/./read_t3.png}
 \end{itemize}
 \item
   写文件
 \begin{itemize}
 \item
   在偏移位置 7 写 ``wzh'' \texttt{./write file\_existed 7 wzh};\\
-  \includegraphics[width=15cm]{./images/./write_t1.png}
+  \includegraphics[width=12cm]{./images/./write_t1.png}
 \item
   写一个不存在的文件 \texttt{./write file\_not\_existed 0 string};\\
-  \includegraphics[width=15cm]{./images/./write_t2.png}
+  \includegraphics[width=12cm]{./images/./write_t2.png}
 \item
     写一个目录文件 \texttt{./write dir\_existed 0 string};\\
-  \includegraphics[width=15cm]{./images/./write_t3.png}
+  \includegraphics[width=12cm]{./images/./write_t3.png}
 \item
   从文件的末尾写一个大小已达到上限的文件
   \texttt{./write bigest 8457216 string};\\
-  \includegraphics[width=15cm]{./images/./write_t4.png}
+  \includegraphics[width=12cm]{./images/./write_t4.png}
 \end{itemize}
 \item
   写目录
 \begin{itemize}
 \item
   在一个不存在的目录中创建新目录项 \texttt{mkdir dir\_noexisted/dir};\\
-  \includegraphics[width=15cm]{./images/./write_dir_t1.png}
+  \includegraphics[width=12cm]{./images/./write_dir_t1.png}
 \item
   在一个已存在的目录中创建新目录项 \texttt{mkdir dir\_existed/dir};\\
-  \includegraphics[width=15cm]{./images/./write_dir_t2.png}
+  \includegraphics[width=12cm]{./images/./write_dir_t2.png}
 \item
   耗尽某个目录可用的目录项, 一个目录可包含的目录项数上限为
   \texttt{8259 * 1024 / 32 = 264288}, 但用于测试的文件系统 i 结点数只有
@@ -2734,31 +2744,31 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \begin{itemize}
 \item
   源文件不存在 \texttt{./mv file\_not\_existed file};\\
-  \includegraphics[width=15cm]{./images/./mv_t1.png}
+  \includegraphics[width=12cm]{./images/./mv_t1.png}
 \item
   源文件是文件, 目标不存在
   \texttt{./mv file\_existed file\_not\_existed};\\
-  \includegraphics[width=15cm]{./images/./mv_t2.png}
+  \includegraphics[width=12cm]{./images/./mv_t2.png}
 \item
   源文件是目录, 目标不存在 \texttt{./mv dir\_existed dir\_noexisted};\\
-  \includegraphics[width=15cm]{./images/./mv_t3.png}
+  \includegraphics[width=12cm]{./images/./mv_t3.png}
 \item
   源文件是文件, 目标是目录 \texttt{./mv file\_existed dir\_existed};\\
-  \includegraphics[width=15cm]{./images/./mv_t4.png}
+  \includegraphics[width=12cm]{./images/./mv_t4.png}
 \item
   源文件是目录, 目标是文件 \texttt{./mv dir\_existed file\_existed};\\
-  \includegraphics[width=15cm]{./images/./mv_t5.png}
+  \includegraphics[width=12cm]{./images/./mv_t5.png}
 \item
   源文件是目录, 目标是空目录 \texttt{./mv dir\_existed dir\_empty};\\
-  \includegraphics[width=15cm]{./images/./mv_t6.png}
+  \includegraphics[width=12cm]{./images/./mv_t6.png}
 \item
   源文件是目录, 目标是非空目录
   \texttt{./mv dir\_existed dir\_nonempty};\\
-  \includegraphics[width=15cm]{./images/./mv_t7.png}
+  \includegraphics[width=12cm]{./images/./mv_t7.png}
 \item
   源文件是目录, 目标是源目录的子目录
   \texttt{./mv dir\_existed dir\_existed/sub};\\
-  \includegraphics[width=15cm]{./images/./mv_t8.png}
+  \includegraphics[width=12cm]{./images/./mv_t8.png}
 \end{itemize}
 \item
   极端条件测试
@@ -2767,7 +2777,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   创建一个名字过长的文件 \\
   \texttt{./creat llllllllllllllllllllllllllll};
 
-  \includegraphics[width=15cm]{./images/./name_too_long.png}
+  \includegraphics[width=12cm]{./images/./name_too_long.png}
 \item
   耗尽所有的 i 结点 (根结点事先占用一个 i 结点):
 
@@ -2779,7 +2789,7 @@ do
 done  
 \end{verbatim}
 
-  \includegraphics[width=15cm]{./images/./exhausted_1.png}
+  \includegraphics[width=12cm]{./images/./exhausted_1.png}
 \end{itemize}
 
 回忆 ``测试环境'' 一节说过的话, 虽然磁盘中共了 8192 个 i 结点, 但是 i
@@ -2798,7 +2808,7 @@ dd if=/dev/zero of=mnt/file3 bs=1024 count=8259
 dd if=/dev/zero of=mnt/file4 bs=1024 count=8259  
 \end{verbatim}
 
-  \includegraphics[width=15cm]{./images/./exhausted_2.png}
+  \includegraphics[width=12cm]{./images/./exhausted_2.png}
 \end{itemize}
 \end{itemize}
 \end{document}
