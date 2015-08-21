@@ -158,6 +158,7 @@ static int ufs_chmod(const char *path, mode_t mode)
 	}
 	inode.i_mode &= ~(0777);
 	inode.i_mode |= mode & 0777;
+	inode.i_ctime = time(NULL);
 	if ((ret = ufs_wr_inode(&inode)) < 0) {
 		log_msg("ufs_chmod: ufs_wr_inode error");
 		goto out;
