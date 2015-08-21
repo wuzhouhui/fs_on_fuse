@@ -21,6 +21,8 @@
     \Huge{基于 FUSE 的文件系统设计与实现}\label{ux57faux4e8e-fuse-ux7684ux6587ux4ef6ux7cfbux7edfux8bbeux8ba1ux4e0eux5b9eux73b0}
 \end{center}
 
+\tableofcontents
+
 \section{FUSE 背景与资料}\label{fuse-ux80ccux666fux4e0eux8d44ux6599}
 
 \subsection{fuse-1.3 的工作方式}
@@ -824,7 +826,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \subsection{功能函数
 (或命令)}\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
 
-\subsubsection{\texttt{format} \textit{diskfile}}
+\subsubsection[\texttt{format}]{\texttt{format} \textit{diskfile}}
 \begin{itemize}
 \item
   功能: 格式化一个文件系统
@@ -879,7 +881,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回;
   \end{itemize}
 \end{itemize}
-\subsubsection{\texttt{int ufs\_read\_sb(const char *diskname)}}
+\subsubsection[\texttt{ufs\_read\_sb}]{\texttt{int ufs\_read\_sb(const char *diskname)}}
 \begin{itemize}
 \item
   功能: 从磁盘上读超级块
@@ -907,7 +909,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回;
   \end{itemize}
 \end{itemize}
-        \subsubsection{\texttt{int init(const char *disk\_name)}}
+\subsubsection[\texttt{init}]{\texttt{int init(const char *disk\_name)}}
         \begin{itemize}
 \item
   功能: 文件系统运行前的初始化;
@@ -942,7 +944,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{unsigned int ufs\_new\_inode(void)}}
+  \subsubsection[\texttt{ufs\_new\_inode}]{\texttt{unsigned int ufs\_new\_inode(void)}}
   \begin{itemize}
 \item
   功能: 获取一个空闲的 i 结点
@@ -964,7 +966,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 因为在格式化文件系统时, 位图的第 1 个位被设置为 1, 所以可用 0
   来指示未找到可用的 i 结点;
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_free\_inode(unsigned int inum)}}
+  \subsubsection[\texttt{ufs\_free\_inode}]{\texttt{int ufs\_free\_inode(unsigned int inum)}}
   \begin{itemize}
 \item
   功能: 释放一个指定的 i 结点
@@ -986,7 +988,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     i 节点原来就处理空闲状态, 返回 \texttt{-EAGAIN};
   \end{itemize}
 \end{itemize}
-\subsubsection{\texttt{int ufs\_rd\_inode(unsigned int inum, struct ufs\_dinode *inode)}}
+\subsubsection[\texttt{ufs\_free\_inode}]{\texttt{int ufs\_rd\_inode(unsigned int inum, struct ufs\_dinode *inode)}}
 \begin{itemize}
 \item
   功能: 读取指定的 i 结点
@@ -1011,7 +1013,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回错误值, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_wr\_inode(struct ufs\_minode *inode)}}
+  \subsubsection[\texttt{ufs\_wr\_inode}]{\texttt{int ufs\_wr\_inode(struct ufs\_minode *inode)}}
   \begin{itemize}
 \item
   功能: 将指定的 i 结点写回磁盘
@@ -1033,7 +1035,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{unsigned int ufs\_new\_zone(void)}}
+  \subsubsection[\texttt{ufs\_new\_zone}]{\texttt{unsigned int ufs\_new\_zone(void)}}
   \begin{itemize}
 \item
   功能: 获取一块空闲的逻辑块
@@ -1044,7 +1046,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   而磁盘上 的每 512 字节为一个磁盘块, 磁盘块中可以存储任意的内容 (无论是
   i 结点, 还是 文件数据), 逻辑块的编号从 1 开始.
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_free\_zone(unsigned int zone\_num)}}
+  \subsubsection[\texttt{ufs\_free\_zone}]{\texttt{int ufs\_free\_zone(unsigned int zone\_num)}}
   \begin{itemize}
 \item
   功能: 释放一个指定的逻辑块
@@ -1065,7 +1067,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{zone\_num} 原来就处于已释放状态, 返回 \texttt{-EAGAIN};
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_rd\_zone(unsigned int zone\_num, void *buf, size\_t size)}}
+  \subsubsection[\texttt{ufs\_rd\_zone}]{\texttt{int ufs\_rd\_zone(unsigned int zone\_num, void *buf, size\_t size)}}
   \begin{itemize}
 \item
   功能: 读一个指定的逻辑块
@@ -1094,7 +1096,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_wr\_zone(unsigned int zone\_num, void *buf, size\_t size)}}
+  \subsubsection[\texttt{ufs\_wr\_zone}]{\texttt{int ufs\_wr\_zone(unsigned int zone\_num, void *buf, size\_t size)}}
   \begin{itemize}
 \item
   功能: 将一个指定的逻辑块写入磁盘
@@ -1123,7 +1125,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{unsigned int inum2bnum(unsigned int inum)}}
+  \subsubsection[\texttt{inum2bnum}]{\texttt{unsigned int inum2bnum(unsigned int inum)}}
   \begin{itemize}
 \item
   功能: 计算指定的 i 结点所在的磁盘块块号
@@ -1141,7 +1143,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 磁盘的第一个块被超级块占用, 故 0 号磁盘块不会被用到, 可用
   作指示错误的返回值.
   \end{itemize}
-  \subsubsection{\texttt{unsigned int znum2bnum(unsigned int zone\_num)}}
+  \subsubsection[\texttt{znum2bnum}]{\texttt{unsigned int znum2bnum(unsigned int zone\_num)}}
   \begin{itemize}
 \item
   功能: 计算指定的逻辑块所在的磁盘块块号
@@ -1156,7 +1158,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   返回值: 编号为 \texttt{zone\_num} 的逻辑块所在的磁盘块块号. 若
   \texttt{zone\_num} 无效则返回 0.
   \end{itemize}
-  \subsubsection{\texttt{unsigned int dnum2znum(struct ufs\_minode *inode, unsigned int data\_num)}}
+  \subsubsection[\texttt{dnum2znum}]{\texttt{unsigned int dnum2znum(struct ufs\_minode *inode, unsigned int data\_num)}}
 \begin{itemize}
 \item
   功能: 计算指定的数据块所在的逻辑块号
@@ -1176,7 +1178,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: ``数据块'' 是相对于单个文件的, 从 1 开始编号, 数据块号最大值
   受限于 i 结点所能支持的最大文件大小.
   \end{itemize}
-  \subsubsection{\texttt{unsigned int ufs\_creat\_zone(struct ufs\_minode *inode, unsigned int dnum)}}
+  \subsubsection[\texttt{ufs\_creat\_zone}]{\texttt{unsigned int ufs\_creat\_zone(struct ufs\_minode *inode, unsigned int dnum)}}
   \begin{itemize}
 \item
   功能: 计算指定的数据块所在的逻辑块号, 若不存在则创建一块;
@@ -1193,7 +1195,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   返回值: 若数据块号与 i 结点有效, 文件大小未达到上限且磁盘有空闲逻辑块,
   则返回对应的逻辑块号; 否则返回 0.
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_rd\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
+  \subsubsection[\texttt{ufs\_rd\_blk}]{\texttt{int ufs\_rd\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
   \begin{itemize}
 \item
   功能: 从磁盘上读一块指定的磁盘块
@@ -1225,7 +1227,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 磁盘文件上的每 512 字节都算作一个磁盘块,
   而不管该磁盘块存放的是什么 内容, 下同.
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_wr\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
+  \subsubsection[\texttt{ufs\_wr\_blk}]{\texttt{int ufs\_wr\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
   \begin{itemize}
 \item
   功能: 写一块指定的磁盘块
@@ -1254,7 +1256,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_path2i(const char *path, struct ufs\_minode *inode)}}
+  \subsubsection[\texttt{ufs\_path2i}]{\texttt{int ufs\_path2i(const char *path, struct ufs\_minode *inode)}}
   \begin{itemize}
 \item
   功能: 将路径名映射为 i 结点
@@ -1282,7 +1284,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   流程图 (图中未画出的判断分支都表示出错返回)\\
   \includegraphics[width=12cm]{./images/path2i.png}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_dir2i(const char *dirpath, struct ufs\_minode *dirinode)}}
+  \subsubsection[\texttt{ufs\_dir2i}]{\texttt{int ufs\_dir2i(const char *dirpath, struct ufs\_minode *dirinode)}}
 
   \begin{itemize}
 \item
@@ -1309,7 +1311,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 函数过程与 \texttt{ufs\_path2i()} 非常类似, 但是将 \texttt{path}
   限制为目录文件.
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_find\_entry(struct ufs\_minode *parent, const char *filename, struct ufs\_dir\_entry *ent)}}
+  \subsubsection[\texttt{ufs\_find\_entry}]{\texttt{int ufs\_find\_entry(struct ufs\_minode *parent, const char *filename, struct ufs\_dir\_entry *ent)}}
   \begin{itemize}
 \item
   功能: 在指定的目录中查找具有指定文件名的文件
@@ -1342,7 +1344,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \includegraphics[width=12cm]{./images/find_entry.png}
   \end{itemize}
 
-  \subsubsection{\texttt{int ufs\_rm\_entry(struct ufs\_minode *dir, const struct ufs\_dir\_entry *entry)}}
+  \subsubsection[\texttt{ufs\_rm\_entry}]{\texttt{int ufs\_rm\_entry(struct ufs\_minode *dir, const struct ufs\_dir\_entry *entry)}}
   \begin{itemize}
 \item
   功能: 从指定的目录中移除指定的目录项;
@@ -1372,7 +1374,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
   \end{itemize}
 
-  \subsubsection{\texttt{int ufs\_add\_entry(struct ufs\_minode *dir, const struct ufs\_dir\_entry *entry)}}
+  \subsubsection[\texttt{ufs\_add\_entry}]{\texttt{int ufs\_add\_entry(struct ufs\_minode *dir, const struct ufs\_dir\_entry *entry)}}
   \begin{itemize}
 \item
   功能: 在指定的目录中新增一个目录项
@@ -1399,7 +1401,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_truncate(struct ufs\_minode *iptr)}}
+  \subsubsection[\texttt{ufs\_truncate}]{\texttt{int ufs\_truncate(struct ufs\_minode *iptr)}}
   \begin{itemize}
 \item
   功能: 释放 i 结点占用的所有数据块
@@ -1422,7 +1424,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_is\_dirempty(struct ufs\_minode *inode)}}
+  \subsubsection[\texttt{ufs\_is\_dirempty}]{\texttt{int ufs\_is\_dirempty(struct ufs\_minode *inode)}}
 
   \begin{itemize}
 \item
@@ -1448,7 +1450,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{inode} 包含除了 \texttt{.} 与 \texttt{..} 之外的目录项;
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{mode\_t ufs\_conv\_fmode(mode\_t mode)}}
+  \subsubsection[\texttt{ufs\_conv\_fmode}]{\texttt{mode\_t ufs\_conv\_fmode(mode\_t mode)}}
   \begin{itemize}
 \item
   功能:
@@ -1463,7 +1465,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \item
   返回值: 本文件系统的标准文件类型与文件访问权限标志, 无出错标志.
   \end{itemize}
-  \subsubsection{\texttt{int ufs\_conv\_oflag(int oflag)}}
+  \subsubsection[\texttt{ufs\_conv\_oflag}]{\texttt{int ufs\_conv\_oflag(int oflag)}}
   \begin{itemize}
 \item
   功能: 将 Linux 标准的文件打开标志转换成本文件系统的打开标志;
@@ -1485,7 +1487,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
 \subsection{系统调用接口}\label{ux7cfbux7edfux8c03ux7528ux63a5ux53e3}
 
-\subsubsection{\texttt{int creat(const char *path, mode\_t mode)}}
+\subsubsection[\texttt{creat}]{\texttt{int creat(const char *path, mode\_t mode)}}
 \begin{itemize}
 \item
   功能: 创建一个新文件
@@ -1580,7 +1582,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./creat_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int release(const char *path, int fd)}}
+  \subsubsection[\texttt{release}]{\texttt{int release(const char *path, int fd)}}
   \begin{itemize}
 \item
   功能: 关闭一个打开文件, 并释放它占用的资源;
@@ -1618,7 +1620,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int releasedir(const char *path)}}
+  \subsubsection[\texttt{releasedir}]{\texttt{int releasedir(const char *path)}}
   \begin{itemize}
 \item
   功能: 释放一个打开的目录;
@@ -1644,7 +1646,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     函数体无实质性内容, 直接返回 0;
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int rename(const char *oldpath, const char *newpath)}}
+  \subsubsection[\texttt{rename}]{\texttt{int rename(const char *oldpath, const char *newpath)}}
   \begin{itemize}
 \item
   功能: 改变文件的位置或 (和) 名字;
@@ -1699,7 +1701,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./rename_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int mkdir(const char *path, mode\_t mode)}}
+  \subsubsection[\texttt{mkdir}]{\texttt{int mkdir(const char *path, mode\_t mode)}}
   \begin{itemize}
 \item
   功能: 创建一个空目录;
@@ -1786,7 +1788,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./mkdir_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int readdir(const char *dirpath)}}
+  \subsubsection[\texttt{readdir}]{\texttt{int readdir(const char *dirpath)}}
   \begin{itemize}
 \item
   功能: 读某个目录中的所有项
@@ -1848,7 +1850,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
   \end{itemize}
 
-  \subsubsection{\texttt{int unlink(const char *path)}}
+  \subsubsection[\texttt{unlink}]{\texttt{int unlink(const char *path)}}
   \begin{itemize}
 \item
   功能: 删除一个目录项;
@@ -1921,7 +1923,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./unlink_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int rmdir(const char *path)}}
+  \subsubsection[\texttt{rmdir}]{\texttt{int rmdir(const char *path)}}
   \begin{itemize}
 \item
   功能: 删除一个空目录;
@@ -1998,7 +2000,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./rmdir_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int open(const char *path, int flag)};}
+  \subsubsection[\texttt{open}]{\texttt{int open(const char *path, int flag)};}
   \begin{itemize}
 \item
   功能: 打开一个文件;
@@ -2080,7 +2082,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./open_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int write(int fd, const void *buf, size\_t size, off\_t offset)}}
+  \subsubsection[\texttt{write}]{\texttt{int write(int fd, const void *buf, size\_t size, off\_t offset)}}
   \begin{itemize}
 \item
   功能: 写一个文件;
@@ -2162,7 +2164,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./write_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int read(int fd, void *buf, size\_t size)}}
+  \subsubsection[\texttt{read}]{\texttt{int read(int fd, void *buf, size\_t size)}}
   \begin{itemize}
 \item
   功能: 读一个文件;
@@ -2221,7 +2223,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=12cm]{./images/./read_2.png}
   \end{itemize}
-  \subsubsection{\texttt{int getattr(const char *path, struct stat *st)}}
+  \subsubsection[\texttt{getattr}]{\texttt{int getattr(const char *path, struct stat *st)}}
   \begin{itemize}
 \item
   功能: 获取文件的元数据;
@@ -2271,7 +2273,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int access(const char *path, int mode)}}
+  \subsubsection[\texttt{access}]{\texttt{int access(const char *path, int mode)}}
   \begin{itemize}
 \item
   功能: 按照进程的实际用户 ID 与实际组 ID 来测试文件的读写权限;
@@ -2326,7 +2328,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     具备 \texttt{mode} 所请求的权限, 返回 0, 否则返回 \texttt{-EACCES};
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int mknod(const char *path, mode\_t mode, dev\_t dev)}}
+  \subsubsection[\texttt{mknod}]{\texttt{int mknod(const char *path, mode\_t mode, dev\_t dev)}}
   \begin{itemize}
 \item
   功能: 创建一个普通文件;
@@ -2385,7 +2387,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 由于文件系统目前只支持目录文件与普通文件这两种类型,
   所以现在主要通过 \texttt{creat()} 来实现 \texttt{mknod()};
   \end{itemize}
-  \subsubsection{\texttt{int statfs(const char *path, struct statvfs *stat)}}
+  \subsubsection[\texttt{statfs}]{\texttt{int statfs(const char *path, struct statvfs *stat)}}
   \begin{itemize}
 \item
   功能: 获取文件系统的统计信息;
@@ -2426,7 +2428,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回;
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int opendir(const char *path)}}
+  \subsubsection[\texttt{opendir}]{\texttt{int opendir(const char *path)}}
   \begin{itemize}
 \item
   功能: 打开一个目录;
@@ -2470,7 +2472,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int closedir(DIR *dirp)}}
+  \subsubsection[\texttt{closedir}]{\texttt{int closedir(DIR *dirp)}}
   \begin{itemize}
 \item
   功能: 关闭一个打开着的目录文件;
@@ -2500,7 +2502,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回;
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int flush(const char *path)}}
+  \subsubsection[\texttt{flush}]{\texttt{int flush(const char *path)}}
   \begin{itemize}
 \item
   功能: 冲洗文件;
@@ -2526,7 +2528,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     函数体无实质性内容, 直接返回 0;
   \end{itemize}
   \end{itemize}
-  \subsubsection{\texttt{int fsync(const char *path, int datasync, struct fuse\_file\_info *fi)}}
+  \subsubsection[\texttt{fsync}]{\texttt{int fsync(const char *path, int datasync, struct fuse\_file\_info *fi)}}
 
   \begin{itemize}
 \item

@@ -1,3 +1,4 @@
+*.toc
 *.sh
 fs_on_fuse.toc
 *.out
