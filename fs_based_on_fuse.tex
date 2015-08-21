@@ -491,7 +491,8 @@ mount -t fusectl none /sys/fs/fuse/connections
 \item
   fuse 模块收到 \texttt{stat} 请求, 将请求写至 \texttt{/dev/fuse}
 \item
-  用户文件系统守护进程 (在图 1-1 是 \texttt{hello}) 不断读取
+    用户文件系统守护进程 (在图 \ref{fig:fuse_structure}
+    是 \texttt{hello}) 不断读取
   \texttt{/dev/fuse}, 若发现 是发送给自己的请求, 则处理该请求.
 \item
   \texttt{hello} 文件系统根据用户在 \texttt{struct fuse\_operations}
@@ -522,8 +523,9 @@ mount -t fusectl none /sys/fs/fuse/connections
 
 \subsection{文件系统在磁盘上的布局}\label{ux6587ux4ef6ux7cfbux7edfux5728ux78c1ux76d8ux4e0aux7684ux5e03ux5c40}
 
-\includegraphics[width=15cm]{./images/./layout.png}\\图 2-1
-文件系统各个功能区在磁盘上的布局
+\includegraphics[width=15cm]{./images/./layout.png}
+\captionof{figure}{文件系统各个功能区在磁盘上的布局}
+\label{fig:layout}
 
 \subsection{常量说明}\label{ux5e38ux91cfux8bf4ux660e}
 
@@ -558,7 +560,8 @@ mount -t fusectl none /sys/fs/fuse/connections
 磁盘块从磁盘的第 1 块 512 字节块 就开始, 一直到磁盘的最后一块 512
 字节块. 而逻辑块的第 1 块从磁盘的数据区 开始,
 该磁盘块前面的几块要预留给超级块, i 结点位图, 逻辑块位图, 与 i 结点使用,
-逻辑块从它们之后的第 1 块开始, 从 1 开始编号. 在图 1-1 中, 从左到右,
+逻辑块从它们之后的第 1 块开始, 从 1 开始编号. 在图 \ref{fig:layout} 中,
+从左到右,
 磁盘块从第 1 块方格开始, 而逻辑块从第 9 块方格开始.
 数据块指的是分配给文件, 用来 存储文件数据 (非元数据) 的逻辑块,
 如果一个文件的大小为 678 KB, 那么它就拥有 2 块数据块,
@@ -722,14 +725,16 @@ struct ufs_minode {
 \texttt{i\_nlink} 是指向该 i 结点的目录项的个数, 可用于实现硬链接.
 \texttt{i\_mode} 包含了有关文件属性与 权限的信息, 该字段包含的信息如下图
 
-\includegraphics[width=15cm]{./images/./imode.png}\\图 2-2 \texttt{i\_mode}
-字段中每一位的作用.
+\includegraphics[width=15cm]{./images/./imode.png}
+\captionof{figure}{文件类型与访问权限}
+\label{fig:i_mode}
 
 \texttt{i\_mode} 的高位在左, 低位在右. 低 9
 位用于判断三类用户对该文件的读写权限, 位 9 用于判断文件类型, 其余位不用.
 
-\includegraphics[width=15cm]{./images/./i_zones_array.png}\\图 2-3 i
-结点逻辑块块号数组的功能
+\includegraphics[width=15cm]{./images/./i_zones_array.png}
+\captionof{figure}{i 结点逻辑块块号数组的功能}
+\label{fig:i_node}
 
 如果存放逻辑块号的存储单元的值为 0, 说明该单元空闲.
 很容易可以算出一个本文件系统在 32 位平台上所能支持的最大文件为
@@ -759,10 +764,10 @@ struct ufs_dir_entry {
 \begin{verbatim}
 struct file {
     struct ufs_minode f_inode;      /* 与该文件对应的 i 结点 */
-    mode_t  f_mode;         /* 文件类型与访问权限 */
-    int f_flag;         /* 文件打开和控制标志 */
-    int f_count;        /* 对应文件句柄引用次数 */
-    off_t   f_pos;          /* 当前文件偏移量 */
+    mode_t  f_mode;                 /* 文件类型与访问权限 */
+    int f_flag;                     /* 文件打开和控制标志 */
+    int f_count;                    /* 对应文件句柄引用次数 */
+    off_t   f_pos;                  /* 当前文件偏移量 */
 };
 
 struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
@@ -781,7 +786,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
             \item
                 \texttt{O\_WRONLY}: 只写打开
             \item
-                \texttt{O\_RDWR}: 读写打开 *
+                \texttt{O\_RDWR}: 读写打开
         \end{itemize}
     \item
         文件创建与控制标志: 
@@ -794,8 +799,9 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
         \end{itemize}
 \end{itemize}
 
-\includegraphics[width=15cm]{./images/./file_mode.png}\\图 1-4 \texttt{f\_mode}
-字段各位的作用, 高位在左, 低位在右.
+\includegraphics[width=15cm]{./images/./file_mode.png}
+\captionof{figure}{文件打开和控制标志, 高位在左, 低位在右}
+\label{fig:f_mode}
 
 3 种文件访问模式必须指定且只能指定一种, 但是文件创建与控制标志都是
 可选的.
@@ -808,7 +814,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \subsection{功能函数
 (或命令)}\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
 
-\subsubsection{\texttt{format} \emph{\texttt{diskfile}}}
+\subsubsection{\texttt{format} \textit{diskfile}}
 \begin{itemize}
 \item
   功能: 格式化一个文件系统
@@ -2230,7 +2236,7 @@ struct file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     \texttt{-EACCES}: 对路径中的某一目录无搜索权限;
   \item
-    \texttt{-ENAMETOOLONG}: 路径过长, 若文件名过长;
+    \texttt{-ENAMETOOLONG}: 路径过长, 或文件名过长;
   \item
     \texttt{-ENOENT}: 路径中的某一部分不存在;
   \item
