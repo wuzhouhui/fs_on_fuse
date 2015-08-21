@@ -145,6 +145,29 @@ out:
 	return(ret);
 }
 
+static int ufs_chmod(const char *path, mode_t mode)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_chmod called, path = %s, mode = %o",
+			!path ? "NULL" : path, mode);
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_chmod: ufs_path2i error");
+		goto out;
+	}
+	inode.i_mode &= ~(0777);
+	inode.i_mode |= mode & 0777;
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_chmod: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_chmod return %d", ret);
+	return(ret);
+}
+
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
@@ -1224,6 +1247,7 @@ out:
 
 struct fuse_operations ufs_oper = {
 	.access		= ufs_access,
+	.chmod		= ufs_chmod,
 	.create		= ufs_creat,
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
