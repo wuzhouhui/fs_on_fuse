@@ -1064,7 +1064,8 @@ static int ufs_statfs(const char *path, struct statvfs *stat)
 		ret = -EINVAL;
 		goto out;
 	}
-	stat->f_bsize	= UFS_BLK_SIZE;
+	stat->f_bsize	= stat->f_frsize = UFS_BLK_SIZE;
+	stat->f_blocks	= sb.s_zone_blocks;
 	stat->f_bfree	= ufs_left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
 	stat->f_bavail	= stat->f_bfree;
