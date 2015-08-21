@@ -733,7 +733,9 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		ret = -EINVAL;
 		goto out;
 	}
-	if (!strncmp(oldpath, newpath, strlen(oldpath))) {
+	ret = strlen(oldpath);
+	if (!strncmp(oldpath, newpath, ret)
+			&& newpath[ret] == '/') {
 		log_msg("ufs_rename: oldpath is prefix of newpath");
 		ret = -EINVAL;
 		goto out;
