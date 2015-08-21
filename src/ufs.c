@@ -1092,6 +1092,44 @@ out:
 	return(ret);
 }
 
+static int ufs_utimens(const char *path, const struct timespec tv[2])
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_utimens called, path = %s", !path ? "NULL" : path);
+	if (!path || !path[0]) {
+		log_msg("path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_path2i error");
+		goto out;
+	}
+	
+	if (!tv || tv[1].tv_nsec == UTIME_NOW)
+		inode.i_mtime = time(NULL);
+	else if (tv[1].tv_nsec == UTIME_OMIT)
+		goto out;
+	else
+		inode.i_mtime = tv[1].tv_sec + tv[1].tv_nsec / 1000000000L;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_utimens: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_utimens return %d", ret);
+	return(ret);
+}
+
 static int ufs_write(const char *path, const char *buf, size_t size,
 		off_t offset, struct fuse_file_info *fi)
 {
@@ -1202,6 +1240,7 @@ struct fuse_operations ufs_oper = {
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
 	.unlink		= ufs_unlink,
+	.utimens	= ufs_utimens,
 	.write		= ufs_write,
 };
 
