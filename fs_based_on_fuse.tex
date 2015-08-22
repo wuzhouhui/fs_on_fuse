@@ -2575,15 +2575,83 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
 \end{itemize}
 
+\section{源代码}
+\subsection{源代码结构}
+所有的源代码 (包括文档源代码及其资源) 都放在 \verb'src/' 目录下,
+该目录包含的文件或目录包括:
+\begin{itemize}
+    \item \verb'src/apue.h'     \\
+        来自 \textit{Advanced Programming in Unix Environment, 3rd Edition}
+        的头文件, 含有日志函数的声明及其需要包含的头文件;
+    \item \verb'src/doc.tex' \\
+        文档的 \LaTeX 源代码;
+    \item \verb'src/error.c' \\
+        错误处理函数, 来自 \textit{Advanced Programming in Unix
+        Environment, 3rd Edition};
+    \item \verb'src/errorlog.c' \\
+        日志函数, 来自 \textit{Advanced Programming in Unix
+        Environment, 3rd Edition};
+    \item \verb'src/format.c' \\
+        文件系统格式化程序;
+    \item \verb'src/images/' \\
+        生成 pdf 文档时所需的图片资源;
+    \item \verb'src/tools/' \\
+        测试工具程序;
+    \item \verb'src/ufs.c' \\
+        文件系统提供的系统调用接口, 例如 \verb'write', \verb'read' 等;
+    \item \verb'src/ufs.h' \\
+        文件系统的主要头文件;
+    \item \verb'src/ufslib.c' \\
+        文件系统向系统调用 (例如 \verb'write') 提供的功能函数 (例如 
+        \verb'ufs_path2i');
+\end{itemize}
+
+\subsection{命名约定与编程风格}
+\subsubsection{命名约定}
+本文件系统独有的函数, 数据结构, 常量, 全局变量都冠有前缀 \verb'ufs_',
+例如 \verb'ufs_write()', \verb'struct ufs_minode', \verb'UFS_ROOT_INO',
+\verb'struct ufs_file ufs_open_files[]', 这么做是为了避免与系统类似的标识
+符重名或冲突.
+\subsubsection{编程风格}
+为便于调试及分析函数调用过程, 当进入某个函数时, 打印一条日志, 日志包含有
+函数的名字, 关键参数的值. 当函数调用过程中发生错误时, 打印一条日志, 内容
+包括出错的函数或错误原因. 当函数返回时打印一条日志, 内容包括返回的函数名
+与返回值, 例如:
+\begin{verbatim}
+static int ufs_getattr(const char *path, struct stat *statptr)
+{
+    int ret = 0;
+    struct ufs_minode inode;
+
+    log_msg("ufs_getattr called, path = %s", path == NULL ? "NULL" :
+            path);
+    if ((ret = ufs_path2i(path, &inode)) < 0) {
+        log_msg("ufs_getattr: ufs_path2i error");
+        goto out;
+    }
+    statptr->st_mode = ufs_conv_fmode(inode.i_mode);
+    statptr->st_ino = inode.i_ino;
+    statptr->st_nlink = inode.i_nlink;
+    statptr->st_uid = inode.i_uid;
+    statptr->st_gid = inode.i_gid;
+    statptr->st_size = inode.i_size;
+    statptr->st_ctime = inode.i_ctime;
+    statptr->st_mtime = inode.i_mtime;
+    ret = 0;
+out:
+    log_msg("ufs_getattr return %d", ret);
+    return(ret);
+}
+\end{verbatim}
 \section{测试与演示}\label{ux6d4bux8bd5ux4e0eux6f14ux793a}
 
 \subsection{测试环境}\label{ux6d4bux8bd5ux73afux5883}
 
 \begin{itemize}
 \item
-  ubuntu 14.04 32-bits
+  Ubuntu 14.04 32-bits
 \item
-  fuse 2.9.4
+  fuse 2.9.4, Ubuntu 14.04 自带 fuse 开发环境.
 \item
   磁盘文件 30 MB
 
@@ -2606,7 +2674,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   最大文件名长度 27 B;
 \item
   带有前缀 \texttt{./} 的命令都是用户自已开发的命令, 非系统提供,
-  测试者可在 \texttt{tools/} 目录下找到命令的源代码, 之所以要自己开发命令,
+  测试者可在 \texttt{src/tools/} 目录下找到命令的源代码, 之所以要自己开发命令,
   是因为有些测试用例无法用系统提供的命令实现 (或难于实现).
 \end{itemize}
 
