@@ -145,6 +145,66 @@ out:
 	return(ret);
 }
 
+static int ufs_chmod(const char *path, mode_t mode)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_chmod called, path = %s, mode = %o",
+			!path ? "NULL" : path, mode);
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_chmod: ufs_path2i error");
+		goto out;
+	}
+	inode.i_mode &= ~(0777);
+	inode.i_mode |= mode & 0777;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_chmod: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_chmod return %d", ret);
+	return(ret);
+}
+
+static int ufs_chown(const char *path, uid_t uid, gid_t gid)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_chown called, path = %s, uid = %d, gid = %d",
+			!path ? "NULL" : path, (int)uid, (int)gid);
+	if (!path || !path[0]) {
+		log_msg("path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_chown: ufs_path2i error");
+		goto out;
+	}
+	if (uid != -1)
+		inode.i_uid = uid;
+	if (gid != -1)
+		inode.i_gid = gid;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_chown: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_chown return %d", ret);
+	return(ret);
+}
+
 static int ufs_creat(const char *path, mode_t mode,
 		struct fuse_file_info *fi)
 {
@@ -1004,7 +1064,8 @@ static int ufs_statfs(const char *path, struct statvfs *stat)
 		ret = -EINVAL;
 		goto out;
 	}
-	stat->f_bsize	= UFS_BLK_SIZE;
+	stat->f_bsize	= stat->f_frsize = UFS_BLK_SIZE;
+	stat->f_blocks	= sb.s_zone_blocks;
 	stat->f_bfree	= ufs_left_cnt(sb.s_zmap, sb.s_zmap_blocks,
 			sb.s_zone_blocks);
 	stat->f_bavail	= stat->f_bfree;
@@ -1089,6 +1150,44 @@ static int ufs_unlink(const char *path)
 	ret = 0;
 out:
 	log_msg("ufs_unlink return %d", ret);
+	return(ret);
+}
+
+static int ufs_utimens(const char *path, const struct timespec tv[2])
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_utimens called, path = %s", !path ? "NULL" : path);
+	if (!path || !path[0]) {
+		log_msg("path is null");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (strlen(path) >= UFS_PATH_LEN) {
+		log_msg("path is too long");
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_path2i error");
+		goto out;
+	}
+	
+	if (!tv || tv[1].tv_nsec == UTIME_NOW)
+		inode.i_mtime = time(NULL);
+	else if (tv[1].tv_nsec == UTIME_OMIT)
+		goto out;
+	else
+		inode.i_mtime = tv[1].tv_sec + tv[1].tv_nsec / 1000000000L;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_utimens: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_utimens return %d", ret);
 	return(ret);
 }
 
@@ -1186,6 +1285,8 @@ out:
 
 struct fuse_operations ufs_oper = {
 	.access		= ufs_access,
+	.chmod		= ufs_chmod,
+	.chown		= ufs_chown,
 	.create		= ufs_creat,
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
@@ -1202,6 +1303,7 @@ struct fuse_operations ufs_oper = {
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
 	.unlink		= ufs_unlink,
+	.utimens	= ufs_utimens,
 	.write		= ufs_write,
 };
 
