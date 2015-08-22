@@ -1,4 +1,4 @@
-\documentclass[nofonts]{ctexart}
+\documentclass[nofonts, titlepage]{ctexart}
 \usepackage{geometry}
 \usepackage{fontspec}
 \usepackage{xeCJK}
@@ -19,11 +19,16 @@
 
 \renewcommand\labelitemii{\tiny{$\square$}}
 
-\begin{document}
-\begin{center}
-    \Huge{基于 FUSE 的文件系统设计与实现}\label{ux57faux4e8e-fuse-ux7684ux6587ux4ef6ux7cfbux7edfux8bbeux8ba1ux4e0eux5b9eux73b0}
-\end{center}
+\hypersetup{
+    pdfborder=0 0 0
+}
 
+\title{基于 fuse 的文件系统设计与实现}
+\author{吴周辉 \\ 中国科学院计算技术研究所}
+
+\begin{document}
+
+\maketitle
 \tableofcontents
 
 \section{FUSE 背景与资料}\label{fuse-ux80ccux666fux4e0eux8d44ux6599}
@@ -2581,15 +2586,15 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 该目录包含的文件或目录包括:
 \begin{itemize}
     \item \verb'src/apue.h'     \\
-        来自 \textit{Advanced Programming in Unix Environment, 3rd Edition}
+        来自 \textit{Advanced Programming in the UNIX Environment, 3rd Edition}
         的头文件, 含有日志函数的声明及其需要包含的头文件;
     \item \verb'src/doc.tex' \\
         文档的 \LaTeX 源代码;
     \item \verb'src/error.c' \\
-        错误处理函数, 来自 \textit{Advanced Programming in Unix
+        错误处理函数, 来自 \textit{Advanced Programming in the UNIX
         Environment, 3rd Edition};
     \item \verb'src/errorlog.c' \\
-        日志函数, 来自 \textit{Advanced Programming in Unix
+        日志函数, 来自 \textit{Advanced Programming in the UNIX
         Environment, 3rd Edition};
     \item \verb'src/format.c' \\
         文件系统格式化程序;
@@ -2900,4 +2905,9 @@ dd if=/dev/zero of=mnt/file4 bs=1024 count=8259
 
   \includegraphics[width=14cm]{./images/./exhausted_2.png}
 \end{itemize}
+
+\section{结语}
+本文件系统实现了大部分文件系统基本功能 (读写创删), 而高级功能 (链接,
+扩展属性等) 有待今后实现. 另外的一点不足之处是, 本文件系统没有考虑并
+发访问, 竞争条件会给文件系统带来不可预知的后果.
 \end{document}
