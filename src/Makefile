@@ -18,6 +18,10 @@ ufs: ufs.o errorlog.o error.o ufslib.o
 format: format.o error.o
 	$(CC) $(CFLAGS) format.o error.o -o format
 
+pdf: *.tex
+	latexmk -pdf -pdflatex="xelatex -interactive=nostopmode" \
+		-use-make fs_based_on_fuse.tex
+
 ignore:
 	sed -i '/### Makefile ###/,$$$ d' .gitignore
 	echo '### Makefile ###' >> .gitignore
@@ -28,4 +32,5 @@ ignore:
 	done)
 
 clean:
-	rm -f *.o format ufs
+	rm -f *.o format ufs fs_based_on_fuse.pdf *.aux *.toc \
+		*.log *.out *.fls *latex*
