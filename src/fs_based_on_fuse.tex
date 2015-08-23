@@ -37,9 +37,9 @@
 
 \begin{center}
 \includegraphics[width=14cm]{./images/./FUSE_structure.svg.png}
-\end{center}
 \captionof{figure}{fuse-1.3 结构图及其工作流程}
 \label{fig:fuse_structure}
+\end{center}
 
 \subsubsection{内核模块}\label{ux5185ux6838ux6a21ux5757}
 
@@ -537,9 +537,9 @@ mount -t fusectl none /sys/fs/fuse/connections
 
 \begin{center}
 \includegraphics[width=14cm]{./images/./layout.png}
-\end{center}
 \captionof{figure}{文件系统各个功能区在磁盘上的布局}
 \label{fig:layout}
+\end{center}
 
 \subsection{常量说明}\label{ux5e38ux91cfux8bf4ux660e}
 
@@ -740,9 +740,9 @@ struct ufs_minode {
 \texttt{i\_nlink} 是指向该 i 结点的目录项的个数, 可用于实现硬链接.
 \texttt{i\_mode} 包含了有关文件属性与 权限的信息, 该字段包含的信息如下图
 
+\begin{center}
 \captionof{figure}{文件类型与访问权限}
 \label{fig:i_mode}
-\begin{center}
 \includegraphics[width=15cm]{./images/./imode.png}
 \end{center}
 
@@ -820,9 +820,9 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
 \begin{center}
 \includegraphics[width=14cm]{./images/./file_mode.png}
-\end{center}
 \captionof{figure}{文件打开和控制标志, 高位在左, 低位在右}
 \label{fig:f_mode}
+\end{center}
 
 3 种文件访问模式必须指定且只能指定一种, 但是文件创建与控制标志都是
 可选的.
