@@ -198,9 +198,10 @@ int ufs_wr_blk(unsigned int, const void *, size_t);
 int ufs_path2i(const char *, struct ufs_minode *);
 int ufs_dir2i(const char *, struct ufs_minode *);
 int ufs_find_entry(struct ufs_minode *, const char *, struct ufs_dir_entry *);
-int ufs_truncate(struct ufs_minode *);
+int ufs_truncatei(struct ufs_minode *);
 int ufs_is_dirempty(struct ufs_minode *);
 mode_t ufs_conv_fmode(mode_t);
 int ufs_conv_oflag(int oflag);
+int ufs_shrink(struct ufs_minode *, off_t);
 
 #endif /* end of _UFS_H */

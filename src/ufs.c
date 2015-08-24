@@ -548,8 +548,8 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		goto out;
 	}
 	if (oflag & UFS_O_TRUNC) {
-		if ((ret = ufs_truncate(&inode)) < 0) {
-			log_msg("ufs_open: ufs_truncate error");
+		if ((ret = ufs_truncatei(&inode)) < 0) {
+			log_msg("ufs_open: ufs_truncatei error");
 			goto out;
 		}
 		if ((ret = ufs_wr_inode(&inode)) < 0) {
@@ -882,8 +882,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
 			}
-			if ((ret = ufs_truncate(&npi)) < 0) {
-				log_msg("ufs_rename: ufs_truncate error");
+			if ((ret = ufs_truncatei(&npi)) < 0) {
+				log_msg("ufs_rename: ufs_truncatei error");
 				goto out;
 			}
 			if ((ret = ufs_free_inode(npi.i_ino)) < 0) {
@@ -933,8 +933,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 				goto out;
 			}
 		} else {
-			if ((ret = ufs_truncate(&npi)) < 0) {
-				log_msg("ufs_rename: ufs_truncate error");
+			if ((ret = ufs_truncatei(&npi)) < 0) {
+				log_msg("ufs_rename: ufs_truncatei error");
 				goto out;
 			}
 			if ((ret = ufs_free_inode(npi.i_ino)) < 0) {
@@ -1040,8 +1040,8 @@ static int ufs_rmdir(const char *path)
 		goto out;
 	}
 
-	if ((ret = ufs_truncate(&inode)) < 0) {
-		log_msg("ufs_rmdir: ufs_truncate error");
+	if ((ret = ufs_truncatei(&inode)) < 0) {
+		log_msg("ufs_rmdir: ufs_truncatei error");
 		goto out;
 	}
 	if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
@@ -1083,6 +1083,61 @@ static int ufs_statfs(const char *path, struct statvfs *stat)
 	ret = 0;
 out:
 	log_msg("ufs_statfs return %d", ret);
+	return(ret);
+}
+
+static int ufs_truncate(const char *path, off_t length)
+{
+	int	ret;
+	struct ufs_minode inode;
+	int	i;
+
+	log_msg("ufs_truncate called, path = %s, length = %d",
+			!path ? "NULL" : path, (int)length);
+	if (!path || !path[0] || length < 0) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (strlen(path) >= UFS_PATH_LEN) {
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if (length > sb.s_max_size) {
+		ret = -EFBIG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_truncate: ufs_path2i error");
+		goto out;
+	}
+	if (UFS_ISDIR(inode.i_mode)) {
+		ret = -EISDIR;
+		goto out;
+	}
+	if ((ret = ufs_shrink(&inode, length)) < 0) {
+		log_msg("ufs_truncate: ufs_do_trunc error");
+		goto out;
+	}
+	inode.i_size = length;
+	inode.i_ctime = time(NULL);
+
+	/* the file maybe opened */
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_count &&
+			ufs_open_files[i].f_inode.i_ino == inode.i_ino) {
+			memcpy(&ufs_open_files[i].f_inode, &inode,
+					sizeof(inode));
+			break;
+		}
+
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_truncate: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_truncate return %d", ret);
 	return(ret);
 }
 
@@ -1144,8 +1199,8 @@ static int ufs_unlink(const char *path)
 			goto out;
 		}
 	} else {
-		if ((ret = ufs_truncate(&inode)) < 0) {
-			log_msg("ufs_unlink: ufs_truncate error");
+		if ((ret = ufs_truncatei(&inode)) < 0) {
+			log_msg("ufs_unlink: ufs_truncatei error");
 			goto out;
 		}
 		if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
@@ -1303,6 +1358,7 @@ struct fuse_operations ufs_oper = {
 	.rename		= ufs_rename,
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
+	.truncate	= ufs_truncate,
 	.unlink		= ufs_unlink,
 	.utimens	= ufs_utimens,
 	.write		= ufs_write,
