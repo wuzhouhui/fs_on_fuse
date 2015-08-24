@@ -648,11 +648,16 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	pos = offset;
 	while (s < size && pos < iptr->i_size) {
 		znum = ufs_dnum2znum(iptr, pos >> UFS_BLK_SIZE_SHIFT);
-		if (!znum)
-			break;
-		if ((ret = ufs_rd_zone(znum, block, sizeof(block))) < 0) {
-			log_msg("ufs_read: ufs_rd_zone error");
-			goto out;
+
+		if (!znum) {
+			/* there is an hole in the file */
+			memset(block, 0, sizeof(block));
+		} else {
+			ret = ufs_rd_zone(znum, block, sizeof(block));
+			if (ret < 0) {
+				log_msg("ufs_read: ufs_rd_zone error");
+				goto out;
+			}
 		}
 		p = pos % UFS_BLK_SIZE;
 		c = UFS_BLK_SIZE - p;
