@@ -2878,6 +2878,19 @@ out:
   \texttt{mv dir\_existed dir\_existed/sub};\\
   \includegraphics[width=14cm]{./images/./mv_t8.png}
 \end{itemize}
+
+\subsubsection{空洞文件}
+\begin{itemize}
+    \item 创建一个空文件, 然后在它的 512 偏移处写一个字节 \verb'w': \\
+        \includegraphics[width=14cm]{./images/./hole_t1.png} \\
+        虽然文件大小为 513 字节, 但只占用了一个数据块 (用于存放写入的
+        那个字节)
+    \item 读取含有空洞的文件, 将读取的内容写到另一个文件中: \\
+        \includegraphics[width=14cm]{./images/./hole_t2.png}\\
+        读取文件的空洞时, 将读到值为 0 的字节, 文件 \verb'nohole' 不含空洞,
+        它占用 2 个数据块.
+\end{itemize}
+
 \subsubsection{极端条件测试}
 \begin{itemize}
 \item
