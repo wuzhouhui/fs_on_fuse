@@ -1090,6 +1090,7 @@ static int ufs_truncate(const char *path, off_t length)
 {
 	int	ret;
 	struct ufs_minode inode;
+	int	i;
 
 	log_msg("ufs_truncate called, path = %s, length = %d",
 			!path ? "NULL" : path, (int)length);
@@ -1120,6 +1121,16 @@ static int ufs_truncate(const char *path, off_t length)
 	}
 	inode.i_size = length;
 	inode.i_ctime = time(NULL);
+
+	/* the file maybe opened */
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_count &&
+			ufs_open_files[i].f_inode.i_ino == inode.i_ino) {
+			memcpy(&ufs_open_files[i].f_inode, &inode,
+					sizeof(inode));
+			break;
+		}
+
 	if ((ret = ufs_wr_inode(&inode)) < 0) {
 		log_msg("ufs_truncate: ufs_wr_inode error");
 		goto out;

@@ -349,7 +349,7 @@ int ufs_free_zone(unsigned int znum)
 	}
 
 out:
-	log_msg("free_znode return %d", ret);
+	log_msg("free_zone return %d", ret);
 	return(ret);
 }
 
@@ -1040,8 +1040,10 @@ int ufs_shrink(struct ufs_minode *inode, off_t length)
 	log_msg("ufs_shrink called, ino = %d, length = %d",
 			(int)inode->i_ino, (int)length);
 
-	if (length >= inode->i_size)
-		return(0);
+	if (length >= inode->i_size) {
+		ret = 0;
+		goto out;
+	}
 
 	dnum = length / UFS_BLK_SIZE;
 	znum = ufs_dnum2znum(inode, dnum);
