@@ -108,7 +108,9 @@ struct ufs_dinode {
 	/* file type and permission */
 	mode_t	i_mode;
 	/* the size of file */
-	off_t	i_size;
+	unsigned int i_size;
+	/* # of disk blocks allocated */
+	unsigned int i_blocks;
 	/* the last time this file modifed */
 	time_t	i_mtime;
 	/* the last time this inode changed */
@@ -132,7 +134,9 @@ struct ufs_minode {
 	/* file type and permission */
 	mode_t	i_mode;
 	/* the size of file */
-	off_t	i_size;
+	unsigned int i_size;
+	/* # of disk blocks allocated */
+	unsigned int i_blocks;
 	/* the last time this file modifed */
 	time_t	i_mtime;
 	/* the last time this inode changed */
