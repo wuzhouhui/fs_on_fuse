@@ -1030,3 +1030,135 @@ int ufs_conv_oflag(int oflag)
 		ufsoflag |= UFS_O_TRUNC;
 	return(ufsoflag);
 }
+
+int ufs_shrink(struct ufs_minode *inode, off_t length)
+{
+	int	ret, i, flag, dflag;
+	unsigned int dnum, znum, *ptr, *dptr;
+	char	buf[UFS_BLK_SIZE], dbuf[UFS_BLK_SIZE];
+
+	log_msg("ufs_shrink called, ino = %d, length = %d",
+			(int)inode->i_ino, (int)length);
+
+	if (length >= inode->i_size)
+		return(0);
+
+	dnum = length / UFS_BLK_SIZE;
+	znum = ufs_dnum2znum(inode, dnum);
+
+	/* maybe hole */
+	if (znum) {
+		if ((ret = ufs_rd_zone(znum, buf, sizeof(buf))) < 0) {
+			log_msg("ufs_shrink: ufs_rd_zone error");
+			goto out;
+		}
+		memset(buf + length % UFS_BLK_SIZE, 0,
+				UFS_BLK_SIZE - length % UFS_BLK_SIZE);
+		if ((ret = ufs_wr_zone(znum, buf, sizeof(buf))) < 0) {
+			log_msg("ufs_shrink: ufs_wr_zone error");
+			goto out;
+		}
+	}
+
+	/* free the rest */
+	dnum = (length + UFS_BLK_SIZE - 1) / UFS_BLK_SIZE;
+
+	/* direct */
+	for (; dnum < 6; dnum++)
+		if (inode->i_zones[dnum]) {
+			ret = ufs_free_zone(inode->i_zones[dnum]);
+			if (ret < 0)
+				goto out;
+			inode->i_zones[dnum] = 0;
+			inode->i_blocks--;
+		}
+
+	/* indirect */
+	if (inode->i_zones[6]) {
+		ret = ufs_rd_zone(inode->i_zones[6], buf, sizeof(buf));
+		if (ret < 0)
+			goto out;
+		ptr = (unsigned int *)buf;
+		flag = (dnum == 6 ? 1 : 0);
+		for (; (dnum - 6) < UFS_ZNUM_PER_BLK; dnum++) {
+			if (!ptr[dnum - 6])
+				continue;
+			ret = ufs_free_zone(ptr[dnum - 6]);
+			if (ret < 0)
+				goto out;
+			ptr[dnum - 6] = 0;
+			inode->i_blocks--;
+		}
+		if (flag) {
+			ret = ufs_free_zone(inode->i_zones[6]);
+			if (ret < 0)
+				goto out;
+			inode->i_zones[6] = 0;
+			inode->i_blocks--;
+		} else {
+			ret = ufs_wr_zone(inode->i_zones[6], buf, sizeof(buf));
+			if (ret < 0)
+				goto out;
+		}
+	}
+
+	/* double indirect */
+	if (!inode->i_zones[7]) {
+		ret = 0;
+		goto out;
+	}
+	if ((ret = ufs_rd_zone(inode->i_zones[7], dbuf, sizeof(dbuf))) < 0)
+		goto out;
+	dptr = (unsigned int *)dbuf;
+	dnum -= 6 + UFS_ZNUM_PER_BLK;
+	dflag = (!dnum) ? 1 : 0;
+	while (dnum < UFS_ZNUM_PER_BLK * UFS_ZNUM_PER_BLK) {
+		if (!dptr[dnum / UFS_ZNUM_PER_BLK]) {
+			dnum = (dnum / UFS_ZNUM_PER_BLK + 1) *
+				UFS_ZNUM_PER_BLK;
+			continue;
+		}
+		ret = ufs_rd_zone(dptr[dnum / UFS_ZNUM_PER_BLK], buf,
+				sizeof(buf));
+		if (ret < 0)
+			goto out;
+		ptr = (unsigned int *)buf;
+		flag = (!(dnum % UFS_ZNUM_PER_BLK)) ? 1 : 0;
+		for (i = dnum % UFS_ZNUM_PER_BLK; i < UFS_ZNUM_PER_BLK;
+				i++) {
+			if (!ptr[i])
+				continue;
+			ret = ufs_free_zone(ptr[i]);
+			inode->i_blocks--;
+			ptr[i] = 0;
+		}
+		if (flag) {
+			ret = ufs_free_zone(dptr[dnum / UFS_ZNUM_PER_BLK]);
+			if (ret < 0)
+				goto out;
+			dptr[dnum / UFS_ZNUM_PER_BLK] = 0;
+			inode->i_blocks--;
+		} else {
+			ret = ufs_wr_zone(dptr[dnum / UFS_ZNUM_PER_BLK],
+					buf, sizeof(buf));
+			if (ret < 0)
+				goto out;
+		}
+		dnum += UFS_ZNUM_PER_BLK - (dnum % UFS_ZNUM_PER_BLK);
+	}
+	if (dflag) {
+		ret = ufs_free_zone(inode->i_zones[7]);
+		if (ret < 0)
+			goto out;
+		inode->i_zones[7] = 0;
+		inode->i_blocks--;
+	} else {
+		ret = ufs_wr_zone(inode->i_zones[7], dbuf, sizeof(dbuf));
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_shrink return %d", ret);
+	return(ret);
+}

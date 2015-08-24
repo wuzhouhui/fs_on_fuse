@@ -199,5 +199,6 @@ int ufs_truncatei(struct ufs_minode *);
 int ufs_is_dirempty(struct ufs_minode *);
 mode_t ufs_conv_fmode(mode_t);
 int ufs_conv_oflag(int oflag);
+int ufs_shrink(struct ufs_minode *, off_t);
 
 #endif /* end of _UFS_H */

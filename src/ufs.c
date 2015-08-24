@@ -1086,6 +1086,50 @@ out:
 	return(ret);
 }
 
+static int ufs_truncate(const char *path, off_t length)
+{
+	int	ret;
+	struct ufs_minode inode;
+
+	log_msg("ufs_truncate called, path = %s, length = %d",
+			!path ? "NULL" : path, (int)length);
+	if (!path || !path[0] || length < 0) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (strlen(path) >= UFS_PATH_LEN) {
+		ret = -ENAMETOOLONG;
+		goto out;
+	}
+	if (length > sb.s_max_size) {
+		ret = -EFBIG;
+		goto out;
+	}
+	if ((ret = ufs_path2i(path, &inode)) < 0) {
+		log_msg("ufs_truncate: ufs_path2i error");
+		goto out;
+	}
+	if (UFS_ISDIR(inode.i_mode)) {
+		ret = -EISDIR;
+		goto out;
+	}
+	if ((ret = ufs_shrink(&inode, length)) < 0) {
+		log_msg("ufs_truncate: ufs_do_trunc error");
+		goto out;
+	}
+	inode.i_size = length;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_truncate: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_truncate return %d", ret);
+	return(ret);
+}
+
 static int ufs_unlink(const char *path)
 {
 	int	ret;
@@ -1303,6 +1347,7 @@ struct fuse_operations ufs_oper = {
 	.rename		= ufs_rename,
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
+	.truncate	= ufs_truncate,
 	.unlink		= ufs_unlink,
 	.utimens	= ufs_utimens,
 	.write		= ufs_write,
