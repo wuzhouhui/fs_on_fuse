@@ -97,7 +97,7 @@
   函数调用的结果会写回到 \texttt{/dev/fuse}, 通过它返回给内核.
 \end{itemize}
 
-\subsection{fuse 文件系统简介}
+\subsection{FUSE 文件系统}
 \label{fuse-ux6587ux4ef6ux7cfbux7edfux7b80ux4ecb}
 
 \subsubsection{定义}\label{ux5b9aux4e49}
@@ -122,7 +122,7 @@
   用户\\执行文件系统操作的用户.
 \end{itemize}
 
-\subsubsection{什么是 FUSE?}\label{ux4ec0ux4e48ux662f-fuse}
+\subsubsection{FUSE 简介}\label{ux4ec0ux4e48ux662f-fuse}
 
 FUSE 是一个用户空间文件系统框架. 它由一个内核模块 (\texttt{fuse.ko}),
 用户空间 库函数 (\texttt{libfuse.*}), 一个挂载实用程序
@@ -284,7 +284,8 @@ mount -t fusectl none /sys/fs/fuse/connections
   通过 FUSE 控制文件系统 终止. 这是最有效的方案, 总能奏效.
 \end{itemize}
 
-\subsubsection{非特权挂载如何起作用}\label{ux975eux7279ux6743ux6302ux8f7dux5982ux4f55ux8d77ux4f5cux7528}
+\subsubsection{非特权挂载的工作方式}
+\label{subsub:how_do_non_privileged_mounts_work}
 
 因为 \texttt{mount()} 系统调用是一个特权操作, 所以需要
 \texttt{fusermount} 的帮助, \texttt{fusermount} 的 SUID 为 root.
@@ -302,7 +303,8 @@ mount -t fusectl none /sys/fs/fuse/connections
   挂载属主不能向其他用户或超级用户的进程施加未期望的行为.
 \end{enumerate}
 
-\subsubsection{如何满足需求?}\label{ux5982ux4f55ux6ee1ux8db3ux9700ux6c42}
+\subsubsection{需求的满足}
+\label{subsub:how_are_requirements_fulfilled}
 
 \def\labelenumi{\Alph{enumi})}
 \def\labelenumii{\arabic{enumii})}
@@ -364,11 +366,12 @@ mount -t fusectl none /sys/fs/fuse/connections
 查看挂载属主是否有足够的权限向访问文件系统的进程发送信号. 这是因为
 \texttt{SIGSTOP} 可以达到类似的效果.
 
-\subsubsection{我认为这些限制是不可接受的?}\label{ux6211ux8ba4ux4e3aux8fd9ux4e9bux9650ux5236ux662fux4e0dux53efux63a5ux53d7ux7684}
+\subsubsection{条件限制的放宽}
+\label{subsub:i_think_these_limitations_are_unacceptable}
 
 如果系统管理员足够相信用户 (或者可以通过某些方式来保证),
 确保系统进程永远 不会进入一个非特权挂载点, 那么可以使用
-\texttt{user\_allow\_other} 配置选项来放松最后一 条限制条件.
+\texttt{user\_allow\_other} 配置选项来放宽最后一 条限制条件.
 如果这个配置选项被设置了, 那么挂载属主可以设置 \texttt{allow\_other}
 选项来禁止掉对其他用户进程的检查.
 
@@ -833,64 +836,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 该文件从打开文件表中清除, 并 将该项置为空闲状态, 表项是否空闲的依据是
 \texttt{f\_count} 是否为 0.
 
-\subsection{功能函数
-(或命令)}\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
-
-\subsubsection[\texttt{format}]{\texttt{format} \textit{diskfile}}
-\begin{itemize}
-\item
-  功能: 格式化一个文件系统
-\item
-  命令行参数:
-
-  \begin{itemize}
-  \item
-    磁盘文件路径, 在挂载文件系统之后, 磁盘文件必须存放在另一个
-    文件系统上, 否则行为是未定义的.
-  \end{itemize}
-\item
-  程序执行结果: 由参数指定的文件被格式化成一个文件系统, 将作为磁盘使用.
-\item
-  注: 本文提到的磁盘都是指利用普通文件模拟的磁盘, ``普通文件''
-  来源于外部 文件系统 (例如 Ext4), 磁盘作为文件系统的私有数据使用.
-  一个文件或作为 磁盘使用的条件是:
-
-  \begin{itemize}
-  \item
-    大小在 1 MB 到 \texttt{UFS\_DISK\_MAX\_SIZE} MB 之间
-  \item
-    是普通文件
-  \item
-    用户可读写
-  \end{itemize}
-\item
-  函数过程
-
-  \begin{itemize}
-  \item
-    打开磁盘文件;
-  \item
-    获取磁盘文件元数据 (主要是磁盘文件大小);
-  \item
-    根据磁盘文件的大小分布, 分配文件系统各个功能区的大小;
-  \item
-    初始化一个超级块, 并将超级块写到磁盘文件的第一个块内;
-  \item
-    初始化 i 结点位图与逻辑块位图, 注意这两个位图的第一个位均保留不用,
-  \item
-    还要预留出一个 i 结点与逻辑块给根目录使用;
-  \item
-    将位图写盘;
-  \item
-    初始化一个根目录 i 结点;
-  \item
-    初始化根目录 (根目录至少包含 \texttt{.} 与 \texttt{..} 这两个目录项;
-  \item
-    将根目录写盘;
-  \item
-    返回;
-  \end{itemize}
-\end{itemize}
+\subsection{初始化函数}
 \subsubsection[\texttt{ufs\_read\_sb}]{\texttt{int ufs\_read\_sb(const char *diskname)}}
 \begin{itemize}
 \item
@@ -954,6 +900,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
+\subsection{对 i 结点操作的函数}\label{ux7cfbux7edfux8c03ux7528ux63a5ux53e3}
   \subsubsection[\texttt{ufs\_new\_inode}]{\texttt{unsigned int ufs\_new\_inode(void)}}
   \begin{itemize}
 \item
@@ -998,7 +945,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     i 节点原来就处理空闲状态, 返回 \texttt{-EAGAIN};
   \end{itemize}
 \end{itemize}
-\subsubsection[\texttt{ufs\_free\_inode}]{\texttt{int ufs\_rd\_inode(unsigned int inum, struct ufs\_dinode *inode)}}
+\subsubsection[\texttt{ufs\_rd\_inode}]{\texttt{int ufs\_rd\_inode(unsigned int inum, struct ufs\_dinode *inode)}}
 \begin{itemize}
 \item
   功能: 读取指定的 i 结点
@@ -1045,6 +992,8 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
+
+  \subsection{对块操作的函数}
   \subsubsection[\texttt{ufs\_new\_zone}]{\texttt{unsigned int ufs\_new\_zone(void)}}
   \begin{itemize}
 \item
@@ -1135,6 +1084,69 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
+  \subsubsection[\texttt{ufs\_rd\_blk}]{\texttt{int ufs\_rd\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
+  \begin{itemize}
+\item
+  功能: 从磁盘上读一块指定的磁盘块
+\item
+  输入参数:
+
+  \begin{itemize}
+  \item
+    \texttt{blk\_num}: 将被读的磁盘块块号
+  \item
+    \texttt{buf}: 存储磁盘块的缓冲区
+  \item
+    \texttt{size}: 缓冲区大小, 必须等于磁盘块大小
+  \end{itemize}
+\item
+  返回值: 若成功返回 0; 失败返回 \texttt{errno}. 以下情况返回失败:
+
+  \begin{itemize}
+  \item
+    \texttt{blk\_num} 无效, 返回 \texttt{-EINVAL};
+  \item
+    \texttt{buf} 为空, 返回 \texttt{-EINVAL};
+  \item
+    \texttt{size} 不等于磁盘块大小, 返回 \texttt{-EINVAL};
+  \item
+    被调用函数返回出错, 将错误值原样返回.
+  \end{itemize}
+\item
+  注: 磁盘文件上的每 512 字节都算作一个磁盘块,
+  而不管该磁盘块存放的是什么 内容, 下同.
+  \end{itemize}
+  \subsubsection[\texttt{ufs\_wr\_blk}]{\texttt{int ufs\_wr\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
+  \begin{itemize}
+\item
+  功能: 写一块指定的磁盘块
+\item
+  输入参数:
+
+  \begin{itemize}
+  \item
+    \texttt{blk\_num}: 将被写入的磁盘块的块号
+  \item
+    \texttt{buf}: 写入磁盘块的缓冲区
+  \item
+    \texttt{size}: 缓冲区大小, 必须等于磁盘块大小
+  \end{itemize}
+\item
+  返回值: 若成功返回 0; 失败返回 -1, 以下情况返回失败:
+
+  \begin{itemize}
+  \item
+    \texttt{blk\_num} 无效, 返回 \texttt{-EINVAL};
+  \item
+    \texttt{buf} 为空, 返回 \texttt{-EINVAL};
+  \item
+    \texttt{size} 不等于磁盘块大小, 返回 \texttt{-EINVAL};
+  \item
+    被调用函数返回出错, 将错误值原样返回.
+  \end{itemize}
+  \end{itemize}
+
+  \subsection{信息转换函数}
   \subsubsection[\texttt{ufs\_inum2bnum}]{\texttt{unsigned int ufs\_inum2bnum(unsigned int inum)}}
   \begin{itemize}
 \item
@@ -1205,67 +1217,6 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   返回值: 若数据块号与 i 结点有效, 文件大小未达到上限且磁盘有空闲逻辑块,
   则返回对应的逻辑块号; 否则返回 0.
   \end{itemize}
-  \subsubsection[\texttt{ufs\_rd\_blk}]{\texttt{int ufs\_rd\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
-  \begin{itemize}
-\item
-  功能: 从磁盘上读一块指定的磁盘块
-\item
-  输入参数:
-
-  \begin{itemize}
-  \item
-    \texttt{blk\_num}: 将被读的磁盘块块号
-  \item
-    \texttt{buf}: 存储磁盘块的缓冲区
-  \item
-    \texttt{size}: 缓冲区大小, 必须等于磁盘块大小
-  \end{itemize}
-\item
-  返回值: 若成功返回 0; 失败返回 \texttt{errno}. 以下情况返回失败:
-
-  \begin{itemize}
-  \item
-    \texttt{blk\_num} 无效, 返回 \texttt{-EINVAL};
-  \item
-    \texttt{buf} 为空, 返回 \texttt{-EINVAL};
-  \item
-    \texttt{size} 不等于磁盘块大小, 返回 \texttt{-EINVAL};
-  \item
-    被调用函数返回出错, 将错误值原样返回.
-  \end{itemize}
-\item
-  注: 磁盘文件上的每 512 字节都算作一个磁盘块,
-  而不管该磁盘块存放的是什么 内容, 下同.
-  \end{itemize}
-  \subsubsection[\texttt{ufs\_wr\_blk}]{\texttt{int ufs\_wr\_blk(unsigned int blk\_num, void *buf, size\_t size)}}
-  \begin{itemize}
-\item
-  功能: 写一块指定的磁盘块
-\item
-  输入参数:
-
-  \begin{itemize}
-  \item
-    \texttt{blk\_num}: 将被写入的磁盘块的块号
-  \item
-    \texttt{buf}: 写入磁盘块的缓冲区
-  \item
-    \texttt{size}: 缓冲区大小, 必须等于磁盘块大小
-  \end{itemize}
-\item
-  返回值: 若成功返回 0; 失败返回 -1, 以下情况返回失败:
-
-  \begin{itemize}
-  \item
-    \texttt{blk\_num} 无效, 返回 \texttt{-EINVAL};
-  \item
-    \texttt{buf} 为空, 返回 \texttt{-EINVAL};
-  \item
-    \texttt{size} 不等于磁盘块大小, 返回 \texttt{-EINVAL};
-  \item
-    被调用函数返回出错, 将错误值原样返回.
-  \end{itemize}
-  \end{itemize}
   \subsubsection[\texttt{ufs\_path2i}]{\texttt{int ufs\_path2i(const char *path, struct ufs\_minode *inode)}}
   \begin{itemize}
 \item
@@ -1321,6 +1272,42 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 函数过程与 \texttt{ufs\_path2i()} 非常类似, 但是将 \texttt{path}
   限制为目录文件.
   \end{itemize}
+  \subsubsection[\texttt{ufs\_conv\_fmode}]{\texttt{mode\_t ufs\_conv\_fmode(mode\_t mode)}}
+  \begin{itemize}
+\item
+  功能:
+  将标准的文件类型及访问权限标志转换成本文件系统支持的文件类型及访问权限标志;
+\item
+  输入参数:
+
+  \begin{itemize}
+  \item
+    \texttt{mode}: Linux 标准的文件类型及访问权限标志;
+  \end{itemize}
+\item
+  返回值: 本文件系统的标准文件类型与文件访问权限标志, 无出错标志.
+  \end{itemize}
+  \subsubsection[\texttt{ufs\_conv\_oflag}]{\texttt{int ufs\_conv\_oflag(int oflag)}}
+  \begin{itemize}
+\item
+  功能: 将 Linux 标准的文件打开标志转换成本文件系统的打开标志;
+\item
+  输入参数:
+
+  \begin{itemize}
+  \item
+    \texttt{oflag}: Linux 标准的文件打开标志;
+  \end{itemize}
+\item
+  返回值:
+
+  \begin{itemize}
+  \item
+    本文件系统的支持的打开标志, 无出错标志;
+  \end{itemize}
+\end{itemize}
+
+\subsection{操作目录项的函数}
   \subsubsection[\texttt{ufs\_find\_entry}]{\texttt{int ufs\_find\_entry(struct ufs\_minode *parent, const char *filename, struct ufs\_dir\_entry *ent)}}
   \begin{itemize}
 \item
@@ -1411,6 +1398,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
+  \subsection{其他帮助函数}
   \subsubsection[\texttt{ufs\_truncate}]{\texttt{int ufs\_truncate(struct ufs\_minode *iptr)}}
   \begin{itemize}
 \item
@@ -1460,42 +1448,65 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{inode} 包含除了 \texttt{.} 与 \texttt{..} 之外的目录项;
   \end{itemize}
   \end{itemize}
-  \subsubsection[\texttt{ufs\_conv\_fmode}]{\texttt{mode\_t ufs\_conv\_fmode(mode\_t mode)}}
-  \begin{itemize}
+
+\subsection{功能函数
+(或命令)}\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
+
+\subsubsection[\texttt{format}]{\texttt{format} \textit{diskfile}}
+\begin{itemize}
 \item
-  功能:
-  将标准的文件类型及访问权限标志转换成本文件系统支持的文件类型及访问权限标志;
+  功能: 格式化一个文件系统
 \item
-  输入参数:
+  命令行参数:
 
   \begin{itemize}
   \item
-    \texttt{mode}: Linux 标准的文件类型及访问权限标志;
+    磁盘文件路径, 在挂载文件系统之后, 磁盘文件必须存放在另一个
+    文件系统上, 否则行为是未定义的.
   \end{itemize}
 \item
-  返回值: 本文件系统的标准文件类型与文件访问权限标志, 无出错标志.
-  \end{itemize}
-  \subsubsection[\texttt{ufs\_conv\_oflag}]{\texttt{int ufs\_conv\_oflag(int oflag)}}
-  \begin{itemize}
+  程序执行结果: 由参数指定的文件被格式化成一个文件系统, 将作为磁盘使用.
 \item
-  功能: 将 Linux 标准的文件打开标志转换成本文件系统的打开标志;
-\item
-  输入参数:
+  注: 本文提到的磁盘都是指利用普通文件模拟的磁盘, ``普通文件''
+  来源于外部 文件系统 (例如 Ext4), 磁盘作为文件系统的私有数据使用.
+  一个文件或作为 磁盘使用的条件是:
 
   \begin{itemize}
   \item
-    \texttt{oflag}: Linux 标准的文件打开标志;
+    大小在 1 MB 到 \texttt{UFS\_DISK\_MAX\_SIZE} MB 之间
+  \item
+    是普通文件
+  \item
+    用户可读写
   \end{itemize}
 \item
-  返回值:
+  函数过程
 
   \begin{itemize}
   \item
-    本文件系统的支持的打开标志, 无出错标志;
+    打开磁盘文件;
+  \item
+    获取磁盘文件元数据 (主要是磁盘文件大小);
+  \item
+    根据磁盘文件的大小分布, 分配文件系统各个功能区的大小;
+  \item
+    初始化一个超级块, 并将超级块写到磁盘文件的第一个块内;
+  \item
+    初始化 i 结点位图与逻辑块位图, 注意这两个位图的第一个位均保留不用,
+  \item
+    还要预留出一个 i 结点与逻辑块给根目录使用;
+  \item
+    将位图写盘;
+  \item
+    初始化一个根目录 i 结点;
+  \item
+    初始化根目录 (根目录至少包含 \texttt{.} 与 \texttt{..} 这两个目录项;
+  \item
+    将根目录写盘;
+  \item
+    返回;
   \end{itemize}
 \end{itemize}
-
-\subsection{系统调用接口}\label{ux7cfbux7edfux8c03ux7528ux63a5ux53e3}
 
 \subsubsection[\texttt{creat}]{\texttt{int creat(const char *path, mode\_t mode)}}
 \begin{itemize}
