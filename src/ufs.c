@@ -359,6 +359,8 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 	statptr->st_size = inode.i_size;
 	statptr->st_ctime = inode.i_ctime;
 	statptr->st_mtime = inode.i_mtime;
+	statptr->st_blksize = UFS_BLK_SIZE;
+	statptr->st_blocks = inode.i_blocks;
 	ret = 0;
 out:
 	log_msg("ufs_getattr return %d", ret);
