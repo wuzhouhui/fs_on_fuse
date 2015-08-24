@@ -385,3 +385,30 @@
       `-errno`; 成功返回 0;
     - 若 `datasync` 为 0, 调用 `fsync(sb.s_fd)`, 若函数出错, 返回 `-errno`;
       成功返回 0;
+
+* `int truncate(const char *path, off_t length)`
+  + 功能: 将文件截断成某一特定的长度;
+  + 输入参数:
+    - `path`: 被截断的文件路径;
+    - `length`: 截断后的长度;
+  + 返回值:
+    - 若成功返回 0;
+    - `-EACCES`: 用户对路径中的某一目录无搜索权限, 或用户对文件无写权限;
+    - `-EFBIG`: 参数 `length` 大于文件系统所能支持的最大长度;
+    - `-EINVAL`: `path` 为空, 或长度为 0, 或 `length` 为负;
+    - `-EIO`: 发生了一个 I/O 错误;
+    - `-EISDIR`: `path` 引用的是目录文件;
+    - `-ENAMETOOLONG`: 文件名或路径名过长;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件;
+    - `-ENOENT`: 路径中的某个成分不存在;
+  + 函数过程:
+    - 若 `path` 为空, 或长度为 0, 或 `length` 小于 0, 返回 `-EINVAL`;
+    - 若 `path` 长度超过最大路径名长度, 返回 `-ENAMETOOLONG`;
+    - 若 `length` 大于文件系统所能支持的最大长度, 返回 `-EFBIG`;
+    - 调用 `ufs_path2i(path, inode)` 获取文件的 i 结点, 若返回出错, 原样 
+      返回错误者;
+    - 若 文件是一个目录文件, 返回 `-EISDIR`;
+    - 若文件大小大于 `length`, 将大于 `length` 的部分释放或清零;
+      将文件大小设置为 `length`;
+    - 更新 文件的时间信息, 将 i 结点写盘, 若函数出错, 原样返回错误值;
+    - 返回;
