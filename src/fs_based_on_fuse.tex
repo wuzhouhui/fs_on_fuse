@@ -757,11 +757,11 @@ struct ufs_minode {
 \end{center}
 
 如果存放逻辑块号的存储单元的值为 0, 说明该单元空闲.
-很容易可以算出一个本文件系统在 32 位平台上所能支持的最大文件为
+很容易可以算出本文件系统在 32 位平台上所能支持的最大文件大小为
 \texttt{(6 + 512/4 + (512/4) * (512/4)) * 512 = 8259 kB}.
 \texttt{struct ufs\_minode} 结构中多出来的信息一方面是为了避免重复计算,
 另一方面是为完成某些功能, 例如当 i 结点 的链接数为 0 且引用次数为 0 时,
-才可删除文件并回收资源, ``引用次数'' 指的是 打开文件表
+才可删除文件并回收它占用的逻辑块与 i 结点, ``引用次数'' 指的是打开文件表
 \texttt{ufs\_open\_files} 中指向该 i 结点的项数.
 
 \subsubsection{目录项}\label{ux76eeux5f55ux9879}
@@ -872,7 +872,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     获取磁盘文件元数据 (主要是磁盘文件大小);
   \item
-    根据磁盘文件的大小分布, 分配文件系统各个功能式的大小;
+    根据磁盘文件的大小分布, 分配文件系统各个功能区的大小;
   \item
     初始化一个超级块, 并将超级块写到磁盘文件的第一个块内;
   \item
@@ -1135,7 +1135,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
-  \subsubsection[\texttt{inum2bnum}]{\texttt{unsigned int inum2bnum(unsigned int inum)}}
+  \subsubsection[\texttt{ufs\_inum2bnum}]{\texttt{unsigned int ufs\_inum2bnum(unsigned int inum)}}
   \begin{itemize}
 \item
   功能: 计算指定的 i 结点所在的磁盘块块号
@@ -1153,7 +1153,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   注: 磁盘的第一个块被超级块占用, 故 0 号磁盘块不会被用到, 可用
   作指示错误的返回值.
   \end{itemize}
-  \subsubsection[\texttt{znum2bnum}]{\texttt{unsigned int znum2bnum(unsigned int zone\_num)}}
+  \subsubsection[\texttt{ufs\_znum2bnum}]{\texttt{unsigned int ufs\_znum2bnum(unsigned int zone\_num)}}
   \begin{itemize}
 \item
   功能: 计算指定的逻辑块所在的磁盘块块号
@@ -1168,7 +1168,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   返回值: 编号为 \texttt{zone\_num} 的逻辑块所在的磁盘块块号. 若
   \texttt{zone\_num} 无效则返回 0.
   \end{itemize}
-  \subsubsection[\texttt{dnum2znum}]{\texttt{unsigned int dnum2znum(struct ufs\_minode *inode, unsigned int data\_num)}}
+  \subsubsection[\texttt{ufs\_dnum2znum}]{\texttt{unsigned int ufs\_dnum2znum(struct ufs\_minode *inode, unsigned int data\_num)}}
 \begin{itemize}
 \item
   功能: 计算指定的数据块所在的逻辑块号
