@@ -2134,8 +2134,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     \texttt{-ENOSPC}: 磁盘空间不足;
   \item
-    \texttt{-EINVAL}: \texttt{buf} 为空, 或 \texttt{size} 小于等于 0, 或
-    \texttt{offset} 超过文件大小;
+    \texttt{-EINVAL}: \texttt{buf} 为空, 或 \texttt{size} 小于等于 0;
   \item
     \texttt{-EFBIG}: 文件过大;
   \end{itemize}
@@ -2149,8 +2148,6 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     若 \texttt{buf} 为空, 或 \texttt{size} 小于等于 0, 返回
     \texttt{-EINVAL};
-  \item
-    若 \texttt{offset} 大于等于文件大小, 返回 \texttt{-EINVAL};
   \item
     将文件的当前读写偏移量 \texttt{pos} 设置为 \texttt{offset},
     若打开文件时指定了 \texttt{UFS\_O\_APPEND}, 将 \texttt{pos}
@@ -2185,7 +2182,8 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 
   \includegraphics[width=15cm]{./images/./write_2.png}
   \end{itemize}
-  \subsubsection[\texttt{read}]{\texttt{int read(int fd, void *buf, size\_t size)}}
+  \subsubsection[\texttt{read}]{\texttt{int read(int fd, void *buf,
+  size\_t size, off\_t offset)}}
   \begin{itemize}
 \item
   功能: 读一个文件;
@@ -2199,6 +2197,8 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{buf}: 数据缓冲区;
   \item
     \texttt{size}: 期望读到的字节数;
+  \item
+    \texttt{offset}: 读位置在文件中的偏移量;
   \end{itemize}
 \item
   返回值:
@@ -2226,7 +2226,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     若 \texttt{ufs\_open\_files{[}fd{]}.f\_inode} 引用的是一个目录文件,
     返回 \texttt{-EISDIR};
   \item
-    获取文件的当前读偏移量 \texttt{pos};
+      设置文件的当前读位置偏移量 \texttt{pos} 为 \texttt{offset}
   \item
     当未遇到文件末尾且未读满 \texttt{size} 个字节时, 循环;
   \item
