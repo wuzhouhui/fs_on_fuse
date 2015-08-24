@@ -359,6 +359,8 @@ static int ufs_getattr(const char *path, struct stat *statptr)
 	statptr->st_size = inode.i_size;
 	statptr->st_ctime = inode.i_ctime;
 	statptr->st_mtime = inode.i_mtime;
+	statptr->st_blksize = UFS_BLK_SIZE;
+	statptr->st_blocks = inode.i_blocks;
 	ret = 0;
 out:
 	log_msg("ufs_getattr return %d", ret);
@@ -648,11 +650,16 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	pos = offset;
 	while (s < size && pos < iptr->i_size) {
 		znum = ufs_dnum2znum(iptr, pos >> UFS_BLK_SIZE_SHIFT);
-		if (!znum)
-			break;
-		if ((ret = ufs_rd_zone(znum, block, sizeof(block))) < 0) {
-			log_msg("ufs_read: ufs_rd_zone error");
-			goto out;
+
+		if (!znum) {
+			/* there is an hole in the file */
+			memset(block, 0, sizeof(block));
+		} else {
+			ret = ufs_rd_zone(znum, block, sizeof(block));
+			if (ret < 0) {
+				log_msg("ufs_read: ufs_rd_zone error");
+				goto out;
+			}
 		}
 		p = pos % UFS_BLK_SIZE;
 		c = UFS_BLK_SIZE - p;
@@ -1228,12 +1235,6 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 	}
 	if (size <= 0) {
 		log_msg("ufs_write: size is less than or equals to zero");
-		ret = -EINVAL;
-		goto out;
-	}
-	/* we don't support hole */
-	if (offset > ufs_open_files[fi->fh].f_inode.i_size) {
-		log_msg("ufs_write: offset larger than file's size");
 		ret = -EINVAL;
 		goto out;
 	}

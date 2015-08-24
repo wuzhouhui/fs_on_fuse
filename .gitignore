@@ -10,6 +10,7 @@ fs_on_fuse.toc
 *.log1
 *.pdf
 *.aux
+*
 *.exe
 Makefile
 *.odt

@@ -477,6 +477,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 		if (ret == 0 && creat) {
 			if ((ret = ufs_new_zone()) == 0)
 				goto out;
+			inode->i_blocks++;
 			inode->i_zones[dnum] = ret;
 			if (ufs_wr_inode(inode) < 0) {
 				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
@@ -495,6 +496,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 				log_msg("_ufs_dnum2znum: ufs_new_zone return 0");
 				goto out;
 			}
+			inode->i_blocks++;
 			inode->i_zones[6] = ret;
 			if (ufs_wr_inode(inode) < 0) {
 				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
@@ -513,6 +515,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 		if (ret == 0 && creat) {
 			if ((ret = ufs_new_zone()) == 0)
 				goto out;
+			inode->i_blocks++;
 			((unsigned int *)buf)[dnum] = ret;
 			if (ufs_wr_zone(inode->i_zones[6], buf, sizeof(buf)) < 0) {
 				log_msg("_ufs_dnum2znum: ufs_wr_inode error");
@@ -531,6 +534,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 			log_msg("_ufs_dnum2znum: ufs_new_inode return 0");
 			goto out;
 		}
+		inode->i_blocks++;
 		inode->i_zones[7] = ret;
 		if (ufs_wr_inode(inode) < 0) {
 			log_msg("_ufs_dnum2znum: ufs_wr_inode error for inode"
@@ -553,6 +557,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 					"1st level of double");
 			goto out;
 		}
+		inode->i_blocks++;
 		((unsigned int *)buf)[dnum / UFS_ZNUM_PER_BLK] = ret;
 		if (ufs_wr_zone(inode->i_zones[7], buf, sizeof(buf)) < 0) {
 			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
@@ -573,6 +578,7 @@ static unsigned int _ufs_dnum2znum(struct ufs_minode *inode, unsigned int dnum, 
 					"2nd level of double");
 			goto out;
 		}
+		inode->i_blocks++;
 		((unsigned int *)buf)[dnum % UFS_ZNUM_PER_BLK] = ret;
 		if (ufs_wr_zone(znum, buf, sizeof(buf)) < 0) {
 			log_msg("_ufs_dnum2znum: ufs_wr_zone error");
