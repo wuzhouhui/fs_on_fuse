@@ -1231,12 +1231,6 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EINVAL;
 		goto out;
 	}
-	/* we don't support hole */
-	if (offset > ufs_open_files[fi->fh].f_inode.i_size) {
-		log_msg("ufs_write: offset larger than file's size");
-		ret = -EINVAL;
-		goto out;
-	}
 
 	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ?
 			ufs_open_files[fi->fh].f_inode.i_size :
