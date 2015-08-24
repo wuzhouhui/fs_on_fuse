@@ -945,15 +945,15 @@ out:
 	return(ret);
 }
 
-int ufs_truncate(struct ufs_minode *iptr)
+int ufs_truncatei(struct ufs_minode *iptr)
 {
 	int	ret, i;
 
-	log_msg("ufs_truncate called, iptr->i_ino = %u", iptr == NULL ?
+	log_msg("ufs_truncatei called, iptr->i_ino = %u", iptr == NULL ?
 			0 : (unsigned int)iptr->i_ino);
 
 	if (iptr == NULL) {
-		log_msg("ufs_truncate: iptr is NULL");
+		log_msg("ufs_truncatei: iptr is NULL");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -961,30 +961,30 @@ int ufs_truncate(struct ufs_minode *iptr)
 		if (iptr->i_zones[i] == 0)
 			continue;
 		if ((ret = ufs_free_zone(iptr->i_zones[i])) < 0) {
-			log_msg("ufs_truncate: ufs_free_zone error for "
+			log_msg("ufs_truncatei: ufs_free_zone error for "
 					"zone %d", (int)iptr->i_zones[i]);
 			goto out;
 		}
 	}
 	if ((ret = ufs_free_ind(iptr->i_zones[6])) < 0) {
-		log_msg("ufs_truncate: ufs_free_ind error");
+		log_msg("ufs_truncatei: ufs_free_ind error");
 		goto out;
 	}
 	if ((ret = ufs_free_dind(iptr->i_zones[7])) < 0) {
-		log_msg("ufs_truncate: ufs_free_dind error");
+		log_msg("ufs_truncatei: ufs_free_dind error");
 		goto out;
 	}
 	memset(&iptr->i_zones, 0, sizeof(iptr->i_zones));
 	iptr->i_size = 0;
 	iptr->i_mtime = iptr->i_ctime = time(NULL);
 	if ((ret = ufs_wr_inode(iptr)) < 0) {
-		log_msg("ufs_truncate: ufs_wr_inode error");
+		log_msg("ufs_truncatei: ufs_wr_inode error");
 		goto out;
 	}
 	ret = 0;
 
 out:
-	log_msg("ufs_truncate return %d", ret);
+	log_msg("ufs_truncatei return %d", ret);
 	return(ret);
 }
 

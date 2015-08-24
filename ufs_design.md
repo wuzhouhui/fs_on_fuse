@@ -137,7 +137,7 @@
     - 调用 `ufs_rm_entry(parinode, entry)`, 从父目录中删除一个目录项, 若函数出错, 原样返回错误值.
     - 调用 `ufs_wr_inode(parinode)` 将父目录 i 结点写盘;
     - 为 `inode.i_nlink` 减一, 减 1 后不为零, 调用 `ufs_wr_inode(inode)` 将 i 结点写盘; 若为 0, 调用 
-      `ufs_truncate(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
+      `ufs_truncatei(inode)` 将文件截断, 若出错, 原样返回错误值, 截断后调用 `ufs_free_inode(inode.i_ino)` 释放
       i 结点.
     - 返回
 * `int rmdir(const char *path)`
@@ -164,7 +164,7 @@
     - 调用 `ufs_dir2i(dir, parinode)`, 获取父目录的 i 结点, 若函数出错, 原样返回错误值;
     - 调用 `ufs_rm_entry(parinode, ent)` 移除将被删除的目录的目录项, 若函数出错, 原样返回错误值;
     - 调用 `ufs_wr_inode(parinode)` 将父目录的 i 结点写盘;
-    - 调用 `ufs_truncate(inode)`, 释放将被删除的目录占用的数据块;
+    - 调用 `ufs_truncatei(inode)`, 释放将被删除的目录占用的数据块;
     - 调用 `ufs_free_inode(inode)` , 释放目录的 i 结点;
     - 返回.
 
@@ -194,7 +194,7 @@
     - 调用 `ufs_path2i(path, inode)`, 获取文件的 i 结点点, 若函数出错, 原样返回错误值;
     - 若 `flag` 包含写操作 (`UFS_O_WRONLY`, `UFS_O_RDWR` 等), 而 `path` 是一个目录文件, 返回 `-EISDIR`;
     - 若 `flag` 指定了 `UFS_O_DIR`, 但 `path` 不是一个目录文件, 返回 `-ENOTDIR`;
-    - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncate(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错, 原样返回错误值;
+    - 若 `flag` 指定了 `UFS_O_TRUNC`, 则调用 `ufs_truncatei(inode)` 与 `ufs_wr_inode(inode)`, 若函数出错, 原样返回错误值;
     - 初始化 `ufs_open_files[fd]`, 返回.
 
 * `int write(int fd, const void *buf, size_t size, off_t offset)`

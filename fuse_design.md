@@ -425,7 +425,7 @@
   + 没有磁盘空间存放目录项, 返回 `-ENOSPC`;
   + 被调用函数返回出错, 将错误值原样返回.
 
-### `int ufs_truncate(struct ufs_minode *iptr)`
+### `int ufs_truncatei(struct ufs_minode *iptr)`
 * 功能: 释放 i 结点占用的所有数据块
 * 输入参数:
   + `iptr`: 将被截断的 i 结点指针;
