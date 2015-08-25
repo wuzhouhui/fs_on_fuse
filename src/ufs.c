@@ -609,6 +609,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		struct fuse_file_info *fi)
 {
 	int	ret = 0;
+	mode_t	acc;
 	off_t	pos, p;
 	size_t	s, c;
 	struct ufs_minode *iptr;
@@ -643,6 +644,18 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	}
 	if (!buf || !size) {
 		ret = 0;
+		goto out;
+	}
+
+	if (getuid() == iptr->i_uid)
+		acc = iptr->i_mode >> 6;
+	else if (getgid() == iptr->i_gid)
+		acc = iptr->i_mode >> 3;
+	else
+		acc = iptr->i_mode;
+	acc &= 0x7;
+	if (!(acc & R_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
