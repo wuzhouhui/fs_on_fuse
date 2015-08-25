@@ -1,7 +1,8 @@
 ### 基于 fuse 的用户空间文件系统
 
 #### 编译与运行环境
-Ubuntu 14.04 32bits, fuse-2.9.4 (Ubuntu 14.04 预装了 fuse).
+* Ubuntu 14.04 32bits
+* Fuse-2.9.4 (Ubuntu 14.04 预装了 Fuse).
 
 #### 编译
 	cd src; make
@@ -10,10 +11,13 @@ Ubuntu 14.04 32bits, fuse-2.9.4 (Ubuntu 14.04 预装了 fuse).
 	dd if=/dev/zero of=disk bs=1M count=30
 	src/format disk
 
-#### 将文件系统挂到 `mnt` 目录
+#### 把文件系统挂载到 `mnt` 目录
 	src/ufs mnt disk
 
 现在, 文件系统就开始运行了, 你可以像访问普通文件系统那样访问它.
+
+#### 卸载文件系统
+	fusermount -u mnt
 
 #### 注意事项
 本文件系统还未完全支持所有的与文件系统有关的系统调用 (例如符号链接), 目前
