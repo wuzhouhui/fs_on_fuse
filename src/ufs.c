@@ -820,6 +820,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		ret = -EINVAL;
 		goto out;
 	}
+	if (!strcmp(oldpath, "/") || !strcmp(newpath, "/")) {
+		ret = -EBUSY;
+		goto out;
+	}
 	if (strlen(oldpath) >= UFS_PATH_LEN || strlen(newpath) >=
 			UFS_PATH_LEN) {
 		log_msg("path name is too long");
