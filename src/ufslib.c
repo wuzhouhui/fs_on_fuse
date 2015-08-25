@@ -670,6 +670,7 @@ out:
 int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
+	mode_t acc;
 	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	off_t	size;
@@ -692,6 +693,19 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 		log_msg("ufs_rm_entry: inode %u is not diectory",
 				(unsigned int)dir->i_ino);
 		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/* access permission check */
+	if (getuid() == dir->i_uid)
+		acc = dir->i_mode >> 6;
+	else if (getgid() == dir->i_gid)
+		acc = dir->i_mode >> 3;
+	else
+		acc = dir->i_mode;
+	acc &= 0x7;
+	if (!(acc & W_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
