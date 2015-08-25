@@ -386,7 +386,7 @@ static int ufs_link(const char *oldpath, const char *newpath)
 		log_msg("ufs_link: ufs_path2i error");
 		goto out;
 	}
-	if (UFS_ISREG(oldi.i_mode)) {
+	if (UFS_ISDIR(oldi.i_mode)) {
 		ret = -EPERM;
 		goto out;
 	}
