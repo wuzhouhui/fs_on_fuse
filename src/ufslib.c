@@ -1156,7 +1156,8 @@ int ufs_shrink(struct ufs_minode *inode, off_t length)
 		inode->i_blocks--;
 	} else {
 		ret = ufs_wr_zone(inode->i_zones[7], dbuf, sizeof(dbuf));
-		goto out;
+		if (ret < 0)
+			goto out;
 	}
 	ret = 0;
 
