@@ -670,6 +670,7 @@ out:
 int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
+	mode_t acc;
 	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	off_t	size;
@@ -692,6 +693,19 @@ int ufs_rm_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 		log_msg("ufs_rm_entry: inode %u is not diectory",
 				(unsigned int)dir->i_ino);
 		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/* access permission check */
+	if (getuid() == dir->i_uid)
+		acc = dir->i_mode >> 6;
+	else if (getgid() == dir->i_gid)
+		acc = dir->i_mode >> 3;
+	else
+		acc = dir->i_mode;
+	acc &= 0x7;
+	if (!(acc & W_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
@@ -762,6 +776,7 @@ out:
 int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 {
 	int	ret, i;
+	mode_t	acc;
 	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	struct ufs_dir_entry *de;
@@ -783,6 +798,19 @@ int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 		log_msg("ufs_add_entry: inode %u is not diectory",
 				(unsigned int)dir->i_ino);
 		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/* access permission check */
+	if (getuid() == dir->i_uid)
+		acc = dir->i_mode >> 6;
+	else if (getgid() == dir->i_gid)
+		acc = dir->i_mode >> 3;
+	else
+		acc = dir->i_mode;
+	acc &= 0x7;
+	if (!(acc & W_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
@@ -892,6 +920,7 @@ int ufs_find_entry(struct ufs_minode *par, const char *file,
 {
 	off_t	i, j;
 	int	ret;
+	mode_t	acc;
 	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	struct ufs_dir_entry *de;
@@ -907,6 +936,19 @@ int ufs_find_entry(struct ufs_minode *par, const char *file,
 
 	if (!UFS_ISDIR(par->i_mode)) {
 		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/* access permission check */
+	if (getuid() == par->i_uid)
+		acc = par->i_mode >> 6;
+	else if (getgid() == par->i_gid)
+		acc = par->i_mode >> 3;
+	else
+		acc = par->i_mode;
+	acc &= 0x7;
+	if ((acc & (R_OK | X_OK)) != (R_OK | X_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
