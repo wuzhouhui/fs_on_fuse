@@ -1350,13 +1350,12 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		}
 		s += c;
 		pos += c;
-		if (pos > iptr->i_size) {
+		if (pos > iptr->i_size)
 			iptr->i_size = pos;
-			if ((ret = ufs_wr_inode(iptr)) < 0) {
-				log_msg("ufs_write: ufs_wr_inode error");
-				goto out;
-			}
-		}
+	}
+	if ((ret = ufs_wr_inode(iptr)) < 0) {
+		log_msg("ufs_write: ufs_wr_inode error");
+		goto out;
 	}
 	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_APPEND))
 		ufs_open_files[fi->fh].f_pos = pos;
