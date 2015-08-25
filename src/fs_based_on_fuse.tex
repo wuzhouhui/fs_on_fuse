@@ -2946,14 +2946,31 @@ out:
 
 \subsubsection{空洞文件}
 \begin{itemize}
-    \item 创建一个空文件, 然后在它的 512 偏移处写一个字节 \verb'w': \\
+    \item 创建一个空文件, 然后在它的 512 偏移处写一个字节 : 
+        \verb'./write mnt/hole 512 w' \\
         \includegraphics[width=14cm]{./images/./hole_t1.png} \\
         虽然文件大小为 513 字节, 但只占用了一个数据块 (用于存放写入的
-        那个字节)
+        那个字节), 从偏移 0 到偏移 511 都是空洞区, 它不占用磁盘空间.
     \item 读取含有空洞的文件, 将读取的内容写到另一个文件中: \\
         \includegraphics[width=14cm]{./images/./hole_t2.png}\\
         读取文件的空洞时, 将读到值为 0 的字节, 文件 \verb'nohole' 不含空洞,
         它占用 2 个数据块.
+\end{itemize}
+
+\subsubsection{设置文件长度}
+\begin{itemize}
+    \item 创建一个足够大的文件: \texttt{dd if=/dev/zero of=file bs=1024 
+        count=6}, 然后将其截断至 512 字节大小 \texttt{truncate -s 512 
+        file} \\
+        \includegraphics[width=14cm]{./images/truncate_t1.png} \\
+        从上图可以看到, 文件现在的长度是 512, 占用 1 个块.
+    \item 加大文件的长度: \texttt{truncate -s 1024 file} \\
+        \includegraphics[width=14cm]{./images/truncate_t2.png} \\
+        从偏移 512 到偏移 1023 都是空洞区, 所以文件长度虽然为 1024, 但
+        只占用一个块 (512 字节)
+    \item 把文件截成 0: \texttt{truncate -s 0 file} \\
+        \includegraphics[width=14cm]{./images/truncate_t3.png} \\
+        文件所有的数据块都被释放, 且长度为 0.
 \end{itemize}
 
 \subsubsection{极端条件测试}
