@@ -892,6 +892,7 @@ int ufs_find_entry(struct ufs_minode *par, const char *file,
 {
 	off_t	i, j;
 	int	ret;
+	mode_t	acc;
 	unsigned int dnum, znum;
 	char	buf[UFS_BLK_SIZE];
 	struct ufs_dir_entry *de;
@@ -907,6 +908,19 @@ int ufs_find_entry(struct ufs_minode *par, const char *file,
 
 	if (!UFS_ISDIR(par->i_mode)) {
 		ret = -ENOTDIR;
+		goto out;
+	}
+
+	/* access permission check */
+	if (getuid() == par->i_uid)
+		acc = par->i_mode >> 6;
+	else if (getgid() == par->i_gid)
+		acc = par->i_mode >> 3;
+	else
+		acc = par->i_mode;
+	acc &= 0x7;
+	if ((acc & (R_OK | X_OK)) != (R_OK | X_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
