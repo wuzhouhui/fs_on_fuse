@@ -45,7 +45,7 @@
 \subsubsection{内核模块}\label{ux5185ux6838ux6a21ux5757}
 
 内核模块由两个部分组成, 第一个是位于 \texttt{kernel/dev.c} 的
-\texttt{proc} 文件系统, 第 二个是位于 \texttt{kernel/file.c},
+\texttt{proc} 文件系统, 第二个是位于 \texttt{kernel/file.c},
 \texttt{kernel/inode.c}, \texttt{kernel/dir.c} 的文件系统 调用.
 
 \texttt{kernel/file.c}, \texttt{kernel/inode.c}, \texttt{kernel/dir.c}
@@ -74,7 +74,7 @@
   \texttt{fuse\_mount()} (\texttt{lib/mount.c}).
 \item
   \texttt{fuse\_mount()} 创建一对 UNIX 域套接字, 然后 \texttt{fork()} 并
-  \texttt{exec()} \texttt{fusermount} (\texttt{util/fusermount.c}),
+  \texttt{exec()} \texttt{fusermount} \\ (\texttt{util/fusermount.c}),
   通过环境变量 \texttt{FUSE\_COMMFD\_ENV} 将其中一个套接字传递 给
   \texttt{fusermount}.
 \item
@@ -2690,9 +2690,10 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \subsection{命名约定与编程风格}
 \subsubsection{命名约定}
 本文件系统独有的函数, 数据结构, 常量, 全局变量都冠有前缀 \verb'ufs_',
-例如 \verb'ufs_write()', \verb'struct ufs_minode', \verb'UFS_ROOT_INO',
-\verb'struct ufs_file ufs_open_files[]', 这么做是为了避免与系统类似的标识
-符重名或冲突.
+例如 \verb'ufs_write()', \texttt{struct ufs\_minode}, \verb'UFS_ROOT_INO',
+\texttt{struct ufs\_file ufs\_open\_files[]}, 这么做是为了避免与系统类
+似的标识符重名或冲突.
+
 \subsubsection{编程风格}
 为便于调试及分析函数调用过程, 当进入某个函数时, 打印一条日志, 日志包含有
 函数的名字, 关键参数的值. 当函数调用过程中发生错误时, 打印一条日志, 内容
