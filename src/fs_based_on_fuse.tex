@@ -1422,6 +1422,22 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     被调用函数返回出错, 将错误值原样返回.
   \end{itemize}
   \end{itemize}
+  \subsubsection[\texttt{ufs\_shrink}]{\texttt{int ufs\_shrink(struct
+  ufs\_minode *inode, off\_t length)}}
+  \begin{itemize}
+        \item 功能: 把文件缩短至某一长度;
+        \item 输入参数:
+        \begin{itemize}
+            \item \verb'inode': 文件的 i 结点指针;
+            \item \verb'length': 缩短后的长度;
+        \end{itemize}
+        \item 返回值:
+        \begin{itemize}
+            \item 若成功, 返回 0;
+            \item 被调用函数出错, 原样返回错误值;
+        \end{itemize}
+  \end{itemize}
+
   \subsubsection[\texttt{ufs\_is\_dirempty}]{\texttt{int ufs\_is\_dirempty(struct ufs\_minode *inode)}}
 
   \begin{itemize}
@@ -2549,6 +2565,54 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     函数体无实质性内容, 直接返回 0;
   \end{itemize}
   \end{itemize}
+
+  \subsubsection[\texttt{truncate}]{\texttt{int truncate(const char *path,
+      off\_t length)}}
+      \begin{itemize}
+            \item 功能: 将文件截断成某一特定的长度;
+            \item 输入参数:
+            \begin{itemize}
+                \item \texttt{path}: 被截断的文件路径;
+                \item \texttt{length}: 截断后的长度;
+            \end{itemize}
+            \item 返回值:
+            \begin{itemize}
+                \item 若成功返回 0;
+                \item \verb'-EACCES': 用户对路径中的某一目录无搜索权限,
+                    或用户对文件无写权限;
+                \item \verb'-EFBIG': 参数 \verb'length' 大于文件系统所能
+                    支持的最大长度;
+                \item \verb'-EINVAL': \verb'path' 为空, 或长度为 0, 或
+                    \verb'length' 为负;
+                \item \verb'-EIO': 发生了一个 I/O 错误;
+                \item \verb'-EISDIR': \verb'path' 引用的是目录文件;
+                \item \verb'-ENAMETOOLONG': 文件名或路径名过长;
+                \item \verb'-ENOTDIR': 路径中的某一前缀目录不是一个 
+                    目录文件;
+                \item \verb'-ENOENT': 路径中的某个成分不存在;
+            \end{itemize}
+            \item 函数过程:
+            \begin{itemize}
+                \item 若 \verb'path' 为空, 或长度为 0, 或 \verb'length'
+                    小于 0, 返回 \verb'-EINVAL';
+                \item 若 \verb'path' 长度超过最大文件名长度, 返回 
+                    \verb'-ENAMETOOLONG';
+                \item 若 \verb'length' 大于文件系统所能支持的最大长度,
+                    返回 \verb'-EFBIG';
+                \item 调用 \verb'ufs_path2i(path, inode)' 获取文件的 i 
+                    结点, 若返回出错, 原样返回错误值;
+                \item 若文件是一个目录文件, 返回 \verb'-EISDIR';
+                \item 若文件长度大于 \verb'length', 调用
+                    \verb'ufs_shrink(inode, length)', 把文件长度缩短,
+                    若返回出错, 原样返回错误值;
+                \item 把文件的长度设置为 \verb'length', 更新 i 结点的状态
+                    更改时间;
+                \item 检查文件是否已打开, 若是, 同步 i 结点;
+                \item 把 i 结点写盘, 若函数出错, 原样返回错误值;
+                \item 返回.
+            \end{itemize}
+      \end{itemize}
+
   \subsubsection[\texttt{fsync}]{\texttt{int fsync(const char *path, int datasync, struct fuse\_file\_info *fi)}}
 
   \begin{itemize}
