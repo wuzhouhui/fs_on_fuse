@@ -413,3 +413,37 @@
     - 更新 文件的时间信息, 将 i 结点写盘, 若函数出错, 原样返回错误值;
     - 检查文件是否已打开, 若是, 同步 i 结点;
     - 返回;
+
+* `int link(const char *oldpath, const char *newpath)`
+  + 功能: 创建一个硬链接;
+  + 输入参数:
+    - `oldpath`: 已存在的路径;
+    - `newpath`: 新的目录项;
+  + 返回值:
+    - 若成功, 返回 0;
+    - `-EACCES`: 用户对 `newpath` 的父目录无写权限, 或对 `oldpath` 与 
+      `newpath` 中的某一前缀目录无搜索权限;
+    - `-EEXIST`: `newpath` 已存在;
+    - `-EIO`: 发生了一个 I/O 错误;
+    - `-EMLINK`: 链接数超过最大值;
+    - `-ENAMETOOLONG`: 路径名或文件名过长;
+    - `-ENOENT`: `oldpath` 不存在, 或 `newpath` 的某一前缀目录不存在;
+    - `-ENOSPC`: 磁盘空间不足, 或 `newpath` 的父目录无多余的空间存放新目录
+      项;
+    - `-ENOTDIR`: 路径中的某一前缀目录不是一个目录文件;
+    - `-EPERM`: `oldpath` 引用的是目录文件;
+  + 函数过程:
+    - 若 `oldpath` (或 `newpath`) 为空, 或长度为 0, 返回 `-EINVAL`;
+    - 调用 `ufs_path2i(oldpath, oldi)`, 若函数出错, 原样返回错误值;
+    - 若 `oldpath` 引用的是目录文件, 返回 `-EPERM`;
+    - 若 `oldi` 的链接数已达到最大值, 返回 `-EMLINK`;
+    - 调用 `dirname(newpath)` 从 `newpath` 中分离出父目录路径, 调用 
+      `newname = basename(newpath)` 获取新路径的文件名;
+    - 调用 `ufs_dir2i(newpar, newpari)`, 获取 `newpath` 的父目录 i 结点,
+      若函数出错, 原样返回错误值;
+    - 调用 `ufs_find_entry(newpari, newname)`, 若返回值为 0, 返回
+      `-EEXIST`; 若 返回不是 `-ENOENT`, 原样返回错误值;
+    - 调用 `ufs_add_entry(newpari, ent)`, 在 `newpath` 的父目录中添加一个
+      新目录项, 并将父目录 i 结点写盘;
+    - 递增 `oldi` 的链接计数, 并将其写盘;
+    - 返回.
