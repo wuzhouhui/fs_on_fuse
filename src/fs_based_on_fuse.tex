@@ -1399,7 +1399,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
   \end{itemize}
   \subsection{其他帮助函数}
-  \subsubsection[\texttt{ufs\_truncate}]{\texttt{int ufs\_truncate(struct ufs\_minode *iptr)}}
+  \subsubsection[\texttt{ufs\_truncatei}]{\texttt{int ufs\_truncatei(struct ufs\_minode *iptr)}}
   \begin{itemize}
 \item
   功能: 释放 i 结点占用的所有数据块
@@ -1930,7 +1930,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     为 \texttt{inode.i\_nlink} 减 1, 减 1 后若不为零, 调用
     \texttt{ufs\_wr\_inode(inode)} 将 i 结点写盘; 若为 0, 调用
-    \texttt{ufs\_truncate(inode)} 将文件截断, 若出错, 原样返回错误值,
+    \texttt{ufs\_truncatei(inode)} 将文件截断, 若出错, 原样返回错误值,
     截断后调用 \\
     \texttt{ufs\_free\_inode(inode.i\_ino)} 释放 i 结点.
   \item
@@ -2007,7 +2007,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     调用 \texttt{ufs\_wr\_inode(parinode)} 将父目录的 i 结点写盘;
   \item
-    调用 \texttt{ufs\_truncate(inode)}, 释放将被删除的目录占用的数据块;
+    调用 \texttt{ufs\_truncatei(inode)}, 释放将被删除的目录占用的数据块;
   \item
     调用 \texttt{ufs\_free\_inode(inode)}, 释放目录的 i 结点;
   \item
@@ -2089,7 +2089,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     不是一个目录文件, 返回 \texttt{-ENOTDIR};
   \item
     若 \texttt{flag} 指定了 \texttt{UFS\_O\_TRUNC}, 则调用
-    \texttt{ufs\_truncate(inode)} 与 \texttt{ufs\_wr\_inode(inode)},
+    \texttt{ufs\_truncatei(inode)} 与 \texttt{ufs\_wr\_inode(inode)},
     若函数出错, 原样返回错误值;
   \item
     初始化 \texttt{ufs\_open\_files{[}fd{]}} 的各个字段, 返回
