@@ -367,6 +367,65 @@ out:
 	return(ret);
 }
 
+static int ufs_link(const char *oldpath, const char *newpath)
+{
+	int	ret;
+	struct ufs_minode oldi, newpari;
+	char	newname[UFS_NAME_LEN + 1], newpar[UFS_PATH_LEN + 1];
+	char	pathcpy[UFS_PATH_LEN + 1];
+	struct ufs_dir_entry ent;
+
+	log_msg("ufs_link called, oldpath = %s, newpath = %s",
+			!oldpath ? "NULL" : oldpath,
+			!newpath ? "NULL" : newpath);
+	if (!oldpath || !oldpath[0] || !newpath || !newpath[0]) {
+		ret = -EINVAL;
+		goto out;
+	}
+	if ((ret = ufs_path2i(oldpath, &oldi)) < 0) {
+		log_msg("ufs_link: ufs_path2i error");
+		goto out;
+	}
+	if (UFS_ISREG(oldi.i_mode)) {
+		ret = -EPERM;
+		goto out;
+	}
+	if (oldi.i_nlink > UFS_LINK_MAX) {
+		ret = -EMLINK;
+		goto out;
+	}
+	strcpy(pathcpy, newpath);
+	strcpy(newpar, dirname(pathcpy));
+	strcpy(pathcpy, newpath);
+	strncpy(newname, basename(pathcpy), UFS_NAME_LEN);
+	newname[UFS_NAME_LEN] = 0;
+	if ((ret = ufs_dir2i(newpar, &newpari)) < 0)
+		goto out;
+	ret = ufs_find_entry(&newpari, newname, &ent);
+	if (!ret) {
+		ret = -EEXIST;
+		goto out;
+	}
+	if (ret != -ENOENT)
+		goto out;
+	ent.de_inum = oldi.i_ino;
+	strcpy(ent.de_name, newname);
+	if ((ret = ufs_add_entry(&newpari, &ent)) < 0)
+		goto out;
+	if ((ret = ufs_wr_inode(&newpari)) < 0) {
+		log_msg("ufs_link: ufs_wr_inode error");
+		goto out;
+	}
+	oldi.i_nlink++;
+	if ((ret = ufs_wr_inode(&oldi)) < 0)
+		goto out;
+	ret = 0;
+
+out:
+	log_msg("ufs_link return %d", ret);
+	return(ret);
+}
+
 static int ufs_mkdir(const char *path, mode_t mode)
 {
 	int	ret;
@@ -1377,6 +1436,7 @@ struct fuse_operations ufs_oper = {
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
 	.getattr	= ufs_getattr,
+	.link		= ufs_link,
 	.mkdir		= ufs_mkdir,
 	.mknod		= ufs_mknod,
 	.open		= ufs_open,
