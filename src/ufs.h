@@ -29,6 +29,8 @@
 #define UFS_NAME_LEN        (32 - sizeof(unsigned int) - 1)
 /* max length of path, null terminator excluded */
 #define UFS_PATH_LEN	1024
+/* max number of links */
+#define UFS_LINK_MAX	128
 /* # inode per block */
 #define UFS_INUM_PER_BLK	(UFS_BLK_SIZE / sizeof(struct ufs_dinode))
 /* # zone nubmer per block */

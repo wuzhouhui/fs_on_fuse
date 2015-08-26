@@ -367,6 +367,66 @@ out:
 	return(ret);
 }
 
+static int ufs_link(const char *oldpath, const char *newpath)
+{
+	int	ret;
+	struct ufs_minode oldi, newpari;
+	char	newname[UFS_NAME_LEN + 1], newpar[UFS_PATH_LEN + 1];
+	char	pathcpy[UFS_PATH_LEN + 1];
+	struct ufs_dir_entry ent;
+
+	log_msg("ufs_link called, oldpath = %s, newpath = %s",
+			!oldpath ? "NULL" : oldpath,
+			!newpath ? "NULL" : newpath);
+	if (!oldpath || !oldpath[0] || !newpath || !newpath[0]) {
+		ret = -EINVAL;
+		goto out;
+	}
+	if ((ret = ufs_path2i(oldpath, &oldi)) < 0) {
+		log_msg("ufs_link: ufs_path2i error");
+		goto out;
+	}
+	if (UFS_ISDIR(oldi.i_mode)) {
+		ret = -EPERM;
+		goto out;
+	}
+	if (oldi.i_nlink > UFS_LINK_MAX) {
+		ret = -EMLINK;
+		goto out;
+	}
+	strcpy(pathcpy, newpath);
+	strcpy(newpar, dirname(pathcpy));
+	strcpy(pathcpy, newpath);
+	strncpy(newname, basename(pathcpy), UFS_NAME_LEN);
+	newname[UFS_NAME_LEN] = 0;
+	if ((ret = ufs_dir2i(newpar, &newpari)) < 0)
+		goto out;
+	ret = ufs_find_entry(&newpari, newname, &ent);
+	if (!ret) {
+		ret = -EEXIST;
+		goto out;
+	}
+	if (ret != -ENOENT)
+		goto out;
+	ent.de_inum = oldi.i_ino;
+	strcpy(ent.de_name, newname);
+	if ((ret = ufs_add_entry(&newpari, &ent)) < 0)
+		goto out;
+	if ((ret = ufs_wr_inode(&newpari)) < 0) {
+		log_msg("ufs_link: ufs_wr_inode error");
+		goto out;
+	}
+	oldi.i_nlink++;
+	oldi.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&oldi)) < 0)
+		goto out;
+	ret = 0;
+
+out:
+	log_msg("ufs_link return %d", ret);
+	return(ret);
+}
+
 static int ufs_mkdir(const char *path, mode_t mode)
 {
 	int	ret;
@@ -458,6 +518,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 
 	/* update parent directory's nlinks */
 	parinode.i_nlink++;
+	parinode.i_ctime = time(NULL);
 	if ((ret = ufs_wr_inode(&parinode)) < 0) {
 		log_msg("ufs_mkdir: ufs_wr_inode error for adding ..");
 		goto out;
@@ -820,6 +881,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 		ret = -EINVAL;
 		goto out;
 	}
+	if (!strcmp(oldpath, "/") || !strcmp(newpath, "/")) {
+		ret = -EBUSY;
+		goto out;
+	}
 	if (strlen(oldpath) >= UFS_PATH_LEN || strlen(newpath) >=
 			UFS_PATH_LEN) {
 		log_msg("path name is too long");
@@ -880,6 +945,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			strcpy(pathcpy, oldpath);
 			strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 			ent.de_name[UFS_NAME_LEN] = 0;
+			oppi.i_nlink--;
+			oppi.i_ctime = time(NULL);
 			if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
@@ -891,6 +958,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			ent.de_name[UFS_NAME_LEN] = 0;
 			if (oppi.i_ino == nppi.i_ino)
 				memcpy(&nppi, &oppi, sizeof(oppi));
+			nppi.i_nlink--;
+			nppi.i_ctime = time(NULL);
 			if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
@@ -904,6 +973,8 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 				goto out;
 			}
 			ent.de_inum = opi.i_ino;
+			nppi.i_nlink++;
+			nppi.i_ctime = time(NULL);
 			if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_add_entry error");
 				goto out;
@@ -973,6 +1044,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 	strcpy(pathcpy, oldpath);
 	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 	ent.de_name[UFS_NAME_LEN] = 0;
+	if (UFS_ISDIR(opi.i_mode)) {
+		oppi.i_nlink--;
+		oppi.i_ctime = time(NULL);
+	}
 	if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
@@ -983,6 +1058,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 	ent.de_name[UFS_NAME_LEN] = 0;
 	if (oppi.i_ino == nppi.i_ino)
 		memcpy(&nppi, &oppi, sizeof(oppi));
+	if (UFS_ISDIR(opi.i_mode)) {
+		nppi.i_nlink++;
+		nppi.i_ctime = time(NULL);
+	}
 	if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
@@ -1133,7 +1212,7 @@ static int ufs_truncate(const char *path, off_t length)
 		goto out;
 	}
 	inode.i_size = length;
-	inode.i_ctime = time(NULL);
+	inode.i_mtime = inode.i_ctime = time(NULL);
 
 	/* the file maybe opened */
 	for (i = 0; i < UFS_OPEN_MAX; i++)
@@ -1207,6 +1286,7 @@ static int ufs_unlink(const char *path)
 	}
 
 	if (--inode.i_nlink) {
+		inode.i_ctime = time(NULL);
 		if ((ret = ufs_wr_inode(&inode)) < 0) {
 			log_msg("ufs_unlink: ufs_wr_inode error");
 			goto out;
@@ -1350,9 +1430,12 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		}
 		s += c;
 		pos += c;
-		if (pos > iptr->i_size)
+		if (pos > iptr->i_size) {
 			iptr->i_size = pos;
+			iptr->i_ctime = time(NULL);
+		}
 	}
+	iptr->i_mtime = time(NULL);
 	if ((ret = ufs_wr_inode(iptr)) < 0) {
 		log_msg("ufs_write: ufs_wr_inode error");
 		goto out;
@@ -1373,6 +1456,7 @@ struct fuse_operations ufs_oper = {
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
 	.getattr	= ufs_getattr,
+	.link		= ufs_link,
 	.mkdir		= ufs_mkdir,
 	.mknod		= ufs_mknod,
 	.open		= ufs_open,
