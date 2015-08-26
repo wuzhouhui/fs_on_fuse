@@ -417,6 +417,7 @@ static int ufs_link(const char *oldpath, const char *newpath)
 		goto out;
 	}
 	oldi.i_nlink++;
+	oldi.i_ctime = time(NULL);
 	if ((ret = ufs_wr_inode(&oldi)) < 0)
 		goto out;
 	ret = 0;
