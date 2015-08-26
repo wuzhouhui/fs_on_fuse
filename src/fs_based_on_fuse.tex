@@ -697,7 +697,8 @@ i 结点或 逻辑块, 在初始化文件系统时, 这两位被初始化为 1.
 struct ufs_dinode {
     nlink_t i_nlink;    /* 链接数 */
     mode_t  i_mode;     /* 文件类型和访问权限 */
-    off_t   i_size;     /* 文件长度, 以字节计 */
+    unsigned int i_size;     /* 文件长度, 以字节计 */
+    unsigned int i_blocks; /* 文件占用的逻辑块块数 */
     time_t  i_mtime;    /* 文件内容最后一次被修改的时间 */
     time_t  i_ctime;    /* i 结点最后一次被修改的时间 */
     uid_t   i_uid;      /* 拥有此文件的用户 id */
@@ -716,7 +717,8 @@ struct ufs_dinode {
 struct ufs_minode {
     nlink_t i_nlink;    /* 链接数 */
     mode_t  i_mode;     /* 文件类型和访问权限 */
-    off_t   i_size;     /* 文件长度, 以字节计 */
+    unsigned int i_size;     /* 文件长度, 以字节计 */
+    unsigned int i_blocks; /* 文件占用的逻辑块块数 */
     time_t  i_mtime;    /* 文件内容最后一次被修改的时间 */
     time_t  i_ctime;    /* i 结点最后一次被修改的时间 */
     uid_t   i_uid;      /* 拥有此文件的用户 id */
@@ -725,8 +727,8 @@ struct ufs_minode {
      * 文件内容用到的逻辑块块号数组.
      *
      * 0-5: 直接块;
-     * 6: 间接块
-     * 7: 间间接块
+     * 6: 一次间接块
+     * 7: 二次间接块
      */
     unsigned int i_zones[8];
 
@@ -737,11 +739,11 @@ struct ufs_minode {
       * 位在 i 结点位图中的下标
       */
     unsigned int    i_ino;    
-    int i_refcnt;   /* i 结点被引用的次数 */
 };
 \end{verbatim}
 
 \texttt{i\_nlink} 是指向该 i 结点的目录项的个数, 可用于实现硬链接.
+\texttt{i\_blocks} 是该文件用到的逻辑块块数, 包括间接块.
 \texttt{i\_mode} 包含了有关文件属性与 权限的信息, 该字段包含的信息如下图
 
 \begin{center}
@@ -805,19 +807,21 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
         文件访问模式: 
         \begin{itemize}
             \item
-                \texttt{O\_RDONLY}: 只读打开
+                \texttt{UFS\_O\_RDONLY}: 只读打开
             \item
-                \texttt{O\_WRONLY}: 只写打开
+                \texttt{UFS\_O\_WRONLY}: 只写打开
             \item
-                \texttt{O\_RDWR}: 读写打开
+                \texttt{UFS\_O\_RDWR}: 读写打开
         \end{itemize}
     \item
         文件创建与控制标志: 
         \begin{itemize}
             \item
-                \texttt{O\_APPEND}: 追加写; 
+                \texttt{UFS\_O\_APPEND}: 追加写; 
             \item
-                \texttt{O\_TRUNC}:
+                \texttt{UFS\_O\_DIR}: 打开的是目录文件;
+            \item
+                \texttt{UFS\_O\_TRUNC}:
                 若打开方式包含写, 则截断文件;
         \end{itemize}
 \end{itemize}
