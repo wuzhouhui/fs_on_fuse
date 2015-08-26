@@ -518,6 +518,7 @@ static int ufs_mkdir(const char *path, mode_t mode)
 
 	/* update parent directory's nlinks */
 	parinode.i_nlink++;
+	parinode.i_ctime = time(NULL);
 	if ((ret = ufs_wr_inode(&parinode)) < 0) {
 		log_msg("ufs_mkdir: ufs_wr_inode error for adding ..");
 		goto out;
