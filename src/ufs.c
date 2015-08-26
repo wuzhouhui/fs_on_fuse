@@ -946,6 +946,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 			ent.de_name[UFS_NAME_LEN] = 0;
 			oppi.i_nlink--;
+			oppi.i_ctime = time(NULL);
 			if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
@@ -958,6 +959,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			if (oppi.i_ino == nppi.i_ino)
 				memcpy(&nppi, &oppi, sizeof(oppi));
 			nppi.i_nlink--;
+			nppi.i_ctime = time(NULL);
 			if ((ret = ufs_rm_entry(&nppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_rm_entry error");
 				goto out;
@@ -972,6 +974,7 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 			}
 			ent.de_inum = opi.i_ino;
 			nppi.i_nlink++;
+			nppi.i_ctime = time(NULL);
 			if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
 				log_msg("ufs_rename: ufs_add_entry error");
 				goto out;
@@ -1041,8 +1044,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 	strcpy(pathcpy, oldpath);
 	strncpy(ent.de_name, basename(pathcpy), UFS_NAME_LEN);
 	ent.de_name[UFS_NAME_LEN] = 0;
-	if (UFS_ISDIR(opi.i_mode))
+	if (UFS_ISDIR(opi.i_mode)) {
 		oppi.i_nlink--;
+		oppi.i_ctime = time(NULL);
+	}
 	if ((ret = ufs_rm_entry(&oppi, &ent)) < 0) {
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
@@ -1053,8 +1058,10 @@ static int ufs_rename(const char *oldpath, const char *newpath)
 	ent.de_name[UFS_NAME_LEN] = 0;
 	if (oppi.i_ino == nppi.i_ino)
 		memcpy(&nppi, &oppi, sizeof(oppi));
-	if (UFS_ISDIR(opi.i_mode))
+	if (UFS_ISDIR(opi.i_mode)) {
 		nppi.i_nlink++;
+		nppi.i_ctime = time(NULL);
+	}
 	if ((ret = ufs_add_entry(&nppi, &ent)) < 0) {
 		log_msg("ufs_rename: ufs_rm_entry error");
 		goto out;
