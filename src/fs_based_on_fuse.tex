@@ -65,7 +65,7 @@
 结构中, 这些要被写入的数据会通过 ``请求队列'' 与
 \texttt{request\_send()} 返回给系统调用.
 
-\subsubsection{fuse 库函数}\label{fuse-ux5e93ux51fdux6570}
+\subsubsection{FUSE 库函数}\label{fuse-ux5e93ux51fdux6570}
 
 \begin{itemize}
 \item
@@ -900,7 +900,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     返回.
   \end{itemize}
   \end{itemize}
-\subsection{对 i 结点操作的函数}\label{ux7cfbux7edfux8c03ux7528ux63a5ux53e3}
+\subsection{操作 i 结点的函数}\label{ux7cfbux7edfux8c03ux7528ux63a5ux53e3}
   \subsubsection[\texttt{ufs\_new\_inode}]{\texttt{unsigned int ufs\_new\_inode(void)}}
   \begin{itemize}
 \item
@@ -993,7 +993,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
   \end{itemize}
 
-  \subsection{对块操作的函数}
+  \subsection{操作块的函数}
   \subsubsection[\texttt{ufs\_new\_zone}]{\texttt{unsigned int ufs\_new\_zone(void)}}
   \begin{itemize}
 \item
@@ -1465,8 +1465,8 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \end{itemize}
   \end{itemize}
 
-\subsection{功能函数
-(或命令)}\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
+\subsection{系统调用 (或命令)}
+\label{ux529fux80fdux51fdux6570-ux6216ux547dux4ee4}
 
 \subsubsection[\texttt{format}]{\texttt{format} \textit{diskfile}}
 \begin{itemize}
