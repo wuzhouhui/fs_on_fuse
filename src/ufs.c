@@ -1430,9 +1430,12 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		}
 		s += c;
 		pos += c;
-		if (pos > iptr->i_size)
+		if (pos > iptr->i_size) {
 			iptr->i_size = pos;
+			iptr->i_ctime = time(NULL);
+		}
 	}
+	iptr->i_mtime = time(NULL);
 	if ((ret = ufs_wr_inode(iptr)) < 0) {
 		log_msg("ufs_write: ufs_wr_inode error");
 		goto out;
