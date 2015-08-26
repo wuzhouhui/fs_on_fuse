@@ -1208,7 +1208,7 @@ static int ufs_truncate(const char *path, off_t length)
 		goto out;
 	}
 	if ((ret = ufs_shrink(&inode, length)) < 0) {
-		log_msg("ufs_truncate: ufs_do_trunc error");
+		log_msg("ufs_truncate: ufs_shrink error");
 		goto out;
 	}
 	inode.i_size = length;
