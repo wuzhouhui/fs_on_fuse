@@ -1212,7 +1212,7 @@ static int ufs_truncate(const char *path, off_t length)
 		goto out;
 	}
 	inode.i_size = length;
-	inode.i_ctime = time(NULL);
+	inode.i_mtime = inode.i_ctime = time(NULL);
 
 	/* the file maybe opened */
 	for (i = 0; i < UFS_OPEN_MAX; i++)
