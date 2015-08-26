@@ -1286,6 +1286,7 @@ static int ufs_unlink(const char *path)
 	}
 
 	if (--inode.i_nlink) {
+		inode.i_ctime = time(NULL);
 		if ((ret = ufs_wr_inode(&inode)) < 0) {
 			log_msg("ufs_unlink: ufs_wr_inode error");
 			goto out;
