@@ -1233,6 +1233,56 @@ out:
 	return(ret);
 }
 
+static int ufs_ftruncate(const char *path, off_t length,
+		struct fuse_file_info *fi)
+{
+	int	ret;
+	struct ufs_minode *iptr;
+
+	log_msg("ufs_ftruncate called, path = %s, length = %d, fd = %d",
+			!path ? "NULL" : path, (int)length,
+			(int)fi->fh);
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
+		log_msg("ufs_ftruncate: fd out of range");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!ufs_open_files[fi->fh].f_count) {
+		log_msg("ufs_ftruncate: fd not opend");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_WRITE)) {
+		log_msg("ufs_ftruncate: file not opened for writing");
+		ret = -EINVAL;
+		goto out;
+	}
+	iptr = &ufs_open_files[fi->fh].f_inode;
+	if (!UFS_ISREG(iptr->i_mode)) {
+		log_msg("ufs_ftruncate: fd is not a regular file");
+		ret = -EISDIR;
+		goto out;
+	}
+	if (length > sb.s_max_size) {
+		ret = -EFBIG;
+		goto out;
+	}
+	if ((ret = ufs_shrink(iptr, length)) < 0) {
+		log_msg("ufs_ftruncate: ufs_shrink error");
+		goto out;
+	}
+	iptr->i_size = length;
+	iptr->i_mtime = iptr->i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(iptr)) < 0) {
+		log_msg("ufs_ftruncate: ufs_wr_inode error");
+		goto out;
+	}
+	ret = 0;
+out:
+	log_msg("ufs_ftruncate return %d", ret);
+	return(ret);
+}
+
 static int ufs_unlink(const char *path)
 {
 	int	ret;
@@ -1469,6 +1519,7 @@ struct fuse_operations ufs_oper = {
 	.rmdir		= ufs_rmdir,
 	.statfs		= ufs_statfs,
 	.truncate	= ufs_truncate,
+	.ftruncate	= ufs_ftruncate,
 	.unlink		= ufs_unlink,
 	.utimens	= ufs_utimens,
 	.write		= ufs_write,
