@@ -848,7 +848,7 @@ int ufs_add_entry(struct ufs_minode *dir, const struct ufs_dir_entry *ent)
 	 * update parent directory's inode.
 	 */
 	dir->i_size += sizeof(de[i]);
-	dir->i_mtime = time(NULL);
+	dir->i_ctime = dir->i_mtime = time(NULL);
 	if ((ret = ufs_wr_inode(dir)) < 0) {
 		log_msg("ufs_add_entry: ufs_wr_inode error");
 		goto out;
