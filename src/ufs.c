@@ -1422,7 +1422,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EBADF;
 		goto out;
 	}
-	if ((ufs_open_files[fi->fh].f_flag & UFS_O_WRITE) == 0) {
+	if ((ufs_open_files[fi->fh].f_flag & O_ACCMODE) == O_RDONLY) {
 		log_msg("ufs_write: file not opened for writing");
 		ret = -EBADF;
 		goto out;
