@@ -43,6 +43,7 @@
 #define UFS_IFDIR	(1 << 9)
 
 /* file open flags */
+#define UFS_O_ACCMODE	0x3
 #define UFS_O_RDONLY	0x0
 #define UFS_O_RDWR	0x1
 #define UFS_O_WRONLY	0x2
