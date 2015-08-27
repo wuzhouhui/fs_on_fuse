@@ -640,7 +640,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = oflag;
 	ufs_open_files[fd].f_count = 1;
-	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND ? inode.i_size : 0);
+	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND) ? inode.i_size : 0;
 	fi->fh = fd;
 	ret = 0;
 	log_msg("ufs_open: fi->fd = %d", fd);
@@ -1441,9 +1441,9 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 
 	iptr = &ufs_open_files[fi->fh].f_inode;
 
-	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ?
+	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND) ?
 			ufs_open_files[fi->fh].f_inode.i_size :
-			offset);
+			offset;
 	s = 0;
 	while (s < size) {
 		znum = ufs_creat_zone(iptr, pos >> UFS_BLK_SIZE_SHIFT);
