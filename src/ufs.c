@@ -568,7 +568,7 @@ out:
 
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
-	int	ret, oflag, fd;
+	int	ret, oflag, fd, acc;
 	struct ufs_minode inode;
 
 	log_msg("ufs_open: path = %s", path == NULL ? "NULL" : path);
@@ -595,6 +595,22 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 
 	if ((ret = ufs_path2i(path, &inode)) < 0) {
 		log_msg("ufs_open: ufs_path2i error");
+		goto out;
+	}
+
+	if (getuid() == inode.i_uid)
+		acc = inode.i_mode >> 6;
+	else if (getgid() == inode.i_gid)
+		acc = inode.i_mode >> 3;
+	else
+		acc = inode.i_mode;
+	acc &= 0x7;
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_RDONLY && !(acc & W_OK)) {
+		ret = -EACCES;
+		goto out;
+	}
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_WRONLY && !(acc & R_OK)) {
+		ret = -EACCES;
 		goto out;
 	}
 
