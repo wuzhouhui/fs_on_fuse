@@ -26,7 +26,7 @@
 #define UFS_BLK_SIZE	(1 << UFS_BLK_SIZE_SHIFT)
 #define UFS_MAGIC		0x7594
 /* max length of file name, null terminator excluded */
-#define UFS_NAME_LEN        (32 - sizeof(unsigned int) - 1)
+#define UFS_NAME_LEN        (64 - sizeof(unsigned int) - 1)
 /* max length of path, null terminator excluded */
 #define UFS_PATH_LEN	1024
 /* max number of links */
@@ -46,15 +46,13 @@
 #define UFS_IFDIR	(1 << 9)
 
 /* file open flags */
+#define UFS_O_ACCMODE	0x3
 #define UFS_O_RDONLY	0x0
 #define UFS_O_RDWR	0x1
 #define UFS_O_WRONLY	0x2
 #define UFS_O_APPEND	0x4
 #define UFS_O_DIR	0x8
 #define UFS_O_TRUNC	0x10
-#define UFS_O_WRITE	((UFS_O_RDWR) | (UFS_O_WRONLY) | (UFS_O_APPEND) \
-		| (UFS_O_TRUNC))
-#define UFS_O_READ	((UFS_O_RDWR) | (UFS_O_RDONLY))
 
 /* super block in disk */
 struct ufs_dsuper_block {

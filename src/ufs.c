@@ -568,7 +568,7 @@ out:
 
 static int ufs_open(const char *path, struct fuse_file_info *fi)
 {
-	int	ret, oflag, fd;
+	int	ret, oflag, fd, acc;
 	struct ufs_minode inode;
 
 	log_msg("ufs_open: path = %s", path == NULL ? "NULL" : path);
@@ -598,7 +598,24 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		goto out;
 	}
 
-	if ((oflag & UFS_O_WRITE) && UFS_ISDIR(inode.i_mode)) {
+	if (getuid() == inode.i_uid)
+		acc = inode.i_mode >> 6;
+	else if (getgid() == inode.i_gid)
+		acc = inode.i_mode >> 3;
+	else
+		acc = inode.i_mode;
+	acc &= 0x7;
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_RDONLY && !(acc & W_OK)) {
+		ret = -EACCES;
+		goto out;
+	}
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_WRONLY && !(acc & R_OK)) {
+		ret = -EACCES;
+		goto out;
+	}
+
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_RDONLY &&
+			UFS_ISDIR(inode.i_mode)) {
 		log_msg("ufs_open: %s is diectory, but flag has write",
 				path);
 		ret = -EISDIR;
@@ -623,7 +640,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = oflag;
 	ufs_open_files[fd].f_count = 1;
-	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND ? inode.i_size : 0);
+	ufs_open_files[fd].f_pos = (oflag & UFS_O_APPEND) ? inode.i_size : 0;
 	fi->fh = fd;
 	ret = 0;
 	log_msg("ufs_open: fi->fd = %d", fd);
@@ -670,7 +687,6 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		struct fuse_file_info *fi)
 {
 	int	ret = 0;
-	mode_t	acc;
 	off_t	pos, p;
 	size_t	s, c;
 	struct ufs_minode *iptr;
@@ -691,7 +707,8 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_READ)) {
+	if ((ufs_open_files[fi->fh].f_flag & UFS_O_ACCMODE) == 
+			UFS_O_WRONLY) {
 		log_msg("ufs_read: file not opend for reading");
 		ret = -EBADF;
 		goto out;
@@ -705,18 +722,6 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 	}
 	if (!buf || !size) {
 		ret = 0;
-		goto out;
-	}
-
-	if (getuid() == iptr->i_uid)
-		acc = iptr->i_mode >> 6;
-	else if (getgid() == iptr->i_gid)
-		acc = iptr->i_mode >> 3;
-	else
-		acc = iptr->i_mode;
-	acc &= 0x7;
-	if (!(acc & R_OK)) {
-		ret = -EACCES;
 		goto out;
 	}
 
@@ -1252,11 +1257,6 @@ static int ufs_ftruncate(const char *path, off_t length,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_WRITE)) {
-		log_msg("ufs_ftruncate: file not opened for writing");
-		ret = -EINVAL;
-		goto out;
-	}
 	iptr = &ufs_open_files[fi->fh].f_inode;
 	if (!UFS_ISREG(iptr->i_mode)) {
 		log_msg("ufs_ftruncate: fd is not a regular file");
@@ -1400,7 +1400,6 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		off_t offset, struct fuse_file_info *fi)
 {
 	size_t	s, c;
-	mode_t	acc;
 	unsigned int znum;
 	off_t	pos, p;
 	int	ret = 0;
@@ -1422,7 +1421,9 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EBADF;
 		goto out;
 	}
-	if ((ufs_open_files[fi->fh].f_flag & UFS_O_WRITE) == 0) {
+
+	if ((ufs_open_files[fi->fh].f_flag & UFS_O_ACCMODE)
+			== UFS_O_RDONLY) {
 		log_msg("ufs_write: file not opened for writing");
 		ret = -EBADF;
 		goto out;
@@ -1440,21 +1441,9 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 
 	iptr = &ufs_open_files[fi->fh].f_inode;
 
-	if (getuid() == iptr->i_uid)
-		acc = iptr->i_mode >> 6;
-	else if (getgid() == iptr->i_gid)
-		acc = iptr->i_mode >> 3;
-	else
-		acc = iptr->i_mode;
-	acc &= 0x7;
-	if (!(acc & W_OK)) {
-		ret = -EACCES;
-		goto out;
-	}
-
-	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND ?
+	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND) ?
 			ufs_open_files[fi->fh].f_inode.i_size :
-			offset);
+			offset;
 	s = 0;
 	while (s < size) {
 		znum = ufs_creat_zone(iptr, pos >> UFS_BLK_SIZE_SHIFT);
