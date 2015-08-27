@@ -1060,9 +1060,9 @@ int ufs_conv_oflag(int oflag)
 {
 	int	ufsoflag = 0;
 
-	if (oflag & O_RDONLY)
+	if ((oflag & O_ACCMODE) == O_RDONLY)
 		ufsoflag = UFS_O_RDONLY;
-	else if (oflag & O_WRONLY)
+	else if ((oflag & O_ACCMODE) == O_WRONLY)
 		ufsoflag = UFS_O_WRONLY;
 	else
 		ufsoflag = UFS_O_RDWR;
