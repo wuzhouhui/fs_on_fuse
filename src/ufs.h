@@ -23,7 +23,7 @@
 #define UFS_BLK_SIZE	(1 << UFS_BLK_SIZE_SHIFT)
 #define UFS_MAGIC		0x7594
 /* max length of file name, null terminator excluded */
-#define UFS_NAME_LEN        (32 - sizeof(unsigned int) - 1)
+#define UFS_NAME_LEN        (64 - sizeof(unsigned int) - 1)
 /* max length of path, null terminator excluded */
 #define UFS_PATH_LEN	1024
 /* max number of links */
