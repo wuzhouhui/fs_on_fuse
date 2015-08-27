@@ -691,7 +691,8 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_READ)) {
+	if ((ufs_open_files[fi->fh].f_flag & UFS_O_ACCMODE) == 
+			UFS_O_WRONLY) {
 		log_msg("ufs_read: file not opend for reading");
 		ret = -EBADF;
 		goto out;
