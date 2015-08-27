@@ -50,9 +50,6 @@
 #define UFS_O_APPEND	0x4
 #define UFS_O_DIR	0x8
 #define UFS_O_TRUNC	0x10
-#define UFS_O_WRITE	((UFS_O_RDWR) | (UFS_O_WRONLY) | (UFS_O_APPEND) \
-		| (UFS_O_TRUNC))
-#define UFS_O_READ	((UFS_O_RDWR) | (UFS_O_RDONLY))
 
 /* super block in disk */
 struct ufs_dsuper_block {

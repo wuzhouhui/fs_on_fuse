@@ -614,7 +614,8 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		goto out;
 	}
 
-	if ((oflag & UFS_O_WRITE) && UFS_ISDIR(inode.i_mode)) {
+	if ((oflag & UFS_O_ACCMODE) != UFS_O_RDONLY &&
+			UFS_ISDIR(inode.i_mode)) {
 		log_msg("ufs_open: %s is diectory, but flag has write",
 				path);
 		ret = -EISDIR;
@@ -1254,11 +1255,6 @@ static int ufs_ftruncate(const char *path, off_t length,
 	if (!ufs_open_files[fi->fh].f_count) {
 		log_msg("ufs_ftruncate: fd not opend");
 		ret = -EBADF;
-		goto out;
-	}
-	if (!(ufs_open_files[fi->fh].f_flag & UFS_O_WRITE)) {
-		log_msg("ufs_ftruncate: file not opened for writing");
-		ret = -EINVAL;
 		goto out;
 	}
 	iptr = &ufs_open_files[fi->fh].f_inode;
