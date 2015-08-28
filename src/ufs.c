@@ -195,14 +195,13 @@ static int ufs_creat(const char *path, mode_t mode,
 
 	/* find a available entry in ufs_open_files */
 	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
-		if (ufs_open_files[fd].f_count == 0)
+		if (!ufs_open_files[fd].f_inode)
 			break;
 	if (fd >= UFS_OPEN_MAX) {
 		log_msg("ufs_creat: ufs_open_files full");
 		ret = -ENFILE;
 		goto out;
 	}
-	memset(&ufs_open_files[fd], 0, sizeof(ufs_open_files[fd]));
 
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
@@ -256,7 +255,13 @@ static int ufs_creat(const char *path, mode_t mode,
 		goto out;
 	}
 
-	ufs_open_files[fd].f_inode = inode;
+	memset(&ufs_open_files[fd], 0, sizeof(ufs_open_files[fd]));
+	ufs_open_files[fd].f_inode = malloc(sizeof(struct ufs_minode));
+	if (!ufs_open_files[fd].f_inode) {
+		log_msg("ufs_creat: malloc error");
+		ret = -ENOMEM;
+		goto out;
+	}
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = UFS_O_WRONLY;
 	ufs_open_files[fd].f_count = 1;
