@@ -1351,7 +1351,7 @@ out:
 
 static int ufs_unlink(const char *path)
 {
-	int	ret;
+	int	ret, i;
 	char	pathcpy[UFS_PATH_LEN + 1], dir[UFS_PATH_LEN + 1],
 		name[UFS_NAME_LEN + 1];
 	struct ufs_minode inode, parinode;
@@ -1401,18 +1401,28 @@ static int ufs_unlink(const char *path)
 		goto out;
 	}
 
-	if (--inode.i_nlink) {
-		inode.i_ctime = time(NULL);
-		if ((ret = ufs_wr_inode(&inode)) < 0) {
-			log_msg("ufs_unlink: ufs_wr_inode error");
-			goto out;
+	inode.i_nlink--;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_unlink: ufs_wr_inode error");
+		goto out;
+	}
+	/* XXX: the file must opened only once */
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_inode && inode.i_ino ==
+				ufs_open_files[i].f_inode->i_ino) {
+			memcpy(ufs_open_files[i].f_inode, &inode,
+					sizeof(inode));
+			break;
 		}
-	} else {
-		if ((ret = ufs_truncatei(&inode)) < 0) {
+	if (!inode.i_nlink && i >= UFS_OPEN_MAX) {
+		ret = ufs_truncatei(&inode);
+		if (ret < 0) {
 			log_msg("ufs_unlink: ufs_truncatei error");
 			goto out;
 		}
-		if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
+		ret = ufs_free_inode(inode.i_ino);
+		if (ret < 0) {
 			log_msg("ufs_unlink: ufs_free_inode error");
 			goto out;
 		}
