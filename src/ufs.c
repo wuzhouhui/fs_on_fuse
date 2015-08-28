@@ -1395,7 +1395,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EBADF;
 		goto out;
 	}
-	if (ufs_open_files[fi->fh].f_count == 0) {
+	if (!ufs_open_files[fi->fh].f_inode == 0) {
 		log_msg("ufs_write: file not opened");
 		ret = -EBADF;
 		goto out;
@@ -1418,10 +1418,10 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		goto out;
 	}
 
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 
 	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND) ?
-			ufs_open_files[fi->fh].f_inode.i_size :
+			ufs_open_files[fi->fh].f_inode->i_size :
 			offset;
 	s = 0;
 	while (s < size) {
