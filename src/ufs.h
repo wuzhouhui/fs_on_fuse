@@ -149,7 +149,6 @@ struct ufs_minode {
 	unsigned int i_zones[8];
 
 	unsigned int	i_ino;		/* number of inode */
-	int	i_refcnt;	/* reference count */
 };
 
 /* directory entry */
