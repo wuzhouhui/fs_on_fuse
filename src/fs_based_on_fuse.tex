@@ -549,8 +549,9 @@ mount -t fusectl none /sys/fs/fuse/connections
 
 \begin{verbatim}
 #define UFS_MAGIC           0x7594  /* 文件系统的标识 */
-#define UFS_NAME_LEN        27      /* 文件名的最大长度, 不包括结尾的空字符 */
-#define UFS_PATH_LEN        1024    /* 路径名最大长度, 不包括结尾的空字符 */
+      /* 文件名的最大长度, 不包括结尾的空字符 */
+#define UFS_NAME_LEN        (64 - sizeof(unsigned int) - 1)
+#define UFS_PATH_LEN        1024   /* 路径名最大长度, 不包括结尾的空字符 */
 #define UFS_BLK_SIZE        512     /* 磁盘块大小 */
 #define UFS_OPEN_MAX        64      /* 同时打开文件数最大值 */
 #define UFS_DISK_MAX_SIZE   32      /* 磁盘文件最大值 (MB) */
@@ -2070,7 +2071,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{-ENAMETOOLONG}: \texttt{path} 长度大于最大路径名长度;
   \item
     \texttt{-EACCES}: 对文件的打开请求不被允许 (例如打开标志指定了
-    \texttt{UFS\_O\_RDWR}, 但文件不可写), 或路径中的某目录 无搜索权限;
+    \texttt{O\_RDWR}, 但文件不可写), 或进程对路径中的某目录无搜索权限;
   \item
     \texttt{-EISDIR}: \texttt{path} 引用的是目录, 而打开标志包含写;
   \item
@@ -2100,15 +2101,19 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     调用 \texttt{ufs\_path2i(path, inode)}, 获取文件的 i 结点号,
     若函数出错, 原样返回错误值;
+  \item 
+      获取进程对该文件的读写权限, 并与打开标志 \texttt{flag} 作比较,
+      如果互相冲突 (例如进程对文件只可读, 但打开标志包含写), 则返回 
+      \verb'-EACCES';
   \item
-    若 \texttt{flag} 包含写操作 (\texttt{UFS\_O\_WRONLY},
-    \texttt{UFS\_O\_RDWR} 等), 而 \texttt{path} 是一个目录文件, 返回
+    若打开标志 \texttt{flag} 包含写操作 (\texttt{O\_WRONLY},
+    \texttt{O\_RDWR} 等), 而 \texttt{path} 是一个目录文件, 返回
     \texttt{-EISDIR};
   \item
-    若 \texttt{flag} 指定了 \texttt{UFS\_O\_DIR}, 但 \texttt{path}
+    若 \texttt{flag} 指定了 \texttt{O\_DIR}, 但 \texttt{path}
     不是一个目录文件, 返回 \texttt{-ENOTDIR};
   \item
-    若 \texttt{flag} 指定了 \texttt{UFS\_O\_TRUNC}, 则调用
+    若 \texttt{flag} 指定了 \texttt{O\_TRUNC}, 则调用
     \texttt{ufs\_truncatei(inode)} 与 \texttt{ufs\_wr\_inode(inode)},
     若函数出错, 原样返回错误值;
   \item
