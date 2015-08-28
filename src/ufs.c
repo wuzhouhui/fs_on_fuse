@@ -557,7 +557,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 	}
 
 	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
-		if (ufs_open_files[fd].f_count == 0)
+		if (!ufs_open_files[fd].f_inode)
 			break;
 	if (fd >= UFS_OPEN_MAX) {
 		log_msg("ufs_open: ufs_open_files is full");
@@ -608,7 +608,13 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		}
 	}
 
-	memcpy(&ufs_open_files[fd].f_inode, &inode, sizeof(inode));
+	ufs_open_files[fd].f_inode = malloc(sizeof(struct ufs_minode));
+	if (!ufs_open_files[fd].f_inode) {
+		log_msg("ufs_open: malloc error");
+		ret = -ENOMEM;
+		goto out;
+	}
+	memcpy(ufs_open_files[fd].f_inode, &inode, sizeof(inode));
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = oflag;
 	ufs_open_files[fd].f_count = 1;
