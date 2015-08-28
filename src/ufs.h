@@ -91,10 +91,6 @@ struct ufs_msuper_block {
 	unsigned int s_1st_inode_block;
 	/* 1st zone block' number in disk */
 	unsigned int s_1st_zone_block;
-	/* available inode left. XXX deprecated. */
-	unsigned int	s_inode_left;
-	/* available zone bloc left. XXX deprecated */
-	unsigned int s_block_left;
 	/* file descriptor of disk file */
 	int	s_fd;
 	/* address of disk file in memeory */
