@@ -866,6 +866,7 @@ out:
 static int ufs_release(const char *path, struct fuse_file_info *fi)
 {
 	int	ret;
+	struct ufs_minode *iptr;
 
 	log_msg("ufs_release called, path = %s, fd = %d",
 			(path == NULL ? "NULL" : path), (int)fi->fh);
@@ -880,7 +881,29 @@ static int ufs_release(const char *path, struct fuse_file_info *fi)
 				(int)fi->fh);
 		goto out;
 	}
-	free(ufs_open_files[fi->fh].f_inode);
+	ufs_open_files[fi->fh].f_count--;
+	if (ufs_open_files[fi->fh].f_count) {
+		ret = 0;
+		goto out;
+	}
+
+	iptr = ufs_open_files[fi->fh].f_inode;
+	if (!iptr->i_nlink) {
+		ret = ufs_truncatei(iptr);
+		if (ret < 0) {
+			log_msg("ufs_release: ufs_truncatei"
+				" error");
+			goto out;
+		}
+		ret = ufs_free_inode(iptr->i_ino);
+		if (ret < 0) {
+			log_msg("ufs_release: ufs_free_inode"
+				" error");
+			goto out;
+		}
+
+	}
+	free(iptr);
 	ufs_open_files[fi->fh].f_inode = NULL;
 	ret = 0;
 
