@@ -262,6 +262,7 @@ static int ufs_creat(const char *path, mode_t mode,
 		ret = -ENOMEM;
 		goto out;
 	}
+	memcpy(ufs_open_files[fd].f_inode, &inode, sizeof(inode));
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = UFS_O_WRONLY;
 	ufs_open_files[fd].f_count = 1;
@@ -1395,7 +1396,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!ufs_open_files[fi->fh].f_inode == 0) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_write: file not opened");
 		ret = -EBADF;
 		goto out;
