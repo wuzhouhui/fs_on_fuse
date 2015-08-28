@@ -402,7 +402,7 @@ out:
 
 static int ufs_link(const char *oldpath, const char *newpath)
 {
-	int	ret;
+	int	ret, i;
 	struct ufs_minode oldi, newpari;
 	char	newname[UFS_NAME_LEN + 1], newpar[UFS_PATH_LEN + 1];
 	char	pathcpy[UFS_PATH_LEN + 1];
@@ -451,6 +451,11 @@ static int ufs_link(const char *oldpath, const char *newpath)
 	}
 	oldi.i_nlink++;
 	oldi.i_ctime = time(NULL);
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_inode && oldi.i_ino ==
+				ufs_open_files[i].f_inode->i_ino)
+			memcpy(ufs_open_files[i].f_inode, &oldi,
+					sizeof(oldi));
 	if ((ret = ufs_wr_inode(&oldi)) < 0)
 		goto out;
 	ret = 0;
