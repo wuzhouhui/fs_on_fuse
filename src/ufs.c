@@ -338,6 +338,41 @@ out:
 	return(ret);
 }
 
+static int ufs_fgetattr(const char *path, struct stat *statptr,
+		struct fuse_file_info *fi)
+{
+	int	ret;
+	struct ufs_minode *iptr;
+
+	log_msg("ufs_fgetattr called, path = %s, fd = %d", (!path) ? "NULL"
+			: path, (int)fi->fh);
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
+		log_msg("ufs_fgetattr: fd out of range");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!ufs_open_files[fi->fh].f_inode) {
+		log_msg("ufs_fgetattr: file not opened");
+		ret = -EBADF;
+		goto out;
+	}
+	iptr = ufs_open_files[fi->fh].f_inode;
+	statptr->st_mode = ufs_conv_fmode(iptr->i_mode);
+	statptr->st_ino = iptr->i_ino;
+	statptr->st_nlink = iptr->i_nlink;
+	statptr->st_uid = iptr->i_uid;
+	statptr->st_gid = iptr->i_gid;
+	statptr->st_size = iptr->i_size;
+	statptr->st_ctime = iptr->i_ctime;
+	statptr->st_mtime = iptr->i_mtime;
+	statptr->st_blksize = UFS_BLK_SIZE;
+	statptr->st_blocks = iptr->i_blocks;
+	ret = 0;
+out:
+	log_msg("ufs_fgetattr return %d", ret);
+	return(ret);
+}
+
 static int ufs_getattr(const char *path, struct stat *statptr)
 {
 	int	ret = 0;
@@ -1500,6 +1535,7 @@ struct fuse_operations ufs_oper = {
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
 	.fsyncdir	= ufs_fsyncdir,
+	.fgetattr	= ufs_fgetattr,
 	.getattr	= ufs_getattr,
 	.link		= ufs_link,
 	.mkdir		= ufs_mkdir,
