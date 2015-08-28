@@ -1267,11 +1267,9 @@ static int ufs_truncate(const char *path, off_t length)
 	/* the file maybe opened */
 	for (i = 0; i < UFS_OPEN_MAX; i++)
 		if (ufs_open_files[i].f_inode &&
-			ufs_open_files[i].f_inode->i_ino == inode.i_ino) {
+			ufs_open_files[i].f_inode->i_ino == inode.i_ino)
 			memcpy(ufs_open_files[i].f_inode, &inode,
 					sizeof(inode));
-			break;
-		}
 
 	if ((ret = ufs_wr_inode(&inode)) < 0) {
 		log_msg("ufs_truncate: ufs_wr_inode error");
