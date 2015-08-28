@@ -1231,12 +1231,12 @@ static int ufs_ftruncate(const char *path, off_t length,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!ufs_open_files[fi->fh].f_count) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_ftruncate: fd not opend");
 		ret = -EBADF;
 		goto out;
 	}
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 	if (!UFS_ISREG(iptr->i_mode)) {
 		log_msg("ufs_ftruncate: fd is not a regular file");
 		ret = -EISDIR;
