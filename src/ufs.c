@@ -680,7 +680,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!ufs_open_files[fi->fh].f_count) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_read: file not opened");
 		ret = -EBADF;
 		goto out;
@@ -692,7 +692,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		goto out;
 	}
 
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 	if (!UFS_ISREG(iptr->i_mode)) {
 		log_msg("ufs_read: file is a directory");
 		ret = -EISDIR;
