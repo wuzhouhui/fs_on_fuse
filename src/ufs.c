@@ -7,39 +7,6 @@
 int log_to_stderr;
 
 struct ufs_file ufs_open_files[UFS_OPEN_MAX];
-/*
- * just a test function
- static void pr_sb(const struct ufs_msuper_block *sb)
- {
- char	buf[UFS_BLK_SIZE];
- struct ufs_dir_entry *ent;
- off_t	offset;
-
- printf("s_magic = %x\n", (int)sb->s_magic);
- printf("s_imap_blocks = %d\n", (int)sb->s_imap_blocks);
- printf("s_zmap_blocks = %d\n", (int)sb->s_zmap_blocks);
- printf("s_inode_blocks = %d\n", (int)sb->s_inode_blocks);
- printf("s_zone_blocks = %d\n", (int)sb->s_zone_blocks);
- printf("s_max_size = %d\n", (int)sb->s_max_size);
- printf("s_imap = %p\n", sb->s_imap);
- printf("s_zmap = %p\n", sb->s_zmap);
- printf("s_1st_inode_block = %d\n", (int)sb->s_1st_inode_block);
- printf("s_1st_zone_block = %d\n", (int)sb->s_1st_zone_block);
- printf("s_inode_left = %d\n", (int)sb->s_inode_left);
- printf("s_block_left = %d\n", (int)sb->s_block_left);
- printf("s_fd = %d\n", (int)sb->s_fd);
- printf("s_addr = %p\n", sb->s_addr);
-
- offset = (1 + sb->s_imap_blocks + sb->s_zmap_blocks
- sb->s_inode_blocks) << UFS_BLK_SIZE_SHIFT;
- pread(sb->s_fd, buf, sizeof(buf), offset);
- ent = (struct ufs_dir_entry *)buf;
- printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
- ent++;
- printf("%d, %s\n", (int)ent->de_inum, ent->de_name);
- return;
- }
- */
 
 static char bit[] = {
 	0, 1, 1, 2,
