@@ -165,7 +165,7 @@ struct ufs_dir_entry {
 #define MAX_FILE_SIZE	(8259 << 10)
 
 struct ufs_file {
-	struct ufs_minode f_inode;
+	struct ufs_minode *f_inode;
 	mode_t	f_mode;
 	int	f_flag;
 	int	f_count;
