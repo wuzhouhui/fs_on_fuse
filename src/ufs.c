@@ -808,13 +808,14 @@ static int ufs_release(const char *path, struct fuse_file_info *fi)
 		log_msg("ufs_release: fd out of range");
 		goto out;
 	}
-	if (ufs_open_files[fi->fh].f_count == 0) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		ret = -EBADF;
 		log_msg("ufs_release: ufs_open_files[%d] not opened",
 				(int)fi->fh);
 		goto out;
 	}
-	ufs_open_files[fi->fh].f_count--;
+	free(ufs_open_files[fi->fh].f_inode);
+	ufs_open_files[fi->fh].f_inode = NULL;
 	ret = 0;
 
 out:
