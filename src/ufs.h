@@ -25,7 +25,7 @@
 /* max length of file name, null terminator excluded */
 #define UFS_NAME_LEN        (64 - sizeof(unsigned int) - 1)
 /* max length of path, null terminator excluded */
-#define UFS_PATH_LEN	1024
+#define UFS_PATH_LEN	512
 /* max number of links */
 #define UFS_LINK_MAX	128
 /* # inode per block */
