@@ -2,7 +2,7 @@
 
 #### 编译与运行环境
 * Ubuntu 14.04 32bits
-* Fuse-2.9.4 (Ubuntu 14.04 预装了 Fuse).
+* Fuse-2.9.4
 
 #### 编译
 	cd src; make
@@ -36,7 +36,7 @@
 
 #### Environment for Compiling and Running
 * Ubuntu 14.04 32bits
-* Fuse-2.9.4 (Ubuntu 14.04 already has Fuse)
+* Fuse-2.9.4
 
 #### Compile
 	cd src; make
