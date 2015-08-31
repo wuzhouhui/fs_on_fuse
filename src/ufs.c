@@ -59,10 +59,6 @@ static int init(const char *disk_name)
 	/* plus one for super block */
 	sb.s_1st_inode_block = sb.s_imap_blocks + sb.s_zmap_blocks + 1;
 	sb.s_1st_zone_block = sb.s_1st_inode_block + sb.s_inode_blocks;
-	sb.s_inode_left = (unsigned int)ufs_left_cnt(sb.s_imap, sb.s_imap_blocks,
-			sb.s_inode_blocks * UFS_INUM_PER_BLK);
-	sb.s_block_left = (unsigned int)ufs_left_cnt(sb.s_zmap, sb.s_zmap_blocks,
-			sb.s_zone_blocks);
 
 	log_msg("init returned");
 	return(0);
@@ -195,14 +191,13 @@ static int ufs_creat(const char *path, mode_t mode,
 
 	/* find a available entry in ufs_open_files */
 	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
-		if (ufs_open_files[fd].f_count == 0)
+		if (!ufs_open_files[fd].f_inode)
 			break;
 	if (fd >= UFS_OPEN_MAX) {
 		log_msg("ufs_creat: ufs_open_files full");
 		ret = -ENFILE;
 		goto out;
 	}
-	memset(&ufs_open_files[fd], 0, sizeof(ufs_open_files[fd]));
 
 	strcpy(pathcpy, path);
 	strcpy(dir, dirname(pathcpy));
@@ -256,7 +251,14 @@ static int ufs_creat(const char *path, mode_t mode,
 		goto out;
 	}
 
-	ufs_open_files[fd].f_inode = inode;
+	memset(&ufs_open_files[fd], 0, sizeof(ufs_open_files[fd]));
+	ufs_open_files[fd].f_inode = malloc(sizeof(struct ufs_minode));
+	if (!ufs_open_files[fd].f_inode) {
+		log_msg("ufs_creat: malloc error");
+		ret = -ENOMEM;
+		goto out;
+	}
+	memcpy(ufs_open_files[fd].f_inode, &inode, sizeof(inode));
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = UFS_O_WRONLY;
 	ufs_open_files[fd].f_count = 1;
@@ -307,6 +309,70 @@ out:
 	return(ret);
 }
 
+static int ufs_fsyncdir(const char *path, int datasync,
+		struct fuse_file_info *fi)
+{
+	int	ret;
+
+	log_msg("ufs_fsyncdir called, path = %s, datasync = %d",
+			(!path) ? "NULL" : path, datasync);
+	if (datasync) {
+		if (fdatasync(sb.s_fd) < 0) {
+			log_msg("ufs_fsyncdir: fdatasync error");
+			ret = -errno;
+			goto out;
+		}
+		ret = 0;
+		goto out;
+	}
+
+	if (fsync(sb.s_fd) < 0) {
+		log_msg("ufs_fsyncdir: fsync error");
+		ret = -errno;
+		goto out;
+	}
+	ret = 0;
+
+out:
+	log_msg("ufs_fsyncdir return %d", ret);
+	return(ret);
+}
+
+static int ufs_fgetattr(const char *path, struct stat *statptr,
+		struct fuse_file_info *fi)
+{
+	int	ret;
+	struct ufs_minode *iptr;
+
+	log_msg("ufs_fgetattr called, path = %s, fd = %d", (!path) ? "NULL"
+			: path, (int)fi->fh);
+	if (fi->fh < 0 || fi->fh >= UFS_OPEN_MAX) {
+		log_msg("ufs_fgetattr: fd out of range");
+		ret = -EBADF;
+		goto out;
+	}
+	if (!ufs_open_files[fi->fh].f_inode) {
+		log_msg("ufs_fgetattr: file not opened");
+		ret = -EBADF;
+		goto out;
+	}
+	iptr = ufs_open_files[fi->fh].f_inode;
+	statptr->st_mode = ufs_conv_fmode(iptr->i_mode);
+	statptr->st_ino = iptr->i_ino;
+	statptr->st_nlink = iptr->i_nlink;
+	statptr->st_uid = iptr->i_uid;
+	statptr->st_gid = iptr->i_gid;
+	statptr->st_size = iptr->i_size;
+	statptr->st_ctime = iptr->i_ctime;
+	statptr->st_mtime = iptr->i_mtime;
+	statptr->st_blksize = UFS_BLK_SIZE;
+	statptr->st_blocks = iptr->i_blocks;
+	ret = 0;
+out:
+	log_msg("ufs_fgetattr return %d", ret);
+	return(ret);
+}
+
 static int ufs_getattr(const char *path, struct stat *statptr)
 {
 	int	ret = 0;
@@ -336,7 +402,7 @@ out:
 
 static int ufs_link(const char *oldpath, const char *newpath)
 {
-	int	ret;
+	int	ret, i;
 	struct ufs_minode oldi, newpari;
 	char	newname[UFS_NAME_LEN + 1], newpar[UFS_PATH_LEN + 1];
 	char	pathcpy[UFS_PATH_LEN + 1];
@@ -385,6 +451,11 @@ static int ufs_link(const char *oldpath, const char *newpath)
 	}
 	oldi.i_nlink++;
 	oldi.i_ctime = time(NULL);
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_inode && oldi.i_ino ==
+				ufs_open_files[i].f_inode->i_ino)
+			memcpy(ufs_open_files[i].f_inode, &oldi,
+					sizeof(oldi));
 	if ((ret = ufs_wr_inode(&oldi)) < 0)
 		goto out;
 	ret = 0;
@@ -552,7 +623,7 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 	}
 
 	for (fd = 0; fd < UFS_OPEN_MAX; fd++)
-		if (ufs_open_files[fd].f_count == 0)
+		if (!ufs_open_files[fd].f_inode)
 			break;
 	if (fd >= UFS_OPEN_MAX) {
 		log_msg("ufs_open: ufs_open_files is full");
@@ -603,7 +674,13 @@ static int ufs_open(const char *path, struct fuse_file_info *fi)
 		}
 	}
 
-	memcpy(&ufs_open_files[fd].f_inode, &inode, sizeof(inode));
+	ufs_open_files[fd].f_inode = malloc(sizeof(struct ufs_minode));
+	if (!ufs_open_files[fd].f_inode) {
+		log_msg("ufs_open: malloc error");
+		ret = -ENOMEM;
+		goto out;
+	}
+	memcpy(ufs_open_files[fd].f_inode, &inode, sizeof(inode));
 	ufs_open_files[fd].f_mode = inode.i_mode;
 	ufs_open_files[fd].f_flag = oflag;
 	ufs_open_files[fd].f_count = 1;
@@ -669,7 +746,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!ufs_open_files[fi->fh].f_count) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_read: file not opened");
 		ret = -EBADF;
 		goto out;
@@ -681,7 +758,7 @@ static int ufs_read(const char *path, char *buf, size_t size, off_t offset,
 		goto out;
 	}
 
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 	if (!UFS_ISREG(iptr->i_mode)) {
 		log_msg("ufs_read: file is a directory");
 		ret = -EISDIR;
@@ -789,6 +866,7 @@ out:
 static int ufs_release(const char *path, struct fuse_file_info *fi)
 {
 	int	ret;
+	struct ufs_minode *iptr;
 
 	log_msg("ufs_release called, path = %s, fd = %d",
 			(path == NULL ? "NULL" : path), (int)fi->fh);
@@ -797,13 +875,36 @@ static int ufs_release(const char *path, struct fuse_file_info *fi)
 		log_msg("ufs_release: fd out of range");
 		goto out;
 	}
-	if (ufs_open_files[fi->fh].f_count == 0) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		ret = -EBADF;
 		log_msg("ufs_release: ufs_open_files[%d] not opened",
 				(int)fi->fh);
 		goto out;
 	}
 	ufs_open_files[fi->fh].f_count--;
+	if (ufs_open_files[fi->fh].f_count) {
+		ret = 0;
+		goto out;
+	}
+
+	iptr = ufs_open_files[fi->fh].f_inode;
+	if (!iptr->i_nlink) {
+		ret = ufs_truncatei(iptr);
+		if (ret < 0) {
+			log_msg("ufs_release: ufs_truncatei"
+				" error");
+			goto out;
+		}
+		ret = ufs_free_inode(iptr->i_ino);
+		if (ret < 0) {
+			log_msg("ufs_release: ufs_free_inode"
+				" error");
+			goto out;
+		}
+
+	}
+	free(iptr);
+	ufs_open_files[fi->fh].f_inode = NULL;
 	ret = 0;
 
 out:
@@ -1188,12 +1289,10 @@ static int ufs_truncate(const char *path, off_t length)
 
 	/* the file maybe opened */
 	for (i = 0; i < UFS_OPEN_MAX; i++)
-		if (ufs_open_files[i].f_count &&
-			ufs_open_files[i].f_inode.i_ino == inode.i_ino) {
-			memcpy(&ufs_open_files[i].f_inode, &inode,
+		if (ufs_open_files[i].f_inode &&
+			ufs_open_files[i].f_inode->i_ino == inode.i_ino)
+			memcpy(ufs_open_files[i].f_inode, &inode,
 					sizeof(inode));
-			break;
-		}
 
 	if ((ret = ufs_wr_inode(&inode)) < 0) {
 		log_msg("ufs_truncate: ufs_wr_inode error");
@@ -1219,12 +1318,12 @@ static int ufs_ftruncate(const char *path, off_t length,
 		ret = -EBADF;
 		goto out;
 	}
-	if (!ufs_open_files[fi->fh].f_count) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_ftruncate: fd not opend");
 		ret = -EBADF;
 		goto out;
 	}
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 	if (!UFS_ISREG(iptr->i_mode)) {
 		log_msg("ufs_ftruncate: fd is not a regular file");
 		ret = -EISDIR;
@@ -1252,7 +1351,7 @@ out:
 
 static int ufs_unlink(const char *path)
 {
-	int	ret;
+	int	ret, i;
 	char	pathcpy[UFS_PATH_LEN + 1], dir[UFS_PATH_LEN + 1],
 		name[UFS_NAME_LEN + 1];
 	struct ufs_minode inode, parinode;
@@ -1302,18 +1401,28 @@ static int ufs_unlink(const char *path)
 		goto out;
 	}
 
-	if (--inode.i_nlink) {
-		inode.i_ctime = time(NULL);
-		if ((ret = ufs_wr_inode(&inode)) < 0) {
-			log_msg("ufs_unlink: ufs_wr_inode error");
-			goto out;
+	inode.i_nlink--;
+	inode.i_ctime = time(NULL);
+	if ((ret = ufs_wr_inode(&inode)) < 0) {
+		log_msg("ufs_unlink: ufs_wr_inode error");
+		goto out;
+	}
+	/* XXX: the file must opened only once */
+	for (i = 0; i < UFS_OPEN_MAX; i++)
+		if (ufs_open_files[i].f_inode && inode.i_ino ==
+				ufs_open_files[i].f_inode->i_ino) {
+			memcpy(ufs_open_files[i].f_inode, &inode,
+					sizeof(inode));
+			break;
 		}
-	} else {
-		if ((ret = ufs_truncatei(&inode)) < 0) {
+	if (!inode.i_nlink && i >= UFS_OPEN_MAX) {
+		ret = ufs_truncatei(&inode);
+		if (ret < 0) {
 			log_msg("ufs_unlink: ufs_truncatei error");
 			goto out;
 		}
-		if ((ret = ufs_free_inode(inode.i_ino)) < 0) {
+		ret = ufs_free_inode(inode.i_ino);
+		if (ret < 0) {
 			log_msg("ufs_unlink: ufs_free_inode error");
 			goto out;
 		}
@@ -1383,7 +1492,7 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		ret = -EBADF;
 		goto out;
 	}
-	if (ufs_open_files[fi->fh].f_count == 0) {
+	if (!ufs_open_files[fi->fh].f_inode) {
 		log_msg("ufs_write: file not opened");
 		ret = -EBADF;
 		goto out;
@@ -1406,10 +1515,10 @@ static int ufs_write(const char *path, const char *buf, size_t size,
 		goto out;
 	}
 
-	iptr = &ufs_open_files[fi->fh].f_inode;
+	iptr = ufs_open_files[fi->fh].f_inode;
 
 	pos = (ufs_open_files[fi->fh].f_flag & UFS_O_APPEND) ?
-			ufs_open_files[fi->fh].f_inode.i_size :
+			ufs_open_files[fi->fh].f_inode->i_size :
 			offset;
 	s = 0;
 	while (s < size) {
@@ -1461,6 +1570,8 @@ struct fuse_operations ufs_oper = {
 	.create		= ufs_creat,
 	.flush		= ufs_flush,
 	.fsync		= ufs_fsync,
+	.fsyncdir	= ufs_fsyncdir,
+	.fgetattr	= ufs_fgetattr,
 	.getattr	= ufs_getattr,
 	.link		= ufs_link,
 	.mkdir		= ufs_mkdir,

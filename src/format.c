@@ -79,14 +79,15 @@ int main(int argc, char *argv[])
 			err_sys("write %s error", argv[1]);
 
 	/* initialize root directory, add . and .. for it */
+	memset(&root, 0, sizeof(root));
 	root.i_nlink = 2;
-	root.i_mode = 0x3ff;
+	root.i_mode = 0x3ed; /* drwxr-xr-x */
 	root.i_uid = getuid();
 	root.i_gid = getgid();
 	root.i_size = sizeof(struct ufs_dir_entry) * 2;
 	root.i_blocks = 1;
-	memset(root.i_zones, 0, sizeof(root.i_zones));
 	root.i_zones[0] = 1;
+	root.i_mtime = root.i_ctime = time(NULL);
 	if (write(fd, &root, sizeof(root)) != sizeof(root))
 		err_sys("write error for root inode");
 

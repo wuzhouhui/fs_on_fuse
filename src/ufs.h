@@ -28,7 +28,7 @@
 /* max length of file name, null terminator excluded */
 #define UFS_NAME_LEN        (64 - sizeof(unsigned int) - 1)
 /* max length of path, null terminator excluded */
-#define UFS_PATH_LEN	1024
+#define UFS_PATH_LEN	512
 /* max number of links */
 #define UFS_LINK_MAX	128
 /* # inode per block */
@@ -94,10 +94,6 @@ struct ufs_msuper_block {
 	unsigned int s_1st_inode_block;
 	/* 1st zone block' number in disk */
 	unsigned int s_1st_zone_block;
-	/* available inode left. XXX deprecated. */
-	unsigned int	s_inode_left;
-	/* available zone bloc left. XXX deprecated */
-	unsigned int s_block_left;
 	/* file descriptor of disk file */
 	int	s_fd;
 	/* address of disk file in memeory */
@@ -167,7 +163,7 @@ struct ufs_dir_entry {
 #define MAX_FILE_SIZE	(8259 << 10)
 
 struct ufs_file {
-	struct ufs_minode f_inode;
+	struct ufs_minode *f_inode;
 	mode_t	f_mode;
 	int	f_flag;
 	int	f_count;
