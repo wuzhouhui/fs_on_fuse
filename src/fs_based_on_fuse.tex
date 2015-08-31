@@ -789,7 +789,7 @@ struct ufs_dir_entry {
 
 \begin{verbatim}
 struct ufs_file {
-    struct ufs_minode f_inode;      /* 与该文件对应的 i 结点 */
+    struct ufs_minode *f_inode;     /* 与该文件对应的 i 结点 */
     mode_t  f_mode;                 /* 文件类型与访问权限 */
     int f_flag;                     /* 文件打开和控制标志 */
     int f_count;                    /* 对应文件句柄引用次数 */
@@ -839,7 +839,7 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
 \texttt{f\_count} 表示该文件被多少个描述符引用, 例如 \texttt{dup()}
 函数就可以增加 \texttt{f\_count} 的值, 当 \texttt{f\_count} 为 0 时,
 该文件从打开文件表中清除, 并 将该项置为空闲状态, 表项是否空闲的依据是
-\texttt{f\_count} 是否为 0.
+\texttt{f\_inode} 是否为 \verb'NULL'.
 
 \subsection{初始化函数}
 \subsubsection[\texttt{ufs\_read\_sb}]{\texttt{int ufs\_read\_sb(const char *diskname)}}
@@ -1658,6 +1658,10 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
     \texttt{-EBADF};
   \item
     \texttt{ufs\_open\_files{[}fs{]}.f\_count} 减 1;
+  \item 若打开文件的引用计数 \verb'f_count' 为 0 且 文件 i 结点的链接数
+      \verb'i_nlink' 也为 0, 则调用 \\\texttt{ufs\_truncatei(inode)} 与 
+      \verb'ufs_free_inode(inode.i_ino)', 释放文件的占用的逻辑块与 i 结点
+      (即真正地删除文件);
   \item
     返回.
   \end{itemize}
@@ -1949,11 +1953,9 @@ struct ufs_file ufs_open_files[UFS_OPEN_MAX]; /* 打开文件表 */
   \item
     调用 \texttt{ufs\_wr\_inode(parinode)} 将父目录 i 结点写盘;
   \item
-    为 \texttt{inode.i\_nlink} 减 1, 减 1 后若不为零, 调用
-    \texttt{ufs\_wr\_inode(inode)} 将 i 结点写盘; 若为 0, 调用
-    \texttt{ufs\_truncatei(inode)} 将文件截断, 若出错, 原样返回错误值,
-    截断后调用 \\
-    \texttt{ufs\_free\_inode(inode.i\_ino)} 释放 i 结点.
+      \verb'i_nlink' 减 1, 若文件已打开, 则同步 i 结点; 若文件未被打开
+      且 \verb'i_nlink' 为 0, 则调用 \\\verb'ufs_truncatei(inode)' 与 
+      \verb'ufs_free_inode(inode.i_ino)', 释放文件的占用的逻辑块与 i 结点;
   \item
     返回
   \end{itemize}
