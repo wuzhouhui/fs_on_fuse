@@ -28,10 +28,6 @@
 
 本文件系统没有考虑并发条件下的文件访问, 竞争条件会带来不可预知的效果.
 
-完整文档请参考 `src/fs_based_on_fuse.tex`, 如果你的系统上没有安装 LaTeX
-编译环境, 请给我留言, 我把编译好的 PDF 发送给您 (因为文档可能会经常变化,
-所以我只把 LaTeX 源文件纳入版本管理).
-
 ### UserSpace Filesystem Based on Fuse
 
 #### Environment for Compiling and Running
